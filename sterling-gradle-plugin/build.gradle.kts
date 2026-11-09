@@ -16,6 +16,8 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
 }
 
+dependencies { implementation(libs.spotless.gradle) }
+
 // The tool versions Sterling pins, read by the plugin at runtime (ToolVersions.java).
 val generatedResources = layout.buildDirectory.dir("generated/sterling-resources")
 val versionResource =

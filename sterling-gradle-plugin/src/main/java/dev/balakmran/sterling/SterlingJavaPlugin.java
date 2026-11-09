@@ -76,5 +76,8 @@ public class SterlingJavaPlugin implements Plugin<Project> {
         .getTasks()
         .named(SterlingPlugin.INFO, SterlingInfoTask.class)
         .configure(task -> task.getJavaToolchain().set(toolchainVersion.map(String::valueOf)));
+
+    SterlingExtension sterling = project.getExtensions().getByType(SterlingExtension.class);
+    Formatting.configure(project, sterling);
   }
 }
