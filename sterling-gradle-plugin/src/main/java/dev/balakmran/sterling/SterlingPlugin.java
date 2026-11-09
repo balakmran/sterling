@@ -8,6 +8,7 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 /**
  * The base plugin, {@code dev.balakmran.sterling}.
@@ -47,8 +48,15 @@ public class SterlingPlugin implements Plugin<Project> {
     project.getPluginManager().apply(BasePlugin.class);
     SterlingExtension sterling = project.getExtensions().create(EXTENSION, SterlingExtension.class);
     applyConventions(sterling, project.getProviders());
-    registerLifecycleTasks(project.getTasks());
+    var stlCheck = registerLifecycleTasks(project.getTasks());
     registerInfoTask(project.getTasks(), sterling);
+    // Sterling owns check: only the gate attaches to it, and only while attachToCheck is on.
+    project
+        .getTasks()
+        .named(LifecycleBasePlugin.CHECK_TASK_NAME)
+        .configure(check ->
+            check.dependsOn(
+                Flags.whenOn(project.getProviders(), sterling.getAttachToCheck(), stlCheck)));
   }
 
   private static void applyConventions(SterlingExtension sterling, ProviderFactory providers) {
@@ -67,14 +75,15 @@ public class SterlingPlugin implements Plugin<Project> {
   }
 
   // Tool configuration adds each task's dependencies; these only define the gate's shape.
-  private static void registerLifecycleTasks(TaskContainer tasks) {
+  private static TaskProvider<Task> registerLifecycleTasks(TaskContainer tasks) {
     lifecycle(tasks, FMT, "Formats Java sources with google-java-format.");
     var fmtCheck = lifecycle(tasks, FMT_CHECK, "Verifies Java sources are formatted.");
     var lint = lifecycle(tasks, LINT, "Compiles Java sources with Error Prone and NullAway.");
     var sec = lifecycle(tasks, SEC, "Analyses bytecode with SpotBugs.");
     var cov = lifecycle(tasks, COV, "Verifies test coverage against the thresholds.");
-    lifecycle(tasks, CHECK, "Runs every enabled Sterling verification.")
-        .configure(task -> task.dependsOn(fmtCheck, lint, sec, cov));
+    var check = lifecycle(tasks, CHECK, "Runs every enabled Sterling verification.");
+    check.configure(task -> task.dependsOn(fmtCheck, lint, sec, cov));
+    return check;
   }
 
   private static TaskProvider<Task> lifecycle(

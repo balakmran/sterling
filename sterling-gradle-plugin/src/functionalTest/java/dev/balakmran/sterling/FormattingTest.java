@@ -86,8 +86,12 @@ class FormattingTest {
   }
 
   @Test
-  void spotlessDoesntAttachToCheck() {
-    BuildResult result = fixture("").file("src/main/java/App.java", UNFORMATTED).build("check");
+  void spotlessDoesntAttachToCheckItself() {
+    // With the gate detached, anything Spotless ran under check would be its own doing.
+    BuildResult result =
+        fixture("sterling { attachToCheck = false }")
+            .file("src/main/java/App.java", UNFORMATTED)
+            .build("check");
 
     assertThat(ranSpotless(result)).isFalse();
   }

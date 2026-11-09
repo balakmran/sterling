@@ -104,8 +104,12 @@ class SpotbugsTest {
   }
 
   @Test
-  void spotbugsDoesntAttachToCheck() {
-    BuildResult result = fixture("").file("src/main/java/app/Bad.java", BAD).build("check");
+  void spotbugsDoesntAttachToCheckItself() {
+    // With the gate detached, a SpotBugs run under check would be its own doing.
+    BuildResult result =
+        fixture("sterling { attachToCheck = false }")
+            .file("src/main/java/app/Bad.java", BAD)
+            .build("check");
 
     assertThat(outcome(result, SPOTBUGS)).isNull();
   }
