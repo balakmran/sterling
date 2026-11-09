@@ -18,7 +18,14 @@ import org.gradle.testing.jacoco.tasks.JacocoReport;
 import org.gradle.testing.jacoco.tasks.JacocoReportBase;
 import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
 
-/** JaCoCo on the {@code test} task; {@code stlCov} verifies the thresholds while the flag is on. */
+/**
+ * Configures JaCoCo coverage on the {@code test} task and its verification for {@code stlCov}.
+ *
+ * <p>JaCoCo is applied whatever {@code coverage.enabled} says. The flag decides whether test tasks
+ * get the agent, whether the report follows {@code test}, and whether {@code stlCov} runs the
+ * verification. Thresholds and excludes are read in the tasks' configuration actions, which run
+ * after the build script.
+ */
 final class Coverage {
   private static final String TEST = "test";
   private static final String REPORT = "jacocoTestReport";
@@ -26,6 +33,12 @@ final class Coverage {
 
   private Coverage() {}
 
+  /**
+   * Applies and configures JaCoCo, and connects its verification to {@code stlCov}.
+   *
+   * @param project a project with the {@code java} plugin applied
+   * @param sterling the project's {@code sterling} extension
+   */
   static void configure(Project project, SterlingExtension sterling) {
     project.getPluginManager().apply(JacocoPlugin.class);
     // A plain field, not a Property: set now so the consumer's script, which runs later, wins.

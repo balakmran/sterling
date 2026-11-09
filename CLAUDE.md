@@ -156,7 +156,15 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - One logical change per commit, following the work breakdown in the plan.
 - Sterling's own Java is formatted with google-java-format, and build scripts
   with ktfmt, both via Spotless. javac runs with `-Xlint:all -Werror`.
-- Code comments are concise and direct: one line, two at most. Say why, not what.
+- Code comments (`//` and `/* */` inside method bodies, fields and build
+  scripts) are concise and direct: one line, two at most. Say why, not what.
+  This limit doesn't apply to Javadoc.
+- Javadoc is as long as it needs to be, in Google Java Style: a summary
+  fragment, then paragraphs (`<p>`) for defaults, behaviour and examples, then
+  `@param`, `@return` and `@throws` as they apply. Every public class, method
+  and enum constant has it, and so do package-private helpers worth explaining.
+  Each package has a `package-info.java`. The `javadoc` task runs in `build`
+  with `-Xdoclint:all -Xwerror`, so missing or broken public docs fail it.
 - Code, test names and comments never cite the plan (its test or step numbers).
   The plan is temporary; name what's being tested instead.
 - `gradle/libs.versions.toml` follows the rules in its header: grouped, sorted,

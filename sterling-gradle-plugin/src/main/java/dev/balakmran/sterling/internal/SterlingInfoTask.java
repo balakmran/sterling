@@ -13,76 +13,154 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 
-/** Prints Sterling's resolved configuration. Every input is wired from the extension. */
+/**
+ * The {@code stlInfo} task: prints Sterling's resolved configuration.
+ *
+ * <p>Each input is wired from the {@code sterling} extension when the task is registered, so the
+ * output shows the values after the profile, the {@code sterling.profile} property and the build
+ * script have all been applied. It never stays up to date, since printing is its only effect.
+ */
 @UntrackedTask(because = "It only prints the resolved configuration.")
 public abstract class SterlingInfoTask extends DefaultTask {
-  /** Pinned tool versions, keyed by tool, plus {@code sterling} itself. */
+  /** Creates the task. Sterling registers it as {@code stlInfo}; Gradle instantiates it. */
+  public SterlingInfoTask() {}
+
+  /**
+   * The tool versions Sterling pins, keyed by tool name, plus {@code sterling} itself.
+   *
+   * @return the tool versions
+   */
   @Input
   public abstract MapProperty<String, String> getToolVersions();
 
-  /** The resolved profile. */
+  /**
+   * The resolved profile.
+   *
+   * @return the profile
+   */
   @Input
   public abstract Property<Profile> getProfile();
 
-  /** Whether {@code check} depends on {@code stlCheck}. */
+  /**
+   * Whether {@code check} depends on {@code stlCheck}.
+   *
+   * @return whether the gate is attached to {@code check}
+   */
   @Input
   public abstract Property<Boolean> getAttachToCheck();
 
-  /** The toolchain's Java version, or why Java tools aren't active. */
+  /**
+   * The Java toolchain's version, or the reason the Java tools aren't active.
+   *
+   * @return the toolchain line
+   */
   @Input
   public abstract Property<String> getJavaToolchain();
 
-  /** Whether formatting is on. */
+  /**
+   * Whether formatting is on.
+   *
+   * @return whether formatting is on
+   */
   @Input
   public abstract Property<Boolean> getFormatEnabled();
 
-  /** Whether Error Prone is on. */
+  /**
+   * Whether Error Prone is on.
+   *
+   * @return whether Error Prone is on
+   */
   @Input
   public abstract Property<Boolean> getErrorProneEnabled();
 
-  /** Whether warnings fail compilation. */
+  /**
+   * Whether compiler warnings fail compilation.
+   *
+   * @return whether warnings are errors
+   */
   @Input
   public abstract Property<Boolean> getWarningsAsErrors();
 
-  /** Error Prone checks the consumer turned off. */
+  /**
+   * The Error Prone checks the build turned off.
+   *
+   * @return the disabled check names
+   */
   @Input
   public abstract SetProperty<String> getDisabledChecks();
 
-  /** Whether NullAway is on. */
+  /**
+   * Whether NullAway is on. It's reported off while Error Prone is off.
+   *
+   * @return whether NullAway is on
+   */
   @Input
   public abstract Property<Boolean> getNullAwayEnabled();
 
-  /** Whether SpotBugs is on. */
+  /**
+   * Whether SpotBugs is on.
+   *
+   * @return whether SpotBugs is on
+   */
   @Input
   public abstract Property<Boolean> getSpotbugsEnabled();
 
-  /** Whether the consumer set a SpotBugs exclude filter. */
+  /**
+   * Whether the build set a SpotBugs exclude filter of its own.
+   *
+   * @return whether a consumer filter is set
+   */
   @Input
   public abstract Property<Boolean> getConsumerExcludeFilter();
 
-  /** Whether coverage is on. */
+  /**
+   * Whether coverage is on.
+   *
+   * @return whether coverage is on
+   */
   @Input
   public abstract Property<Boolean> getCoverageEnabled();
 
-  /** Minimum instruction coverage, in percent. */
+  /**
+   * The minimum instruction coverage, in percent. Out-of-range values fail when read.
+   *
+   * @return the instruction threshold
+   */
   @Input
   public abstract Property<Integer> getInstruction();
 
-  /** Minimum branch coverage, in percent. */
+  /**
+   * The minimum branch coverage, in percent. Out-of-range values fail when read.
+   *
+   * @return the branch threshold
+   */
   @Input
   public abstract Property<Integer> getBranch();
 
-  /** Class-file patterns left out of coverage. */
+  /**
+   * The class-file patterns left out of coverage.
+   *
+   * @return the exclude patterns
+   */
   @Input
   public abstract ListProperty<String> getCoverageExcludes();
 
-  /** Prints at quiet level, so {@code -q} still shows the one thing this task is for. */
+  /**
+   * Prints the report.
+   *
+   * <p>It logs at quiet level, so {@code ./gradlew -q stlInfo} still shows it.
+   */
   @TaskAction
   public void print() {
     getLogger().quiet(render(JavaVersion.current().getMajorVersion()));
   }
 
-  /** The report, given the daemon's Java version. */
+  /**
+   * Builds the report: a version line, then one aligned line per setting.
+   *
+   * @param daemonJvm the Java version the Gradle daemon runs on, such as {@code 25}
+   * @return the report, without a trailing newline
+   */
   public String render(String daemonJvm) {
     Map<String, String> versions = getToolVersions().get();
     List<List<String>> rows =

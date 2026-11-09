@@ -8,12 +8,24 @@ group = "dev.balakmran.sterling"
 
 version = providers.fileContents(layout.settingsDirectory.file("version.txt")).asText.get().trim()
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+    // Puts javadoc in every build; the Plugin Portal also expects the jar.
+    withJavadocJar()
+}
 
 tasks.withType<JavaCompile>().configureEach {
     // JVM 17 bytecode loads on a JDK 17 daemon, so Sterling can fail with a clear message.
     options.release = 17
     options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+}
+
+tasks.javadoc {
+    // Missing or broken docs on the public API fail the build.
+    (options as StandardJavadocDocletOptions).apply {
+        addBooleanOption("Xdoclint:all", true)
+        addBooleanOption("Xwerror", true)
+    }
 }
 
 dependencies { implementation(libs.spotless.gradle) }

@@ -3,17 +3,57 @@ package dev.balakmran.sterling;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
-/** Settings for JaCoCo coverage. */
+/**
+ * Settings for test coverage with JaCoCo.
+ *
+ * <p>Coverage is measured on the {@code test} task. After it runs, {@code jacocoTestReport} writes
+ * HTML and XML reports, and {@code stlCov} fails when coverage is below either threshold. JaCoCo
+ * already ignores classes and methods annotated with an annotation named {@code *Generated*} that
+ * is kept in the class file, such as Lombok's {@code @Generated}.
+ */
 public abstract class CoverageSettings {
-  /** Whether tests record coverage and {@code stlCov} verifies it. Default from the profile. */
+  /** Creates the settings. Gradle instantiates this class for the {@code sterling} extension. */
+  public CoverageSettings() {}
+
+  /**
+   * Whether tests record coverage and {@code stlCov} verifies it.
+   *
+   * <p>Defaults to false for {@link Profile#LENIENT} and true otherwise. When false, no test task
+   * gets the JaCoCo agent, so no coverage data or report is produced, and a JDK that JaCoCo doesn't
+   * support yet can't break the tests.
+   *
+   * @return the enabled property
+   */
   public abstract Property<Boolean> getEnabled();
 
-  /** Minimum instruction coverage, in percent (0 to 100). Default from the profile. */
+  /**
+   * The minimum share of bytecode instructions the tests must execute, in percent.
+   *
+   * <p>Defaults to 0, 80 and 95 for {@link Profile#LENIENT}, {@link Profile#STANDARD} and {@link
+   * Profile#STRICT}. A value outside 0 to 100 fails the build with a message naming this setting.
+   *
+   * @return the instruction threshold
+   */
   public abstract Property<Integer> getInstruction();
 
-  /** Minimum branch coverage, in percent (0 to 100). Default from the profile. */
+  /**
+   * The minimum share of branches ({@code if}, {@code switch} and similar) the tests must take, in
+   * percent.
+   *
+   * <p>Defaults to 0, 70 and 85 for {@link Profile#LENIENT}, {@link Profile#STANDARD} and {@link
+   * Profile#STRICT}. A value outside 0 to 100 fails the build with a message naming this setting.
+   *
+   * @return the branch threshold
+   */
   public abstract Property<Integer> getBranch();
 
-  /** Ant-style class-file patterns left out of coverage, such as the Spring Boot main class. */
+  /**
+   * Class files left out of coverage, as Ant-style patterns. Empty by default.
+   *
+   * <p>Patterns match paths under the classes directory, such as <code>**&#47;*Application*</code>
+   * for a Spring Boot main class. They apply to the report and the verification alike.
+   *
+   * @return the exclude patterns
+   */
   public abstract ListProperty<String> getExcludes();
 }

@@ -6,13 +6,24 @@ import com.diffplug.gradle.spotless.SpotlessExtension;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 
-/** Spotless with google-java-format; {@code stlFmt} and {@code stlFmtCheck} follow the flag. */
+/**
+ * Configures Spotless with google-java-format for {@code stlFmt} and {@code stlFmtCheck}.
+ *
+ * <p>Spotless is applied and configured whatever {@code format.enabled} says; the flag only decides
+ * whether the Sterling tasks depend on Spotless's.
+ */
 final class Formatting {
   /** Generated sources, wherever a generator puts them under a build directory. */
   static final String GENERATED_SOURCES = "**/build/generated/**";
 
   private Formatting() {}
 
+  /**
+   * Applies and configures Spotless, and connects it to the Sterling tasks.
+   *
+   * @param project a project with the {@code java} plugin applied
+   * @param sterling the project's {@code sterling} extension
+   */
   static void configure(Project project, SterlingExtension sterling) {
     project.getPluginManager().apply("com.diffplug.spotless");
     SpotlessExtension spotless = project.getExtensions().getByType(SpotlessExtension.class);

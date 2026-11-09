@@ -9,7 +9,24 @@ import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 
-/** The base plugin, {@code dev.balakmran.sterling}: the extension and the {@code stl*} tasks. */
+/**
+ * The base plugin, {@code dev.balakmran.sterling}.
+ *
+ * <p>It applies Gradle's {@code base} plugin, creates the {@code sterling} extension with each
+ * setting's profile default, and registers the tasks in the {@code sterling} group:
+ *
+ * <ul>
+ *   <li>{@code stlFmt} formats sources; it's the only task that changes them.
+ *   <li>{@code stlFmtCheck}, {@code stlLint}, {@code stlSec} and {@code stlCov} verify formatting,
+ *       compile-time analysis, bytecode analysis and coverage.
+ *   <li>{@code stlCheck} runs those four, and is the task {@code check} depends on.
+ *   <li>{@code stlInfo} prints the resolved configuration.
+ * </ul>
+ *
+ * <p>On its own the tasks have nothing to run. {@link SterlingJavaPlugin} applies this plugin and
+ * connects each task to its tool once the {@code java} plugin is applied, so most builds apply
+ * {@code dev.balakmran.sterling.java} instead.
+ */
 public class SterlingPlugin implements Plugin<Project> {
   static final String EXTENSION = "sterling";
   static final String GROUP = "sterling";
@@ -22,7 +39,7 @@ public class SterlingPlugin implements Plugin<Project> {
   static final String INFO = "stlInfo";
   static final String JAVA_NOT_APPLIED = "not active (dev.balakmran.sterling.java not applied)";
 
-  /** Creates the plugin; Gradle calls this. */
+  /** Creates the plugin. Gradle instantiates it when a build applies the plugin ID. */
   public SterlingPlugin() {}
 
   @Override

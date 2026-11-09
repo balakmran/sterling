@@ -11,11 +11,27 @@ import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.compile.JavaCompile;
 
-/** The Java plugin, {@code dev.balakmran.sterling.java}: wires the tools once java is applied. */
+/**
+ * The Java plugin, {@code dev.balakmran.sterling.java}: the one most builds apply.
+ *
+ * <p>When applied, it:
+ *
+ * <ol>
+ *   <li>fails straight away if Gradle itself runs on a JDK below 21, because google-java-format
+ *       runs inside the Gradle daemon;
+ *   <li>applies {@link SterlingPlugin}, so the extension and tasks always exist;
+ *   <li>once the {@code java} plugin is applied, before or after Sterling, applies and configures
+ *       Spotless and JaCoCo, connects them to the {@code stl*} tasks, and adds {@code
+ *       stlToolchainCheck}, which fails {@code compileJava} on a toolchain below Java 21.
+ * </ol>
+ *
+ * <p>Without {@code java}, the tools stay inactive and nothing fails. Sterling never applies {@code
+ * java} itself.
+ */
 public class SterlingJavaPlugin implements Plugin<Project> {
   static final String TOOLCHAIN_CHECK = "stlToolchainCheck";
 
-  /** Creates the plugin; Gradle calls this. */
+  /** Creates the plugin. Gradle instantiates it when a build applies the plugin ID. */
   public SterlingJavaPlugin() {}
 
   @Override
@@ -30,7 +46,15 @@ public class SterlingJavaPlugin implements Plugin<Project> {
     project.getPluginManager().withPlugin("java", java -> configureJava(project));
   }
 
-  // google-java-format runs inside the daemon and needs JDK 21.
+  /**
+   * Fails when the Gradle daemon runs on a JDK below Sterling's floor.
+   *
+   * <p>google-java-format runs inside the daemon and needs JDK 21. The message tells the user how
+   * to move the daemon to a newer JDK.
+   *
+   * @param current the daemon's Java version
+   * @throws GradleException if {@code current} is below Java 21
+   */
   static void checkDaemonJvm(JavaVersion current) {
     if (Integer.parseInt(current.getMajorVersion()) < MIN_JAVA) {
       throw new GradleException(
