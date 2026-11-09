@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import net.ltgt.gradle.errorprone.CheckSeverity;
 import net.ltgt.gradle.errorprone.ErrorProneOptions;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -20,8 +19,9 @@ import org.gradle.api.tasks.compile.JavaCompile;
  *
  * <p>Sterling applies {@code net.ltgt.errorprone}, which runs Error Prone inside javac and adds the
  * javac flags it needs. {@code errorProne.enabled} turns it on or off per compilation and decides
- * whether {@code error_prone_core} is downloaded at all. Code under {@code build/generated} is
- * skipped, whichever generator wrote it.
+ * whether {@code error_prone_core} is downloaded at all. NullAway, an Error Prone check, is set up
+ * here too ({@link NullAway}). Code under {@code build/generated} is skipped, whichever generator
+ * wrote it.
  */
 final class ErrorProne {
   /**
@@ -29,9 +29,6 @@ final class ErrorProne {
    * so it also works on Windows.
    */
   static final String GENERATED_PATHS = ".*[/\\\\]build[/\\\\]generated[/\\\\].*";
-
-  private static final String GROUP = "com.google.errorprone";
-  private static final String CORE = "error_prone_core";
 
   private ErrorProne() {}
 
@@ -46,21 +43,15 @@ final class ErrorProne {
     ErrorProneSettings settings = sterling.getErrorProne();
     Provider<Boolean> enabled = settings.getEnabled();
 
-    // Created now: the action below runs at resolution time, when Project mustn't be touched.
-    Dependency core =
-        project.getDependencies().create(GROUP + ":" + CORE + ":" + ToolVersions.get("errorprone"));
-    project
-        .getConfigurations()
-        .named("errorprone")
-        .configure(errorprone ->
-            errorprone.withDependencies(dependencies -> {
-              boolean declared =
-                  dependencies.stream()
-                      .anyMatch(d -> GROUP.equals(d.getGroup()) && CORE.equals(d.getName()));
-              if (enabled.get() && !declared) {
-                dependencies.add(core.copy());
-              }
-            }));
+    ToolDependencies.addWhenOn(
+        project,
+        "errorprone",
+        "com.google.errorprone",
+        "error_prone_core",
+        ToolVersions.get("errorprone"),
+        enabled);
+    Provider<Boolean> nullAway = NullAway.active(sterling);
+    NullAway.addDependencies(project, nullAway);
 
     Provider<Map<String, CheckSeverity>> disabled =
         settings.getDisabledChecks().map(ErrorProne::off);
@@ -76,7 +67,10 @@ final class ErrorProne {
           options.getEnabled().convention(enabled);
           options.getDisableWarningsInGeneratedCode().convention(true);
           options.getExcludedPaths().convention(GENERATED_PATHS);
+          // NullAway first, so errorProne.disable("NullAway") can still turn it off.
+          options.getChecks().putAll(NullAway.checks(nullAway));
           options.getChecks().putAll(disabled);
+          options.getCheckOptions().putAll(NullAway.checkOptions(nullAway));
           compile
               .getOptions()
               .getCompilerArgumentProviders()

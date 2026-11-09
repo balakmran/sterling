@@ -65,14 +65,17 @@ class ErrorProneTest {
   }
 
   @Test
-  void errorProneDisabledCompilesWithoutItOrItsDownload() {
+  void errorProneDisabledDownloadsNeitherItNorNullAwayNorJspecify() {
     Fixture fixture =
         fixture("sterling { errorProne { enabled = false } }")
             .file("src/main/java/app/App.java", DEAD_EXCEPTION);
 
     assertThat(outcome(fixture.build("compileJava"), COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
     assertThat(fixture.build("dependencies", "--configuration", "annotationProcessor").getOutput())
-        .doesNotContain("error_prone_core");
+        .doesNotContain("error_prone_core")
+        .doesNotContain("nullaway");
+    assertThat(fixture.build("dependencies", "--configuration", "compileClasspath").getOutput())
+        .doesNotContain("jspecify");
   }
 
   @Test

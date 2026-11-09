@@ -99,6 +99,8 @@ testing {
                         "sterling.errorproneVersion",
                         libs.versions.errorprone.asProvider().get(),
                     )
+                    systemProperty("sterling.nullawayVersion", libs.versions.nullaway.get())
+                    systemProperty("sterling.jspecifyVersion", libs.versions.jspecify.get())
                 }
             }
         }
