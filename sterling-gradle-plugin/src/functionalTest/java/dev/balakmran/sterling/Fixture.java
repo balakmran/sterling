@@ -39,6 +39,15 @@ final class Fixture {
     }
   }
 
+  /** A JDK home from the functionalTest task, with {@code /} separators for gradle.properties. */
+  static String jdk(int version) {
+    String home = System.getProperty("sterling.jdk" + version);
+    if (home == null) {
+      throw new IllegalStateException("sterling.jdk" + version + " not set");
+    }
+    return home.replace('\\', '/');
+  }
+
   BuildResult build(String... args) {
     return runner(args).build();
   }

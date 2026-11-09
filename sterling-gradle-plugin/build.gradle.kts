@@ -64,10 +64,24 @@ testing {
                 implementation(libs.assertj)
                 implementation(libs.junit.jupiter.api)
             }
-            targets.configureEach { testTask.configure { shouldRunAfter(tasks.test) } }
+            targets.configureEach {
+                testTask.configure {
+                    shouldRunAfter(tasks.test)
+                    // Fixtures run builds on JDK 17 to check the below-21 failures.
+                    val jdk17 = jdkPath(17)
+                    jvmArgumentProviders.add(
+                        CommandLineArgumentProvider { listOf("-Dsterling.jdk17=${jdk17.get()}") }
+                    )
+                }
+            }
         }
     }
 }
+
+fun jdkPath(version: Int): Provider<String> =
+    javaToolchains
+        .launcherFor { languageVersion = JavaLanguageVersion.of(version) }
+        .map { it.metadata.installationPath.asFile.absolutePath }
 
 gradlePlugin {
     testSourceSets(sourceSets["functionalTest"])
@@ -75,6 +89,10 @@ gradlePlugin {
         register("sterling") {
             id = "dev.balakmran.sterling"
             implementationClass = "dev.balakmran.sterling.SterlingPlugin"
+        }
+        register("sterlingJava") {
+            id = "dev.balakmran.sterling.java"
+            implementationClass = "dev.balakmran.sterling.SterlingJavaPlugin"
         }
     }
 }
