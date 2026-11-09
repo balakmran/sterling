@@ -3,6 +3,7 @@ package dev.balakmran.sterling;
 import static dev.balakmran.sterling.Flags.whenOn;
 
 import com.diffplug.gradle.spotless.SpotlessExtension;
+import com.diffplug.spotless.LineEnding;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 
@@ -29,6 +30,9 @@ final class Formatting {
     SpotlessExtension spotless = project.getExtensions().getByType(SpotlessExtension.class);
     // Sterling owns `check`; only stlCheck attaches to it.
     spotless.setEnforceCheck(false);
+    // Spotless's default reads git settings while configuring, which defeats the configuration
+    // cache. Formatting is about layout; keep each file's line endings as they are.
+    spotless.setLineEndings(LineEnding.PRESERVE);
     spotless.java(java -> {
       // The google-java-format step also removes unused imports.
       java.googleJavaFormat(ToolVersions.get("google-java-format"));

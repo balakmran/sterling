@@ -17,6 +17,11 @@ import org.gradle.testkit.runner.TaskOutcome;
  * <p>Every build runs with {@code --warning-mode=all}, and any Gradle deprecation warning in the
  * output fails the test, except those in {@link #KNOWN_DEPRECATIONS}. That's {@code
  * --warning-mode=fail} with exceptions for third-party plugins Sterling can't fix.
+ *
+ * <p>Builds run on the matrix cell the {@code functionalTest} task passes in: a Gradle version
+ * ({@link #gradleVersion()}) and a Java toolchain ({@link #javaVersion()}), which an init script
+ * sets on every project that applies {@code java}. A fixture's own toolchain setting still wins.
+ * Consumer builds only see the JDKs the task provides; they never detect or download others.
  */
 final class Fixture {
   /**
@@ -28,11 +33,42 @@ final class Fixture {
           // SpotBugs Gradle plugin 6.5.13 (the latest) calls it; Gradle 9.9 deprecates it.
           "The Configuration.setVisible(boolean) method has been deprecated.");
 
+  private static final String INIT_SCRIPT = ".sterling-toolchain.init.gradle";
+
   private final Path dir;
 
   Fixture(Path dir) {
     this.dir = dir;
     file("settings.gradle.kts", "rootProject.name = \"consumer\"\n");
+    file(
+        INIT_SCRIPT,
+        """
+        gradle.beforeProject { project ->
+            project.plugins.withId('java') {
+                project.extensions.getByType(JavaPluginExtension).toolchain
+                    .languageVersion.set(JavaLanguageVersion.of(%s))
+            }
+        }
+        """
+            .formatted(javaVersion()));
+  }
+
+  /**
+   * The Gradle version consumer builds run on.
+   *
+   * @return a version such as {@code 9.0.0}, or blank for the Gradle running the tests
+   */
+  static String gradleVersion() {
+    return System.getProperty("sterling.gradleVersion", "");
+  }
+
+  /**
+   * The Java toolchain version consumer builds use, such as {@code 21} or {@code 25}.
+   *
+   * @return the version
+   */
+  static int javaVersion() {
+    return Integer.parseInt(System.getProperty("sterling.javaVersion", "21"));
   }
 
   Fixture file(String path, String content) {
@@ -99,10 +135,18 @@ final class Fixture {
     List<String> arguments = new ArrayList<>(List.of(args));
     arguments.addAll(
         List.of(
-            "--configuration-cache", "--configuration-cache-problems=fail", "--warning-mode=all"));
-    return GradleRunner.create()
-        .withProjectDir(dir.toFile())
-        .withPluginClasspath()
-        .withArguments(arguments);
+            "--configuration-cache",
+            "--configuration-cache-problems=fail",
+            "--warning-mode=all",
+            "--init-script=" + INIT_SCRIPT,
+            "-Dorg.gradle.java.installations.paths=" + String.join(",", jdk(17), jdk(21), jdk(25)),
+            "-Dorg.gradle.java.installations.auto-detect=false",
+            "-Dorg.gradle.java.installations.auto-download=false"));
+    GradleRunner runner =
+        GradleRunner.create()
+            .withProjectDir(dir.toFile())
+            .withPluginClasspath()
+            .withArguments(arguments);
+    return gradleVersion().isBlank() ? runner : runner.withGradleVersion(gradleVersion());
   }
 }

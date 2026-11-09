@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and functional tests
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,40 @@ jobs:
         with:
           persist-credentials: false
 
-      # 17 and 25 are for functional tests; 21, listed last, becomes JAVA_HOME.
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Also validates the wrapper jar's checksum.
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      # Compile, unit tests, Javadoc, plugin validation and dependency checks.
+      - name: Build
+        run: ./gradlew build --warning-mode=fail
+
+  functional-test:
+    name: Functional tests (Gradle ${{ matrix.gradle-name }}, Java ${{ matrix.java }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported Gradle, and the latest (the wrapper's, passed as blank).
+        gradle: ['9.0.0', '']
+        java: [21, 25]
+        include:
+          - gradle: '9.0.0'
+            gradle-name: '9.0.0'
+          - gradle: ''
+            gradle-name: latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 17 checks the below-21 failures, 25 is a consumer toolchain; 21, last, runs the build.
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
@@ -32,8 +65,10 @@ jobs:
             25
             21
 
-      # Also validates the wrapper jar's checksum.
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
-      - name: Build
-        run: ./gradlew build functionalTest --warning-mode=fail
+      - name: Functional tests
+        run: >-
+          ./gradlew functionalTest --warning-mode=fail
+          -Psterling.test.gradle=${{ matrix.gradle }}
+          -Psterling.test.java=${{ matrix.java }}

@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.errorprone.gradle)
     implementation(libs.spotbugs.gradle)
     implementation(libs.spotless.gradle)
+    implementation(libs.spotless.lib)
 }
 
 // The tool versions Sterling pins, read by the plugin at runtime (ToolVersions.java).
@@ -85,10 +86,22 @@ testing {
             targets.configureEach {
                 testTask.configure {
                     shouldRunAfter(tasks.test)
-                    // Fixtures run builds on JDK 17 to check the below-21 failures.
-                    val jdk17 = jdkPath(17)
+                    // The matrix cell: -Psterling.test.gradle=9.0.0 -Psterling.test.java=25.
+                    // A blank Gradle version means the wrapper's.
+                    systemProperty(
+                        "sterling.gradleVersion",
+                        providers.gradleProperty("sterling.test.gradle").getOrElse(""),
+                    )
+                    systemProperty(
+                        "sterling.javaVersion",
+                        providers.gradleProperty("sterling.test.java").getOrElse("21"),
+                    )
+                    // JDK 17 checks the below-21 failures; 21 and 25 are consumer toolchains.
+                    val jdks = listOf(17, 21, 25).associateWith { jdkPath(it) }
                     jvmArgumentProviders.add(
-                        CommandLineArgumentProvider { listOf("-Dsterling.jdk17=${jdk17.get()}") }
+                        CommandLineArgumentProvider {
+                            jdks.map { (version, path) -> "-Dsterling.jdk$version=${path.get()}" }
+                        }
                     )
                     // Lets tests assert pinned versions without repeating them.
                     systemProperty(

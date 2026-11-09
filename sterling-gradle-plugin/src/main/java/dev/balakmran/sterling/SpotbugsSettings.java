@@ -7,8 +7,9 @@ import org.gradle.api.provider.Property;
  * Settings for SpotBugs, which analyses compiled bytecode for bug patterns.
  *
  * <p>{@code stlSec} runs SpotBugs on the main source set and writes HTML, XML and SARIF reports.
- * Sterling ships a default exclude filter for generated code and for patterns that Spring
- * constructor injection and records trigger in ordinary code.
+ * Sterling's default exclude filter skips patterns that Spring constructor injection and records
+ * trigger in ordinary code, and every class compiled from generated sources: source directories
+ * under {@code build/generated} and annotation processors' output.
  */
 public abstract class SpotbugsSettings {
   /** Creates the settings. Gradle instantiates this class for the {@code sterling} extension. */

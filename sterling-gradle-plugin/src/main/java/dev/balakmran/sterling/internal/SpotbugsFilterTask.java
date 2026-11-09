@@ -1,10 +1,16 @@
 package dev.balakmran.sterling.internal;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -17,11 +23,14 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.IgnoreEmptyDirectories;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
@@ -37,9 +46,13 @@ import org.xml.sax.SAXException;
 /**
  * The {@code stlSpotbugsFilter} task: writes the exclude filter {@code spotbugsMain} uses.
  *
- * <p>The filter holds the {@code <Match>} elements of Sterling's default filter followed by those
- * of the project's {@code sterling.spotbugs.excludeFilter}, if set. A project's filter therefore
- * adds exclusions; it can't remove Sterling's.
+ * <p>The filter holds the {@code <Match>} elements of Sterling's default filter, then those of the
+ * project's {@code sterling.spotbugs.excludeFilter} if set, then one for each class compiled from
+ * generated sources. A project's filter therefore adds exclusions; it can't remove Sterling's.
+ *
+ * <p>Class files don't record which directory their source came from, so a filter can't match
+ * {@code build/generated} by path. Instead the task reads the generated source directories when it
+ * runs and turns each {@code .java} file's path into a class name, covering its nested classes too.
  */
 @CacheableTask
 public abstract class SpotbugsFilterTask extends DefaultTask {
@@ -70,6 +83,16 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
   public abstract RegularFileProperty getConsumerFilter();
 
   /**
+   * Directories of generated Java sources, whose classes SpotBugs skips. Missing ones are ignored.
+   *
+   * @return the generated source directories
+   */
+  @InputFiles
+  @IgnoreEmptyDirectories
+  @PathSensitive(PathSensitivity.RELATIVE)
+  public abstract ConfigurableFileCollection getGeneratedSources();
+
+  /**
    * Where the merged filter is written.
    *
    * @return the merged filter file
@@ -89,26 +112,31 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
       if (getConsumerFilter().isPresent()) {
         consumer = Files.readString(getConsumerFilter().get().getAsFile().toPath());
       }
+      List<String> generated = generatedClasses(getGeneratedSources().getFiles());
       Files.writeString(
-          getMergedFilter().get().getAsFile().toPath(), merge(getSterlingFilter().get(), consumer));
+          getMergedFilter().get().getAsFile().toPath(),
+          merge(getSterlingFilter().get(), consumer, generated));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
   /**
-   * Merges two SpotBugs exclude filters into one.
+   * Merges two SpotBugs exclude filters into one, and excludes the given generated classes.
    *
    * <p>Only the {@code <Match>} children of each {@code <FindBugsFilter>} root are kept, Sterling's
    * first. Either filter may declare SpotBugs's XML namespace; the result doesn't. Document type
-   * declarations are rejected, so a filter can't pull in external entities.
+   * declarations are rejected, so a filter can't pull in external entities. Each generated class
+   * gets a {@code <Match>} on its name that also covers its nested classes.
    *
    * @param sterlingFilter the XML of Sterling's default filter
    * @param consumerFilter the XML of the project's filter, or null when it has none
+   * @param generatedClasses fully qualified names of classes compiled from generated sources
    * @return the merged filter's XML
    * @throws GradleException if either filter can't be parsed or has another root element
    */
-  public static String merge(String sterlingFilter, String consumerFilter) {
+  public static String merge(
+      String sterlingFilter, String consumerFilter, List<String> generatedClasses) {
     DocumentBuilder builder = secureBuilder();
     Document merged = builder.newDocument();
     Element root = merged.createElement(ROOT);
@@ -117,7 +145,47 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
     if (consumerFilter != null) {
       copyMatches(builder, consumerFilter, "sterling.spotbugs.excludeFilter", root);
     }
+    for (String name : generatedClasses) {
+      Element match = merged.createElement(MATCH);
+      Element type = merged.createElement("Class");
+      // A regex: the class itself, or any class nested in it.
+      type.setAttribute("name", "~" + name.replace(".", "\\.") + "(\\$.*)?");
+      match.appendChild(type);
+      root.appendChild(match);
+    }
     return serialize(merged);
+  }
+
+  /**
+   * The classes declared by the {@code .java} files under some source directories, named from each
+   * file's path relative to its directory. {@code package-info.java} and {@code module-info.java}
+   * are skipped.
+   *
+   * @param sourceDirectories source directories; ones that don't exist are skipped
+   * @return the fully qualified class names, sorted
+   */
+  public static List<String> generatedClasses(Set<File> sourceDirectories) {
+    List<String> names = new ArrayList<>();
+    for (File directory : sourceDirectories) {
+      Path root = directory.toPath();
+      if (!Files.isDirectory(root)) {
+        continue;
+      }
+      try (Stream<Path> files = Files.walk(root)) {
+        files
+            .filter(file -> file.getFileName().toString().endsWith(".java"))
+            .map(file -> root.relativize(file).toString())
+            .filter(path -> !path.endsWith("package-info.java"))
+            .filter(path -> !path.endsWith("module-info.java"))
+            .map(path -> path.substring(0, path.length() - ".java".length()))
+            .map(path -> path.replace(File.separatorChar, '.'))
+            .forEach(names::add);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+    names.sort(null);
+    return names;
   }
 
   private static void copyMatches(

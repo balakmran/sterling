@@ -5,6 +5,7 @@ import static dev.balakmran.sterling.Flags.whenOn;
 import com.github.spotbugs.snom.SpotBugsExtension;
 import com.github.spotbugs.snom.SpotBugsTask;
 import dev.balakmran.sterling.internal.SpotbugsFilterTask;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -14,15 +15,16 @@ import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.compile.JavaCompile;
 
 /**
  * Configures SpotBugs on the main classes for {@code stlSec}.
  *
  * <p>Sterling applies {@code com.github.spotbugs-base}, which creates no tasks and doesn't attach
  * to {@code check}, and registers {@code spotbugsMain} itself. Test classes aren't analysed. The
- * exclude filter is Sterling's default merged with the project's own, by {@code stlSpotbugsFilter}.
- * {@code spotbugs.enabled} decides whether {@code stlSec} runs {@code spotbugsMain}; the task
- * itself always exists.
+ * exclude filter is Sterling's default merged with the project's own, plus every class compiled
+ * from generated sources, written by {@code stlSpotbugsFilter}. {@code spotbugs.enabled} decides
+ * whether {@code stlSec} runs {@code spotbugsMain}; the task itself always exists.
  */
 final class Spotbugs {
   static final String TASK = "spotbugsMain";
@@ -46,6 +48,7 @@ final class Spotbugs {
         .convention(ToolVersions.get("spotbugs"));
 
     TaskContainer tasks = project.getTasks();
+    SourceSet main = project.getExtensions().getByType(SourceSetContainer.class).getByName("main");
     var filter =
         tasks.register(
             FILTER_TASK,
@@ -55,6 +58,19 @@ final class Spotbugs {
               task.setDescription("Merges Sterling's SpotBugs exclude filter with the project's.");
               task.getSterlingFilter().set(defaultFilter());
               task.getConsumerFilter().set(sterling.getSpotbugs().getExcludeFilter());
+              // Generators' source directories, and javac's annotation-processor output.
+              task.getGeneratedSources()
+                  .from(
+                      project.provider(() ->
+                          main.getJava().getSrcDirs().stream()
+                              .filter(Spotbugs::isGenerated)
+                              .toList()));
+              task.getGeneratedSources()
+                  .from(
+                      tasks
+                          .named(main.getCompileJavaTaskName(), JavaCompile.class)
+                          .flatMap(
+                              compile -> compile.getOptions().getGeneratedSourceOutputDirectory()));
               task.getMergedFilter()
                   .set(
                       project
@@ -63,7 +79,6 @@ final class Spotbugs {
                           .file("sterling/spotbugs-exclude.xml"));
             });
 
-    SourceSet main = project.getExtensions().getByType(SourceSetContainer.class).getByName("main");
     var spotbugsMain =
         tasks.register(
             TASK,
@@ -85,6 +100,17 @@ final class Spotbugs {
         .configure(task ->
             task.dependsOn(
                 whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), spotbugsMain)));
+  }
+
+  /**
+   * Whether a source directory holds generated code: whether it's under a {@code build/generated}
+   * directory, the same rule Spotless and Error Prone apply.
+   *
+   * @param directory a source directory
+   * @return true for generated sources
+   */
+  static boolean isGenerated(File directory) {
+    return (directory.getPath() + File.separator).matches(ErrorProne.GENERATED_PATHS);
   }
 
   /**

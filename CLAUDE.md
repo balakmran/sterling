@@ -117,8 +117,11 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
 - **Languages:** the plugin and its tests are Java, compiled with
   `--release 17`, so Java 17 language features only. Build scripts are Gradle
   Kotlin DSL. No Kotlin source code.
-- Functional tests run against Gradle 9.0 and the latest stable Gradle, with
-  consumer toolchains 21 and 25.
+- Functional tests run against Gradle 9.0.0 and the latest stable Gradle, with
+  consumer toolchains 21 and 25. `-Psterling.test.gradle=9.0.0` and
+  `-Psterling.test.java=25` pick a cell (default: latest × 21); CI runs all four.
+  Before declaring a change done, run at least the default cell and the
+  9.0.0 × 25 one; Gradle API newer than 9.0 only fails there.
 
 When pinning a version (Gradle, Spotless, google-java-format, Error Prone,
 NullAway, JSpecify, SpotBugs, JaCoCo), check the current stable release rather

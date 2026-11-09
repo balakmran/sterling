@@ -190,7 +190,8 @@ build with a message naming the setting.
 
 `stlFmt` and `stlFmtCheck` cover every source set. Sources under any
 `build/generated` directory (OpenAPI generators, annotation processors,
-Spring AOT) are left alone.
+Spring AOT) are left alone. Each file keeps the line endings it has; enforce
+those with `.gitattributes` or Spotless's own `lineEndings` setting.
 
 ### Error Prone
 
@@ -228,10 +229,14 @@ them.
 reports under `build/reports/spotbugs`. Sterling's default exclude filter
 skips three patterns that Spring constructor injection and records trigger
 in ordinary code: `EI_EXPOSE_REP`, `EI_EXPOSE_REP2` and `CT_CONSTRUCTOR_THROW`.
-`spotbugs.excludeFilter` adds your own exclusions to those.
 
-SpotBugs doesn't skip generated code yet. If a generator's output trips it,
-exclude those classes in your filter, for example:
+It also skips every class compiled from generated sources: those in source
+directories under `build/generated` (OpenAPI generators and the like) and
+annotation processors' output (MapStruct and others). Spring AOT's classes
+aren't analysed at all.
+
+`spotbugs.excludeFilter` adds your own exclusions to Sterling's, for example
+for generated code that lives somewhere else:
 
 ```xml
 <FindBugsFilter>
@@ -349,14 +354,22 @@ Then apply `id("dev.balakmran.sterling.java")` without a version.
 ## Building Sterling
 
 Sterling is written in Java; its build scripts use the Gradle Kotlin DSL.
-Building it needs JDK 21, and its tests also need JDK 17 to check the
-"needs Java 21" errors. Gradle finds installed JDKs, including SDKMAN's, and
-doesn't download any.
+Building it needs JDK 21; its functional tests also need JDK 17, to check the
+"needs Java 21" errors, and JDK 25, a consumer toolchain they test. Gradle
+finds installed JDKs, including SDKMAN's, and doesn't download any.
 
 ```bash
 ./gradlew build                 # compile, unit tests, Javadoc, plugin validation, dependency checks
 ./gradlew functionalTest        # tests that run real builds with TestKit
 ./gradlew spotlessApply         # format Sterling's own code
+```
+
+Functional tests run consumer builds on the latest Gradle with a Java 21
+toolchain by default. CI also runs Gradle 9.0.0 and Java 25; to run one of
+those combinations locally (JDK 25 must be installed):
+
+```bash
+./gradlew functionalTest -Psterling.test.gradle=9.0.0 -Psterling.test.java=25
 ```
 
 ## License

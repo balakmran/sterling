@@ -48,8 +48,7 @@ class JavaPluginTest {
     BuildResult first = fixture.build("compileJava", "stlInfo");
     assertThat(outcome(first, ":stlToolchainCheck")).isEqualTo(TaskOutcome.SUCCESS);
     assertThat(outcome(first, ":compileJava")).isEqualTo(TaskOutcome.SUCCESS);
-    assertThat(first.getOutput())
-        .contains("Java toolchain:       " + Runtime.version().feature() + "\n");
+    assertThat(first.getOutput()).contains("Java toolchain:       " + Fixture.javaVersion() + "\n");
 
     BuildResult second = fixture.build("compileJava");
     assertThat(outcome(second, ":stlToolchainCheck")).isEqualTo(TaskOutcome.UP_TO_DATE);
