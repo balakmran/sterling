@@ -1,0 +1,106 @@
+package dev.balakmran.sterling;
+
+import static dev.balakmran.sterling.Flags.whenOn;
+
+import com.github.spotbugs.snom.SpotBugsExtension;
+import com.github.spotbugs.snom.SpotBugsTask;
+import dev.balakmran.sterling.internal.SpotbugsFilterTask;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import org.gradle.api.Project;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetContainer;
+import org.gradle.api.tasks.TaskContainer;
+
+/**
+ * Configures SpotBugs on the main classes for {@code stlSec}.
+ *
+ * <p>Sterling applies {@code com.github.spotbugs-base}, which creates no tasks and doesn't attach
+ * to {@code check}, and registers {@code spotbugsMain} itself. Test classes aren't analysed. The
+ * exclude filter is Sterling's default merged with the project's own, by {@code stlSpotbugsFilter}.
+ * {@code spotbugs.enabled} decides whether {@code stlSec} runs {@code spotbugsMain}; the task
+ * itself always exists.
+ */
+final class Spotbugs {
+  static final String TASK = "spotbugsMain";
+  static final String FILTER_TASK = "stlSpotbugsFilter";
+  static final String DEFAULT_FILTER = "spotbugs-exclude.xml";
+
+  private Spotbugs() {}
+
+  /**
+   * Applies and configures SpotBugs, and connects {@code spotbugsMain} to {@code stlSec}.
+   *
+   * @param project a project with the {@code java} plugin applied
+   * @param sterling the project's {@code sterling} extension
+   */
+  static void configure(Project project, SterlingExtension sterling) {
+    project.getPluginManager().apply("com.github.spotbugs-base");
+    project
+        .getExtensions()
+        .getByType(SpotBugsExtension.class)
+        .getToolVersion()
+        .convention(ToolVersions.get("spotbugs"));
+
+    TaskContainer tasks = project.getTasks();
+    var filter =
+        tasks.register(
+            FILTER_TASK,
+            SpotbugsFilterTask.class,
+            task -> {
+              task.setGroup(SterlingPlugin.GROUP);
+              task.setDescription("Merges Sterling's SpotBugs exclude filter with the project's.");
+              task.getSterlingFilter().set(defaultFilter());
+              task.getConsumerFilter().set(sterling.getSpotbugs().getExcludeFilter());
+              task.getMergedFilter()
+                  .set(
+                      project
+                          .getLayout()
+                          .getBuildDirectory()
+                          .file("sterling/spotbugs-exclude.xml"));
+            });
+
+    SourceSet main = project.getExtensions().getByType(SourceSetContainer.class).getByName("main");
+    var spotbugsMain =
+        tasks.register(
+            TASK,
+            SpotBugsTask.class,
+            task -> {
+              task.setGroup(SterlingPlugin.GROUP);
+              task.setDescription("Analyses the main classes with SpotBugs.");
+              task.getClassDirs().from(main.getOutput().getClassesDirs());
+              task.getSourceDirs().from(main.getAllSource().getSourceDirectories());
+              task.getAuxClassPaths().from(main.getCompileClasspath());
+              task.getExcludeFilter().set(filter.flatMap(SpotbugsFilterTask::getMergedFilter));
+              for (String format : List.of("html", "xml", "sarif")) {
+                task.getReports().create(format, report -> report.getRequired().set(true));
+              }
+            });
+
+    tasks
+        .named(SterlingPlugin.SEC)
+        .configure(task ->
+            task.dependsOn(
+                whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), spotbugsMain)));
+  }
+
+  /**
+   * Reads Sterling's default exclude filter from the plugin jar.
+   *
+   * @return the filter's XML
+   */
+  static String defaultFilter() {
+    try (InputStream in = Spotbugs.class.getResourceAsStream(DEFAULT_FILTER)) {
+      if (in == null) {
+        throw new IllegalStateException(
+            "Sterling's " + DEFAULT_FILTER + " is missing from the jar.");
+      }
+      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+}

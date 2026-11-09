@@ -143,6 +143,9 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - Every case in the plan's test table has a functional test.
 - Every `enabled` flag has a test that turns it off and asserts the tool did
   not run (and, for dependency-backed tools, that its artifact wasn't resolved).
+- Deprecations: functional tests run with `--warning-mode=all` and fail on any
+  Gradle deprecation except those in `Fixture.KNOWN_DEPRECATIONS`, each a
+  third-party plugin's, to be removed when that plugin fixes it.
 - Configuration cache: tests run with `--configuration-cache` and
   `--configuration-cache-problems=fail`, and at least one test asserts the cache
   is reused on a second run.

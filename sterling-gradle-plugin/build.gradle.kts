@@ -28,7 +28,10 @@ tasks.javadoc {
     }
 }
 
-dependencies { implementation(libs.spotless.gradle) }
+dependencies {
+    implementation(libs.spotbugs.gradle)
+    implementation(libs.spotless.gradle)
+}
 
 // The tool versions Sterling pins, read by the plugin at runtime (ToolVersions.java).
 val generatedResources = layout.buildDirectory.dir("generated/sterling-resources")
@@ -85,6 +88,11 @@ testing {
                     val jdk17 = jdkPath(17)
                     jvmArgumentProviders.add(
                         CommandLineArgumentProvider { listOf("-Dsterling.jdk17=${jdk17.get()}") }
+                    )
+                    // Lets tests assert the pinned engine without repeating its version.
+                    systemProperty(
+                        "sterling.spotbugsVersion",
+                        libs.versions.spotbugs.asProvider().get(),
                     )
                 }
             }

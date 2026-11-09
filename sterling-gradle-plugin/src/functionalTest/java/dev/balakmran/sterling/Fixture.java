@@ -11,8 +11,23 @@ import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 
-/** A throwaway consumer build, run with the configuration cache and strict warnings. */
+/**
+ * A throwaway consumer build, run with the configuration cache and strict deprecation checks.
+ *
+ * <p>Every build runs with {@code --warning-mode=all}, and any Gradle deprecation warning in the
+ * output fails the test, except those in {@link #KNOWN_DEPRECATIONS}. That's {@code
+ * --warning-mode=fail} with exceptions for third-party plugins Sterling can't fix.
+ */
 final class Fixture {
+  /**
+   * Deprecation warnings from third-party plugins, matched by prefix. Remove each one once a
+   * release of that plugin fixes it.
+   */
+  private static final List<String> KNOWN_DEPRECATIONS =
+      List.of(
+          // SpotBugs Gradle plugin 6.5.13 (the latest) calls it; Gradle 9.9 deprecates it.
+          "The Configuration.setVisible(boolean) method has been deprecated.");
+
   private final Path dir;
 
   Fixture(Path dir) {
@@ -49,11 +64,11 @@ final class Fixture {
   }
 
   BuildResult build(String... args) {
-    return runner(args).build();
+    return checkDeprecations(runner(args).build());
   }
 
   BuildResult buildAndFail(String... args) {
-    return runner(args).buildAndFail();
+    return checkDeprecations(runner(args).buildAndFail());
   }
 
   /** A task's outcome, or null when the task wasn't in the build. */
@@ -62,11 +77,29 @@ final class Fixture {
     return task == null ? null : task.getOutcome();
   }
 
+  private static BuildResult checkDeprecations(BuildResult result) {
+    List<String> unexpected =
+        result
+            .getOutput()
+            .lines()
+            .filter(line -> line.contains("has been deprecated"))
+            .filter(line -> KNOWN_DEPRECATIONS.stream().noneMatch(line::startsWith))
+            .toList();
+    if (!unexpected.isEmpty()) {
+      throw new AssertionError(
+          "Unexpected Gradle deprecations:\n"
+              + String.join("\n", unexpected)
+              + "\n\nBuild output:\n"
+              + result.getOutput());
+    }
+    return result;
+  }
+
   private GradleRunner runner(String... args) {
     List<String> arguments = new ArrayList<>(List.of(args));
     arguments.addAll(
         List.of(
-            "--configuration-cache", "--configuration-cache-problems=fail", "--warning-mode=fail"));
+            "--configuration-cache", "--configuration-cache-problems=fail", "--warning-mode=all"));
     return GradleRunner.create()
         .withProjectDir(dir.toFile())
         .withPluginClasspath()

@@ -21,7 +21,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
  *       runs inside the Gradle daemon;
  *   <li>applies {@link SterlingPlugin}, so the extension and tasks always exist;
  *   <li>once the {@code java} plugin is applied, before or after Sterling, applies and configures
- *       Spotless and JaCoCo, connects them to the {@code stl*} tasks, and adds {@code
+ *       Spotless, JaCoCo and SpotBugs, connects them to the {@code stl*} tasks, and adds {@code
  *       stlToolchainCheck}, which fails {@code compileJava} on a toolchain below Java 21.
  * </ol>
  *
@@ -104,5 +104,6 @@ public class SterlingJavaPlugin implements Plugin<Project> {
     SterlingExtension sterling = project.getExtensions().getByType(SterlingExtension.class);
     Formatting.configure(project, sterling);
     Coverage.configure(project, sterling);
+    Spotbugs.configure(project, sterling);
   }
 }
