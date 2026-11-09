@@ -1,4 +1,4 @@
-# Every version Sterling uses. Exceptions: Gradle (wrapper properties), foojay (settings.gradle.kts).
+# Every version Sterling uses, except Gradle itself (gradle/wrapper/gradle-wrapper.properties).
 #
 # Rules:
 # - Each table has the same two groups, in order: Consumer tools, then Sterling build.
