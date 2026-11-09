@@ -29,7 +29,8 @@ public abstract class ErrorProneSettings {
    * Whether compiler warnings fail the build, by passing {@code -Werror} to javac.
    *
    * <p>Defaults to true for {@link Profile#STRICT} and false otherwise. This covers all javac
-   * warnings, including javac's own such as {@code [removal]}, not only Error Prone's.
+   * warnings, including javac's own such as {@code [removal]}, not only Error Prone's, and applies
+   * even while Error Prone is off.
    *
    * @return the warnings-as-errors property
    */

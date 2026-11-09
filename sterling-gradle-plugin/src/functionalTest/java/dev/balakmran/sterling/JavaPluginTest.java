@@ -19,6 +19,8 @@ class JavaPluginTest {
           java
           id("dev.balakmran.sterling.java")
       }
+
+      repositories { mavenCentral() }
       """;
 
   @TempDir Path dir;

@@ -29,6 +29,7 @@ tasks.javadoc {
 }
 
 dependencies {
+    implementation(libs.errorprone.gradle)
     implementation(libs.spotbugs.gradle)
     implementation(libs.spotless.gradle)
 }
@@ -89,10 +90,14 @@ testing {
                     jvmArgumentProviders.add(
                         CommandLineArgumentProvider { listOf("-Dsterling.jdk17=${jdk17.get()}") }
                     )
-                    // Lets tests assert the pinned engine without repeating its version.
+                    // Lets tests assert pinned versions without repeating them.
                     systemProperty(
                         "sterling.spotbugsVersion",
                         libs.versions.spotbugs.asProvider().get(),
+                    )
+                    systemProperty(
+                        "sterling.errorproneVersion",
+                        libs.versions.errorprone.asProvider().get(),
                     )
                 }
             }
