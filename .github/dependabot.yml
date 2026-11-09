@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Catalog and wrapper. Each PR needs regenerated checksums (see CLAUDE.md).
+  # Covers gradle/libs.versions.toml and the wrapper.
   - package-ecosystem: gradle
     directory: /
     schedule:

@@ -43,7 +43,6 @@ configuration.
 sterling/
 ├── settings.gradle.kts
 ├── gradle/libs.versions.toml        # every version lives here
-├── gradle/verification-metadata.xml # dependency checksums
 ├── sterling-gradle-plugin/
 │   └── src/
 │       ├── main/java/dev/balakmran/sterling/  # public API and plugins
@@ -68,16 +67,6 @@ sterling/
 ```
 
 Run `./gradlew build functionalTest` before declaring any task done.
-
-After adding or bumping any dependency or plugin, regenerate the checksums in
-`gradle/verification-metadata.xml` and review the diff:
-
-```bash
-./gradlew --write-verification-metadata sha256 --no-configuration-cache build functionalTest spotlessCheck
-```
-
-Dependabot doesn't update that file, so its PRs fail until the checksums are
-regenerated on the branch.
 
 ## Plugin authoring rules
 
