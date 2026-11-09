@@ -79,5 +79,6 @@ public class SterlingJavaPlugin implements Plugin<Project> {
 
     SterlingExtension sterling = project.getExtensions().getByType(SterlingExtension.class);
     Formatting.configure(project, sterling);
+    Coverage.configure(project, sterling);
   }
 }

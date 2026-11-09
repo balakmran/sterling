@@ -93,9 +93,10 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
    `profile.map { ... }`.
 4. **Flags never decide plugin application.** The consumer's `sterling { }`
    block runs after Sterling is applied. Always apply the underlying plugins;
-   honour each `enabled` flag lazily: provider-based `dependsOn`, `onlyIf` on a
+   honour each `enabled` flag lazily: `dependsOn`/`finalizedBy` through
+   `Flags.whenOn` (never `flag.map`, whose tasks Gradle can drop), `onlyIf` on a
    `Provider<Boolean>`, `errorprone.isEnabled` bound to a provider, the JaCoCo
-   agent's `enabled` set from the flag in the `test` configuration action, and
+   agent's `enabled` set from the flag in each `Test` task's configuration action, and
    tool dependencies added inside `withDependencies { }` so nothing resolves
    when a tool is off.
 5. **React, don't apply.** The Java plugin reacts with

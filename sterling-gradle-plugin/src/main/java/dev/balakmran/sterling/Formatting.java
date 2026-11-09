@@ -1,7 +1,8 @@
 package dev.balakmran.sterling;
 
+import static dev.balakmran.sterling.Flags.whenOn;
+
 import com.diffplug.gradle.spotless.SpotlessExtension;
-import java.util.List;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 
@@ -28,16 +29,16 @@ final class Formatting {
     project
         .getTasks()
         .named(SterlingPlugin.FMT)
-        .configure(task -> task.dependsOn(whenOn(enabled, "spotlessApply")));
+        .configure(task ->
+            task.dependsOn(
+                whenOn(
+                    project.getProviders(), enabled, project.getTasks().named("spotlessApply"))));
     project
         .getTasks()
         .named(SterlingPlugin.FMT_CHECK)
-        .configure(task -> task.dependsOn(whenOn(enabled, "spotlessCheck")));
-  }
-
-  /** Task names to depend on while the flag is on; none when it's off. */
-  static Provider<List<String>> whenOn(Provider<Boolean> flag, String... tasks) {
-    List<String> names = List.of(tasks);
-    return flag.map(on -> on ? names : List.of());
+        .configure(task ->
+            task.dependsOn(
+                whenOn(
+                    project.getProviders(), enabled, project.getTasks().named("spotlessCheck"))));
   }
 }
