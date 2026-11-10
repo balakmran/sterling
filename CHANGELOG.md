@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.2](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* declare configuration-cache support to the Plugin Portal ([ca1860c](https://github.com/balakmran/sterling/commit/ca1860c8e77ea53026eb4a2f23aa4ef9671bb068))
+
 ## 0.1.0-alpha.1 (2026-11-10)
 
 
