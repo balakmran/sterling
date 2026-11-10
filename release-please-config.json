@@ -6,9 +6,12 @@
   "packages": {
     ".": {
       "package-name": "sterling",
-      "release-as": "0.1.0-alpha.1",
+      "versioning": "prerelease",
       "prerelease": true,
-      "extra-files": ["README.md"]
+      "prerelease-type": "alpha",
+      "extra-files": [
+        "README.md"
+      ]
     }
   }
 }
