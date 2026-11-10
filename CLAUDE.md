@@ -84,8 +84,9 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
    block runs after Sterling is applied. Always apply the underlying plugins;
    honour each `enabled` flag lazily: `dependsOn`/`finalizedBy` through
    `Flags.whenOn` (never `flag.map`, whose tasks Gradle can drop), `onlyIf` on a
-   `Provider<Boolean>`, `errorprone.isEnabled` bound to a provider, the JaCoCo
-   agent's `enabled` set from the flag in each `Test` task's configuration action, and
+   `Provider<Boolean>`, `errorprone.isEnabled` bound to a provider, plain (non-`Property`)
+   tool values such as the JaCoCo agent's `enabled` set in a `taskGraph.whenReady`
+   listener (a configuration action can run before `sterling { }`), and
    tool dependencies added inside `withDependencies { }` so nothing resolves
    when a tool is off.
 5. **React, don't apply.** The Java plugin reacts with

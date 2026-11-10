@@ -54,7 +54,7 @@ final class ErrorProne {
     NullAway.addDependencies(project, nullAway);
 
     Provider<Map<String, CheckSeverity>> disabled =
-        settings.getDisabledChecks().map(ErrorProne::off);
+        settings.getDisabledChecks().zip(nullAway, ErrorProne::off);
     project
         .getTasks()
         .withType(JavaCompile.class)
@@ -92,11 +92,16 @@ final class ErrorProne {
   /**
    * The checks a set of names turns off, in the form Error Prone's options take.
    *
+   * <p>{@code NullAway} is left out while NullAway isn't running: its jar isn't on Error Prone's
+   * path then, and Error Prone rejects a check name it doesn't know, even to turn it off.
+   *
    * @param checks the check names
+   * @param nullAwayActive whether NullAway runs
    * @return each name mapped to {@link CheckSeverity#OFF}
    */
-  static Map<String, CheckSeverity> off(Set<String> checks) {
+  static Map<String, CheckSeverity> off(Set<String> checks, boolean nullAwayActive) {
     return checks.stream()
+        .filter(check -> nullAwayActive || !NullAway.CHECK.equals(check))
         .collect(Collectors.toMap(Function.identity(), check -> CheckSeverity.OFF));
   }
 }

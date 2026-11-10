@@ -158,6 +158,37 @@ class CoverageTest {
     assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.SUCCESS);
   }
 
+  // Spring Initializr's Kotlin template creates the test task eagerly, before sterling { } runs.
+  private static final String EAGER_TEST = "tasks.withType<Test> { }\n";
+
+  @Test
+  void coverageOffAppliesEvenWhenTheTestTaskIsCreatedFirst() {
+    BuildResult result =
+        fixture(EAGER_TEST + "sterling { coverage { enabled = false } }\n").build("test");
+
+    assertThat(outcome(result, ":test")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(Files.exists(dir.resolve("build/jacoco/test.exec"))).isFalse();
+  }
+
+  @Test
+  void coverageOnUnderLenientStillFailsWhenTheTestTaskIsCreatedFirst() {
+    BuildResult result =
+        fixture(EAGER_TEST + "sterling { coverage { enabled = true; instruction = 90 } }\n")
+            .file("gradle.properties", "sterling.profile=lenient\n")
+            .buildAndFail("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.FAILED);
+  }
+
+  @Test
+  void thresholdsApplyEvenWhenTheVerificationTaskIsCreatedFirst() {
+    BuildResult result =
+        fixture("tasks.withType<JacocoCoverageVerification> { }\n" + thresholds(40, 40))
+            .build("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
   @Test
   void coverageDisabledRunsTestsWithoutTheAgentOrReports() {
     BuildResult result =

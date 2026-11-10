@@ -291,6 +291,11 @@ name contains `Generated` and that's kept in the class file, such as Lombok's
 `# pragma: no cover`. Annotations kept only in source, like MapStruct's or
 `jakarta.annotation.Generated`, aren't seen; use `coverage.excludes` for those.
 
+`coverage.excludes` patterns match class files under the classes directory,
+such as `com/example/Application*`. End them with `*`: nested and anonymous
+classes compile to their own files, like `Application$1.class`, which
+`com/example/Application.class` alone would miss.
+
 ## Configuring the tools directly
 
 Sterling covers the common settings. For anything else, configure the tool

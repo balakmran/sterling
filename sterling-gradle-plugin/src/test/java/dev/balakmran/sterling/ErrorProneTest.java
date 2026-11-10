@@ -27,9 +27,14 @@ class ErrorProneTest {
 
   @Test
   void offTurnsEachNamedCheckOff() {
-    assertThat(ErrorProne.off(Set.of("UnusedVariable", "DeadException")))
+    assertThat(ErrorProne.off(Set.of("UnusedVariable", "NullAway"), true))
         .containsExactlyInAnyOrderEntriesOf(
-            java.util.Map.of(
-                "UnusedVariable", CheckSeverity.OFF, "DeadException", CheckSeverity.OFF));
+            java.util.Map.of("UnusedVariable", CheckSeverity.OFF, "NullAway", CheckSeverity.OFF));
+  }
+
+  @Test
+  void offLeavesNullAwayOutWhileItIsntRunning() {
+    assertThat(ErrorProne.off(Set.of("UnusedVariable", "NullAway"), false))
+        .containsExactlyEntriesOf(java.util.Map.of("UnusedVariable", CheckSeverity.OFF));
   }
 }

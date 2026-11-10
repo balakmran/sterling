@@ -5,6 +5,7 @@ import static dev.balakmran.sterling.Flags.whenOn;
 import java.math.BigDecimal;
 import java.util.List;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -23,8 +24,13 @@ import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
  *
  * <p>JaCoCo is applied whatever {@code coverage.enabled} says. The flag decides whether test tasks
  * get the agent, whether the report follows {@code test}, and whether {@code stlCov} runs the
- * verification. Thresholds and excludes are read in the tasks' configuration actions, which run
- * after the build script.
+ * verification.
+ *
+ * <p>The agent switch, the thresholds and the excludes are plain values on JaCoCo's side, not lazy
+ * properties, so they're set once the task graph is ready. A configuration action would be too
+ * early when a build script creates the tasks before its {@code sterling { }} block, as Spring
+ * Initializr's {@code tasks.withType<Test> { }} does; it would see the profile's defaults instead
+ * of the project's settings.
  */
 final class Coverage {
   private static final String TEST = "test";
@@ -51,12 +57,14 @@ final class Coverage {
     Provider<Boolean> enabled = coverage.getEnabled();
     TaskContainer tasks = project.getTasks();
 
-    // Configuration actions run after the build script, so they see the consumer's values.
-    // Coverage off means no agent, so a JDK that JaCoCo doesn't support yet can't break tests.
-    tasks
-        .withType(Test.class)
-        .configureEach(test ->
-            test.getExtensions().getByType(JacocoTaskExtension.class).setEnabled(enabled.get()));
+    // Every build script has run by now. The result is stored in the configuration cache.
+    project
+        .getGradle()
+        .getTaskGraph()
+        .whenReady(graph ->
+            graph.getAllTasks().stream()
+                .filter(task -> task.getProject() == project)
+                .forEach(task -> applySettings(project, task, coverage)));
     tasks
         .named(TEST)
         .configure(
@@ -71,29 +79,39 @@ final class Coverage {
           report.onlyIf("coverage is enabled", Flags.onlyIf(enabled));
           report.getReports().getXml().getRequired().set(true);
           report.getReports().getHtml().getRequired().set(true);
-          applyExcludes(project, report, coverage);
         });
 
     tasks
         .named(VERIFICATION, JacocoCoverageVerification.class)
-        .configure(verification -> {
-          verification.dependsOn(TEST);
-          int instruction =
-              Validation.percent(coverage.getInstruction(), "coverage.instruction").get();
-          int branch = Validation.percent(coverage.getBranch(), "coverage.branch").get();
-          verification
-              .getViolationRules()
-              .rule(rule -> {
-                rule.limit(limit -> minimum(limit, "INSTRUCTION", instruction));
-                rule.limit(limit -> minimum(limit, "BRANCH", branch));
-              });
-          applyExcludes(project, verification, coverage);
-        });
+        .configure(verification -> verification.dependsOn(TEST));
 
     tasks
         .named(SterlingPlugin.COV)
         .configure(task ->
             task.dependsOn(whenOn(project.getProviders(), enabled, tasks.named(VERIFICATION))));
+  }
+
+  // The values from sterling { }, for one task about to run.
+  private static void applySettings(Project project, Task task, CoverageSettings coverage) {
+    if (task instanceof Test test) {
+      // Coverage off means no agent, so a JDK that JaCoCo doesn't support yet can't break tests.
+      test.getExtensions()
+          .getByType(JacocoTaskExtension.class)
+          .setEnabled(coverage.getEnabled().get());
+    } else if (task instanceof JacocoCoverageVerification verification
+        && VERIFICATION.equals(task.getName())) {
+      int instruction = Validation.percent(coverage.getInstruction(), "coverage.instruction").get();
+      int branch = Validation.percent(coverage.getBranch(), "coverage.branch").get();
+      verification
+          .getViolationRules()
+          .rule(rule -> {
+            rule.limit(limit -> minimum(limit, "INSTRUCTION", instruction));
+            rule.limit(limit -> minimum(limit, "BRANCH", branch));
+          });
+      applyExcludes(project, verification, coverage);
+    } else if (task instanceof JacocoReport report && REPORT.equals(task.getName())) {
+      applyExcludes(project, report, coverage);
+    }
   }
 
   private static void minimum(JacocoLimit limit, String counter, int percent) {

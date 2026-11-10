@@ -53,6 +53,9 @@ public abstract class CoverageSettings {
    * <p>Patterns match paths under the classes directory, such as <code>**&#47;*Application*</code>
    * for a Spring Boot main class. They apply to the report and the verification alike.
    *
+   * <p>End a pattern with {@code *}: nested and anonymous classes compile to their own class files,
+   * such as {@code Application$1.class}, which {@code Application.class} alone doesn't match.
+   *
    * @return the exclude patterns
    */
   public abstract ListProperty<String> getExcludes();

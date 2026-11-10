@@ -114,6 +114,24 @@ class NullAwayTest {
   }
 
   @Test
+  void disablingTheNullAwayCheckWhileNullAwayIsOffStillCompiles() {
+    BuildResult result =
+        fixture(
+                """
+                sterling {
+                    errorProne { disable("NullAway") }
+                    nullAway { enabled = false }
+                }
+
+                dependencies { compileOnly("org.jspecify:jspecify:1.0.0") }
+                """)
+            .file("src/main/java/app/package-info.java", NULL_MARKED)
+            .build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
   void disablingTheNullAwayCheckByNameStillTurnsItOff() {
     BuildResult result =
         fixture("sterling { errorProne { disable(\"NullAway\") } }")
