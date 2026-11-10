@@ -16,8 +16,9 @@ bug-scans and coverage-verifies your code:
 One setting, the **profile**, decides how strict all of them are. Every tool
 can be switched off or tuned on its own.
 
-> **Status: pre-release.** 0.1.0 isn't on the Gradle Plugin Portal yet. Until
-> it is, try it from a local clone (see [Trying it before release](#trying-it-before-release)).
+> **Status: pre-release.** Versions before 0.1.0 are alphas, and the DSL may
+> still change. Until a version is on the Gradle Plugin Portal, try it from a
+> local clone (see [Trying it before release](#trying-it-before-release)).
 
 ## Requirements
 

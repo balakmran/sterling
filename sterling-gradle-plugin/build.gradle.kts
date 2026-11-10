@@ -1,5 +1,6 @@
 plugins {
     `java-gradle-plugin`
+    alias(libs.plugins.plugin.publish)
     // Version comes from the root build, which aggregates buildHealth.
     id("com.autonomousapps.dependency-analysis")
 }
@@ -127,14 +128,29 @@ fun jdkPath(version: Int): Provider<String> =
 
 gradlePlugin {
     testSourceSets(sourceSets["functionalTest"])
+    website = "https://github.com/balakmran/sterling"
+    vcsUrl = "https://github.com/balakmran/sterling"
+    val tools =
+        listOf("code-quality", "formatting", "error-prone", "nullaway", "spotbugs", "jacoco")
     plugins {
         register("sterling") {
             id = "dev.balakmran.sterling"
             implementationClass = "dev.balakmran.sterling.SterlingPlugin"
+            displayName = "Sterling base"
+            description =
+                "The sterling { } extension and stl* tasks, without tools. " +
+                    "Most builds apply dev.balakmran.sterling.java instead."
+            tags = tools
         }
         register("sterlingJava") {
             id = "dev.balakmran.sterling.java"
             implementationClass = "dev.balakmran.sterling.SterlingJavaPlugin"
+            displayName = "Sterling for Java"
+            description =
+                "Opinionated, configurable code-quality gate for Java 21+ projects: " +
+                    "google-java-format, Error Prone, NullAway, SpotBugs and JaCoCo, " +
+                    "with strictness set by one profile."
+            tags = tools
         }
     }
 }
