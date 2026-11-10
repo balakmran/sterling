@@ -1,3 +1,6 @@
+// Adds compatibility { } to plugin declarations; applied by plugin-publish.
+import org.gradle.plugin.compatibility.compatibility
+
 plugins {
     `java-gradle-plugin`
     alias(libs.plugins.plugin.publish)
@@ -137,6 +140,8 @@ gradlePlugin {
             id = "dev.balakmran.sterling"
             implementationClass = "dev.balakmran.sterling.SterlingPlugin"
             displayName = "Sterling base"
+            // Every functional test runs with --configuration-cache-problems=fail.
+            compatibility { features { configurationCache = true } }
             description =
                 "The sterling { } extension and stl* tasks, without tools. " +
                     "Most builds apply dev.balakmran.sterling.java instead."
@@ -146,6 +151,8 @@ gradlePlugin {
             id = "dev.balakmran.sterling.java"
             implementationClass = "dev.balakmran.sterling.SterlingJavaPlugin"
             displayName = "Sterling for Java"
+            // Every functional test runs with --configuration-cache-problems=fail.
+            compatibility { features { configurationCache = true } }
             description =
                 "Opinionated, configurable code-quality gate for Java 21+ projects: " +
                     "google-java-format, Error Prone, NullAway, SpotBugs and JaCoCo, " +
