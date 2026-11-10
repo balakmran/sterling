@@ -68,14 +68,18 @@ testing {
                 implementation(libs.assertj)
                 implementation(libs.junit.jupiter.api)
             }
-            // The pin test compares the version resource with these files.
+            // The pin and README tests compare the code with these files.
             targets.configureEach {
                 testTask.configure {
                     val catalog = layout.settingsDirectory.file("gradle/libs.versions.toml")
                     val versionFile = layout.settingsDirectory.file("version.txt")
-                    inputs.files(catalog, versionFile).withPathSensitivity(PathSensitivity.RELATIVE)
+                    val readme = layout.settingsDirectory.file("README.md")
+                    inputs
+                        .files(catalog, versionFile, readme)
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
                     systemProperty("sterling.catalog", catalog.asFile.absolutePath)
                     systemProperty("sterling.versionFile", versionFile.asFile.absolutePath)
+                    systemProperty("sterling.readme", readme.asFile.absolutePath)
                 }
             }
         }

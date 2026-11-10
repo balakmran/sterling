@@ -185,6 +185,38 @@ In Groovy build scripts the block is the same, with
 A threshold outside 0 to 100, or an unknown `sterling.profile`, fails the
 build with a message naming the setting.
 
+### Settings reference
+
+| Setting | Type | Default |
+|---|---|---|
+| `profile` | `Profile`: `LENIENT`, `STANDARD` or `STRICT` | The `sterling.profile` property, else `STANDARD` |
+| `attachToCheck` | Boolean | From the profile |
+| `format.enabled` | Boolean | true |
+| `errorProne.enabled` | Boolean | true |
+| `errorProne.warningsAsErrors` | Boolean | From the profile |
+| `errorProne.disabledChecks` | Set of check names | Empty |
+| `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
+| `nullAway.enabled` | Boolean | true (needs Error Prone) |
+| `spotbugs.enabled` | Boolean | From the profile |
+| `spotbugs.excludeFilter` | File | None |
+| `coverage.enabled` | Boolean | From the profile |
+| `coverage.instruction` | Percent, 0 to 100 | From the profile |
+| `coverage.branch` | Percent, 0 to 100 | From the profile |
+| `coverage.excludes` | List of class-file patterns | Empty |
+
+## Pinned tool versions
+
+Sterling configures these versions of each tool:
+
+| Tool | Version |
+|---|---|
+| google-java-format | 2.0.0 |
+| Error Prone | 2.52.0 |
+| NullAway | 0.14.3 |
+| JSpecify | 1.0.1 |
+| SpotBugs | 4.10.5 |
+| JaCoCo | 0.8.16 |
+
 ## Tool notes
 
 ### Formatting
