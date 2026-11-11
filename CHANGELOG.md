@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-11)
+
+
+### Bug Fixes
+
+* apply coverage settings after build scripts run, and allow disabling NullAway while it's off ([29f4644](https://github.com/balakmran/sterling/commit/29f4644b560a1ab19d79dedd6f2b5f8c293b6983))
+
 ## [0.1.0-alpha.2](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-11-10)
 
 
