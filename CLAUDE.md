@@ -150,6 +150,11 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - Conventional Commits (`feat:`, `fix:`, `test:`, `build:`, `docs:`, `ci:`).
   release-please derives versions and the changelog from them.
 - One logical change per commit, following the work breakdown in the plan.
+- Trunk-based: never commit to `main`. Branch from it as `feat/`, `fix/`,
+  `ci/`, `docs/`, `build/` or `test/` plus a short name, open a PR, and
+  rebase-merge once CI passes, so commit messages reach `main` unchanged. CI
+  runs on PRs only. release-please's PRs run no CI (`GITHUB_TOKEN` starts no
+  workflows); they're merged with the admin bypass.
 - Sterling's own Java is formatted with google-java-format, and build scripts
   with ktfmt, both via Spotless. javac runs with `-Xlint:all -Werror`.
 - Code comments (`//` and `/* */` inside method bodies, fields and build
