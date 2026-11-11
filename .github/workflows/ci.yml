@@ -1,10 +1,10 @@
 name: CI
 
+# PRs only: main accepts changes through up-to-date PRs, so a push run would repeat the PR's.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
