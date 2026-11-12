@@ -8,18 +8,18 @@ import org.gradle.api.GradleException;
 import org.gradle.api.JavaVersion;
 import org.junit.jupiter.api.Test;
 
-class SterlingJavaPluginTest {
+class SterlingPluginTest {
   @Test
   void daemonJvmCheckAccepts21AndLater() {
     List.of(JavaVersion.VERSION_21, JavaVersion.VERSION_25)
         .forEach(version ->
-            assertThatCode(() -> SterlingJavaPlugin.checkDaemonJvm(version))
+            assertThatCode(() -> SterlingPlugin.checkDaemonJvm(version))
                 .doesNotThrowAnyException());
   }
 
   @Test
   void daemonJvmCheckRejects17WithTheFix() {
-    assertThatThrownBy(() -> SterlingJavaPlugin.checkDaemonJvm(JavaVersion.VERSION_17))
+    assertThatThrownBy(() -> SterlingPlugin.checkDaemonJvm(JavaVersion.VERSION_17))
         .isInstanceOf(GradleException.class)
         .hasMessage(
             "Sterling requires Gradle to run on JDK 21+ (found 17). "

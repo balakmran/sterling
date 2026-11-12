@@ -29,7 +29,7 @@ class SpringBootTest {
                     java
                     id("org.springframework.boot") version "%s"
                     id("org.springframework.boot.aot") version "%s"
-                    id("dev.balakmran.sterling.java")
+                    id("dev.balakmran.sterling")
                 }
 
                 // Spring's AOT processing needs a group, as real projects have.

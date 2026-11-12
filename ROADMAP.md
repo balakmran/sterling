@@ -60,9 +60,7 @@ Scope and acceptance criteria: [`docs/plans/v0.1.0.md`](docs/plans/v0.1.0.md).
 Changes agreed before GA:
 
 - **One plugin ID.** `dev.balakmran.sterling` sets up the tools whenever the
-  `java` plugin is applied; `dev.balakmran.sterling.java` goes away. The two
-  shipped in one jar and differed only in a daemon JDK check, so the split
-  bought nothing, and after GA removing an ID breaks users.
+  `java` plugin is applied, so there is no separate plugin to choose.
 - **`JSpecifyMode` on in `STRICT` only,** behind a new `nullAway.jspecifyMode`
   setting. Spring calls the mode "still under development" and recommends it
   as a second step; it's where most false positives on generic and lambda code
@@ -169,7 +167,7 @@ and at least five public projects build with Sterling.
 
 | Date | Decision | Why |
 |---|---|---|
-| 2026-11-11 | One plugin ID, `dev.balakmran.sterling`, from 0.1.0 | The base and Java plugins shared a jar and differed only by a daemon check |
+| 2026-11-11 | One plugin ID, `dev.balakmran.sterling`, from 0.1.0 | A second, tool-less ID would add nothing: the tools already wait for `java` |
 | 2026-11-11 | `JSpecifyMode` on in `STRICT` only | Spring's guidance; most NullAway false positives come from it |
 | 2026-11-11 | `format.style` offers `GOOGLE` and `AOSP` | Lowers the reformat cost for 4-space codebases without a new pin |
 | 2026-11-11 | Checkstyle moves from 0.2 to 0.5, opt-in | Small gap over google-java-format and Error Prone; adoption work comes first |

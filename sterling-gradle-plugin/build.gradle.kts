@@ -143,18 +143,7 @@ gradlePlugin {
         register("sterling") {
             id = "dev.balakmran.sterling"
             implementationClass = "dev.balakmran.sterling.SterlingPlugin"
-            displayName = "Sterling base"
-            // Every functional test runs with --configuration-cache-problems=fail.
-            compatibility { features { configurationCache = true } }
-            description =
-                "The sterling { } extension and stl* tasks, without tools. " +
-                    "Most builds apply dev.balakmran.sterling.java instead."
-            tags = tools
-        }
-        register("sterlingJava") {
-            id = "dev.balakmran.sterling.java"
-            implementationClass = "dev.balakmran.sterling.SterlingJavaPlugin"
-            displayName = "Sterling for Java"
+            displayName = "Sterling"
             // Every functional test runs with --configuration-cache-problems=fail.
             compatibility { features { configurationCache = true } }
             description =

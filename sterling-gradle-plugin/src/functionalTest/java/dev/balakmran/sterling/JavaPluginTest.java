@@ -10,14 +10,17 @@ import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** The Java plugin: activated by java, with a JDK 21 floor for the toolchain and daemon. */
+/**
+ * Sterling with java: the tools activate once java is applied, with a JDK 21 floor for the
+ * toolchain and daemon.
+ */
 class JavaPluginTest {
   private static final String SOURCE = "public class App {}\n";
   private static final String JAVA_AND_STERLING =
       """
       plugins {
           java
-          id("dev.balakmran.sterling.java")
+          id("dev.balakmran.sterling")
       }
 
       repositories { mavenCentral() }
@@ -29,7 +32,7 @@ class JavaPluginTest {
   void withoutJavaTheBuildSucceedsAndStlInfoReportsJavaNotActive() {
     BuildResult result =
         new Fixture(dir)
-            .file("build.gradle.kts", "plugins { id(\"dev.balakmran.sterling.java\") }\n")
+            .file("build.gradle.kts", "plugins { id(\"dev.balakmran.sterling\") }\n")
             .build("stlInfo", "stlCheck");
 
     assertThat(outcome(result, ":stlInfo")).isEqualTo(TaskOutcome.SUCCESS);
@@ -84,7 +87,7 @@ class JavaPluginTest {
     BuildResult result =
         new Fixture(dir)
             .file("gradle.properties", "org.gradle.java.home=" + Fixture.jdk(17) + "\n")
-            .file("build.gradle.kts", "plugins { id(\"dev.balakmran.sterling.java\") }\n")
+            .file("build.gradle.kts", "plugins { id(\"dev.balakmran.sterling\") }\n")
             .buildAndFail("help");
 
     assertThat(outcome(result, ":help")).isNull();
@@ -107,10 +110,10 @@ class JavaPluginTest {
             .file(
                 "build.gradle.kts",
                 """
-                plugins { id("dev.balakmran.sterling.java") apply false }
+                plugins { id("dev.balakmran.sterling") apply false }
 
                 subprojects {
-                    apply(plugin = "dev.balakmran.sterling.java")
+                    apply(plugin = "dev.balakmran.sterling")
                     apply(plugin = "java")
                     repositories { mavenCentral() }
                 }
