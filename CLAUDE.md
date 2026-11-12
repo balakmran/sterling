@@ -5,7 +5,8 @@ Published as a Gradle plugin under `dev.balakmran.sterling`.
 
 Current milestone: **v0.1.0**. The plan, scope, configuration model and
 acceptance criteria are in `docs/plans/v0.1.0.md`. Read it before starting work
-and do not build anything listed under "Out" there.
+and do not build anything listed under "Out" there. Later milestones are in
+`ROADMAP.md`.
 
 ## Identifiers
 
@@ -41,6 +42,7 @@ configuration.
 
 ```
 sterling/
+├── ROADMAP.md                       # milestones after the current one
 ├── settings.gradle.kts
 ├── gradle/libs.versions.toml        # every version lives here
 ├── sterling-gradle-plugin/
@@ -54,7 +56,8 @@ sterling/
 └── .github/workflows/
 ```
 
-`sterling-rules` (Checkstyle/PMD config) arrives in v0.2.0. Do not create it yet.
+`sterling-rules` (Checkstyle config) arrives with Checkstyle, planned for
+v0.5.0 in `ROADMAP.md`. Do not create it yet.
 
 ## Commands
 
