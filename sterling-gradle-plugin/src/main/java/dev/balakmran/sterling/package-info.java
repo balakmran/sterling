@@ -1,7 +1,7 @@
 /**
  * Sterling: opinionated, configurable code-quality enforcement for Gradle Java projects.
  *
- * <p>Apply {@code dev.balakmran.sterling.java} to a project that uses the {@code java} plugin. It
+ * <p>Apply {@code dev.balakmran.sterling} to a project that uses the {@code java} plugin. It
  * formats with google-java-format, finds bugs at compile time with Error Prone and NullAway,
  * analyses bytecode with SpotBugs and verifies test coverage with JaCoCo. {@link
  * dev.balakmran.sterling.Profile} sets how strict each one is, and the {@code sterling { }} block

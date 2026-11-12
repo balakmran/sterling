@@ -30,7 +30,7 @@ class SterlingInfoTaskTest {
             "Profile:              STANDARD",
             "Gate wired to check:  yes",
             "Daemon JVM:           25",
-            "Java toolchain:       not active (dev.balakmran.sterling.java not applied)",
+            "Java toolchain:       not active (java plugin not applied)",
             "Formatting:           on   (google-java-format "
                 + ToolVersions.get("google-java-format")
                 + ")",

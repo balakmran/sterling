@@ -10,8 +10,8 @@ import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** The base plugin: the stl tasks, profiles, settings and stlInfo. */
-class BasePluginTest {
+/** Without java: the stl tasks, profiles, settings and stlInfo. */
+class LifecycleTasksTest {
   @TempDir Path dir;
 
   private Fixture fixture(String script) {

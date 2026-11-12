@@ -42,7 +42,7 @@ can be switched off or tuned on its own.
 ```kotlin
 plugins {
     java
-    id("dev.balakmran.sterling.java") version "0.1.0-alpha.3"
+    id("dev.balakmran.sterling") version "0.1.0-alpha.3"
 }
 
 repositories { mavenCentral() }
@@ -51,11 +51,8 @@ repositories { mavenCentral() }
 
 That's all most projects need. With the default `STANDARD` profile,
 `./gradlew build` now runs the whole gate. Sterling never applies `java` for
-you, and works whether it's applied before or after it.
-
-`dev.balakmran.sterling` is the base plugin: the `sterling { }` block and the
-tasks, without any tools. Use it only to share configuration in a build where
-not every project is Java.
+you, and works whether it's applied before or after it. In a project without
+`java`, the tools stay off and the `stl*` tasks have nothing to run.
 
 ### Adopting it in an existing project
 
@@ -388,7 +385,7 @@ pluginManagement {
 }
 ```
 
-Then apply `id("dev.balakmran.sterling.java")` without a version.
+Then apply `id("dev.balakmran.sterling")` without a version.
 
 ## Building Sterling
 

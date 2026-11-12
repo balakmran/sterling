@@ -14,8 +14,7 @@ and do not build anything listed under "Out" there. Later milestones are in
 |---|---|
 | Maven group | `dev.balakmran.sterling` |
 | Plugin artifact | `sterling-gradle-plugin` |
-| Base plugin ID | `dev.balakmran.sterling` |
-| Java plugin ID | `dev.balakmran.sterling.java` |
+| Plugin ID | `dev.balakmran.sterling` |
 | Java package | `dev.balakmran.sterling` |
 | Extension name | `sterling` |
 | Task group | `sterling` |
@@ -47,7 +46,7 @@ sterling/
 ├── gradle/libs.versions.toml        # every version lives here
 ├── sterling-gradle-plugin/
 │   └── src/
-│       ├── main/java/dev/balakmran/sterling/  # public API and plugins
+│       ├── main/java/dev/balakmran/sterling/  # public API and the plugin
 │       ├── main/java/.../sterling/internal/   # task types; not for consumers
 │       ├── main/resources/          # SpotBugs exclude filter (versions.properties is generated)
 │       ├── test/java/...            # unit tests (ProjectBuilder)
@@ -92,7 +91,7 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
    listener (a configuration action can run before `sterling { }`), and
    tool dependencies added inside `withDependencies { }` so nothing resolves
    when a tool is off.
-5. **React, don't apply.** The Java plugin reacts with
+5. **React, don't apply.** The plugin reacts with
    `pluginManager.withPlugin("java") { ... }`. It never applies `java` itself.
 6. **Wrap tool tasks, don't replace them.** `stl*` tasks are aggregates that
    `dependsOn` the underlying tool tasks. The tools' own task names keep working.
@@ -176,7 +175,7 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - No new dependency without a reason; every plugin dependency ends up on the
   consumer's buildscript classpath. `buildHealth` (dependency-analysis) fails
   the build on unused or misdeclared dependencies.
-- Public API is the `dev.balakmran.sterling` package: the plugins, the
+- Public API is the `dev.balakmran.sterling` package: the plugin, the
   extension, its settings classes and `Profile`, each with Javadoc. Anything
   else is package-private, or public in `dev.balakmran.sterling.internal` when
   Gradle needs it (task types).

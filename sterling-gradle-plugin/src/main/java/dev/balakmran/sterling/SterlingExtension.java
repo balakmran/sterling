@@ -29,7 +29,7 @@ import org.gradle.api.tasks.Nested;
  * }</pre>
  */
 public abstract class SterlingExtension {
-  /** Creates the extension. Sterling's base plugin registers it as {@code sterling}. */
+  /** Creates the extension. The Sterling plugin registers it as {@code sterling}. */
   public SterlingExtension() {}
 
   /**

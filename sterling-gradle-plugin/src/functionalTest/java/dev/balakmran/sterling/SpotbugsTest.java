@@ -51,7 +51,7 @@ class SpotbugsTest {
             """
             plugins {
                 java
-                id("dev.balakmran.sterling.java")
+                id("dev.balakmran.sterling")
             }
 
             repositories { mavenCentral() }
