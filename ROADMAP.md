@@ -20,6 +20,12 @@ and most 3.x services run on Java 17, below Sterling's floor.
 
 **Not for:** Maven builds, Kotlin or Groovy sources, Java 17 toolchains.
 
+**What it replaces:** a hand-written `build-logic`, or the NullAway snippet
+copied from Spring's demo project. Spring's own `io.spring.nullability` plugin
+sets up Error Prone and NullAway only, so null checking alone isn't the reason
+to pick Sterling: the tested bundle and the single gate are. Sterling sits
+beside SonarQube, as the local gate that runs before the pull request.
+
 ## Rules every milestone follows
 
 1. **Depth before breadth.** Each tool Sterling adds is another version to bump
@@ -39,6 +45,10 @@ and most 3.x services run on Java 17, below Sterling's floor.
 6. **One plugin ID per kind of target.** Framework support (Spring, later
    others) reacts to that framework's plugin inside the existing plugin; a new
    ID is added only when its behaviour would be wrong elsewhere.
+7. **A bump that can change findings is a minor release.** A new Error Prone
+   adds checks and a new google-java-format reformats code, so either can fail
+   a build that changed nothing. Those go out as a minor release with a note
+   on what changed; only bumps that change no findings are patches.
 
 ## Milestones
 
@@ -59,6 +69,10 @@ Changes agreed before GA:
   come from.
 - **Dogfood checks:** a Lombok module (`@Data`, `@Builder`) compiles cleanly
   under Error Prone and NullAway and doesn't drag coverage down.
+- **Existing tool plugins:** a functional test and a README note for a project
+  that already applies Spotless or SpotBugs at another plugin version, the
+  first thing a brownfield build hits.
+- **Release policy** for tool bumps (rule 7), stated in the README.
 
 ### v0.2.0 — Adopt it on a real Spring Boot 4 service
 
@@ -67,6 +81,8 @@ Remove the reasons a Spring team backs out in the first hour.
 - Spring-aware NullAway defaults, starting with
   `CustomContractAnnotations=org.springframework.lang.Contract`, and README
   guidance for NullAway's known limitations with Spring and Reactor APIs.
+  Compare with what `io.spring.nullability` sets first, including its test
+  options (AssertJ's `Contract`, `HandleTestAssertionLibraries`).
 - Spring Boot behaviour, such as leaving the application class out of
   coverage, switched on by reacting to `org.springframework.boot`.
 - Lombok: a functional test and a README section.
@@ -74,28 +90,42 @@ Remove the reasons a Spring team backs out in the first hour.
   indentation, so existing code needs a far smaller reformat.
 - `format.ratchetFrom`, exposing Spotless's ratchet for brownfield projects.
   It reads git through JGit, so it must pass the configuration cache tests.
-- Spotless `misc` (trailing whitespace, final newline) and `kotlinGradle`
-  formats.
 - Coverage: leave out classes compiled from generated sources; count extra
   `Test` tasks and JVM test suites such as `integrationTest`.
 - Supported overrides of tool versions, so a project can take an Error Prone
   or NullAway release before Sterling ships one.
-- Test matrix: a Groovy DSL project, one Windows cell, and a non-blocking
-  latest-JDK cell.
-- Releases: a Dependabot bump that passes the matrix becomes a patch release
-  with no manual steps.
-- Documentation site (Zensical on GitHub Pages).
+- When `stlSec` or `stlCov` fails, print the findings or the shortfall to the
+  console, so neither a person nor a coding agent has to open an HTML report.
+- Multi-module recipe: a convention plugin in `build-logic`, documented and
+  covered by a functional test. Aggregation stays in 0.4.0.
+- An example Spring Boot 4 service in a public repository. It is the "done
+  when" below, and the public proof that closed-source adopters can't give.
+- Migration page: from Spring's NullAway snippet, and from a hand-written
+  `build-logic`.
+- Releases: a Dependabot bump that passes the matrix and changes no findings
+  becomes a patch release with no manual steps (rule 7 covers the rest).
 
 **Done when** a Spring Boot 4 service with Lombok, generated OpenAPI code and an
 integration test suite adopts Sterling with nothing in its build but the
 plugin, a profile and a coverage exclude or two.
 
+Alongside, not tied to a release (none of it changes the plugin):
+
+- Test matrix: a Groovy DSL project, one Windows cell, and a non-blocking
+  latest-JDK cell.
+- Documentation site (Zensical on GitHub Pages).
+- Trust signals: `SECURITY.md`, an OpenSSF Scorecard badge, a compatibility
+  table per release, and a "what Sterling does in plain Gradle" page, so
+  leaving looks cheap.
+
 ### v0.3.0 — Readable failures and one-command fixes
 
-- On failure, print `file:line [Tool:Rule] message` to the console, so nobody
-  has to open an HTML report.
+- One console format for every tool, `file:line [Tool:Rule] message`,
+  building on the 0.2.0 summary.
 - Report findings through Gradle's Problems API as well. Don't promise IDE
   integration until it's verified.
+- A documented GitHub Actions recipe: SARIF upload and pull request
+  annotations.
 - `stlFix`: a separate compile pass with Error Prone's patching, then `stlFmt`.
   It changes sources, so it is never part of `stlCheck`. Includes
   `AddNullMarkedToPackageInfo` as an opt-in patch for marking packages
@@ -122,14 +152,18 @@ plugin, a profile and a coverage exclude or two.
   sharing is wanted; otherwise the config ships as a plugin resource.
 - Evaluate PMD 7 and Picnic's Error Prone Support as `STRICT`-only extras. Each
   goes in only with a dogfood report showing more signal than noise.
+- Spotless `misc` (trailing whitespace, final newline) and `kotlinGradle`
+  formats.
 
 ### v1.0.0 — Stable
 
 - Freeze the DSL. Declare Isolated Projects support once Gradle stabilises it.
-- Migration guides from a hand-written `build-logic` and from
-  `ru.vyarus.quality`.
-- An examples repository: a Spring Boot 4 service, a multi-module service, and
-  a brownfield before-and-after.
+- Migration guides from `ru.vyarus.quality` and Palantir Baseline.
+- More examples beside the 0.2.0 one: a multi-module service and a brownfield
+  before-and-after.
+
+**Done when** the DSL has gone two minor releases without a breaking change
+and at least five public projects build with Sterling.
 
 ## Decisions log
 
@@ -141,3 +175,8 @@ plugin, a profile and a coverage exclude or two.
 | 2026-11-11 | Checkstyle moves from 0.2 to 0.5, opt-in | Small gap over google-java-format and Error Prone; adoption work comes first |
 | 2026-11-11 | Spring support lives in the main plugin | Everything planned for Spring is harmless elsewhere or keyed off the Boot plugin |
 | 2026-11-11 | FindSecBugs dropped; `stlSec` keeps its name | Slow releases, CodeQL covers it; renaming isn't worth the churn |
+| 2026-11-11 | Tool bumps that can change findings are minor releases | A new Error Prone check or a formatter change fails builds that changed nothing |
+| 2026-11-11 | Console summary for SpotBugs and coverage moves from 0.3 to 0.2 | "Open the HTML report" is a first-hour reason to back out, and agents can't read it |
+| 2026-11-11 | The Spring Boot 4 example moves from 1.0 to 0.2 | Target users are closed-source services; without it there is no public proof |
+| 2026-11-11 | Spotless `misc` and `kotlinGradle` move from 0.2 to 0.5 | Breadth, and `kotlinGradle` adds a formatter pin; adoption work comes first |
+| 2026-11-11 | No Maven support | A Maven plugin is a second codebase with its own lifecycle; one maintainer can't keep both tested every month |
