@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-11-12)
+
+
+### Features
+
+* ship one plugin ID, dev.balakmran.sterling ([182021e](https://github.com/balakmran/sterling/commit/182021ee0504a2c3aa9e1141ef7cb4c59afc6675))
+
 ## [0.1.0-alpha.3](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-11-11)
 
 
