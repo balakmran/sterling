@@ -14,7 +14,7 @@ versions and the changelog from the commit messages that land on `main`.
 
 1. Look first: `git status`, `git diff`, `git branch --show-current`. If
    nothing has changed, say so and stop. Never stage
-   `docs/plans/v0.1.0-review.md` or `.claude/settings.local.json`.
+   `.claude/settings.local.json`.
 
 2. Pick the Conventional Commit type from the change (`feat`, `fix`, `test`,
    `build`, `ci`, `docs`, or `chore` for tooling that isn't the build).

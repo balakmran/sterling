@@ -19,6 +19,7 @@ can be switched off or tuned on its own.
 > **Status: pre-release.** Versions before 0.1.0 are alphas, and the DSL may
 > still change. Until a version is on the Gradle Plugin Portal, try it from a
 > local clone (see [Trying it before release](#trying-it-before-release)).
+> What comes after 0.1.0 is in the [roadmap](ROADMAP.md).
 
 ## Requirements
 
