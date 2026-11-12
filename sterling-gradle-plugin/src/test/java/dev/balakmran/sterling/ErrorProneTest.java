@@ -33,6 +33,16 @@ class ErrorProneTest {
   }
 
   @Test
+  void nullAwayOptionsAddJspecifyModeOnlyWhenItIsOn() {
+    assertThat(NullAway.options(true, false))
+        .containsExactlyEntriesOf(java.util.Map.of("NullAway:OnlyNullMarked", "true"));
+    assertThat(NullAway.options(true, true))
+        .containsExactlyInAnyOrderEntriesOf(
+            java.util.Map.of("NullAway:OnlyNullMarked", "true", "NullAway:JSpecifyMode", "true"));
+    assertThat(NullAway.options(false, true)).isEmpty();
+  }
+
+  @Test
   void offLeavesNullAwayOutWhileItIsntRunning() {
     assertThat(ErrorProne.off(Set.of("UnusedVariable", "NullAway"), false))
         .containsExactlyEntriesOf(java.util.Map.of("UnusedVariable", CheckSeverity.OFF));

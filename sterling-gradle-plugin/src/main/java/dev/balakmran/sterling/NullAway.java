@@ -66,13 +66,32 @@ final class NullAway {
   }
 
   /**
-   * NullAway's options while active: check only {@code @NullMarked} code, using JSpecify semantics.
+   * NullAway's options while active: check only {@code @NullMarked} code, and use JSpecify mode
+   * when {@code jspecifyMode} is on.
    *
    * @param active whether NullAway runs
+   * @param jspecifyMode whether NullAway runs in JSpecify mode
    * @return the check options to add to Error Prone's options
    */
-  static Provider<Map<String, String>> checkOptions(Provider<Boolean> active) {
-    return active.map(on ->
-        on ? Map.of(CHECK + ":OnlyNullMarked", "true", CHECK + ":JSpecifyMode", "true") : Map.of());
+  static Provider<Map<String, String>> checkOptions(
+      Provider<Boolean> active, Provider<Boolean> jspecifyMode) {
+    return active.zip(jspecifyMode, NullAway::options);
+  }
+
+  /**
+   * The option entries {@link #checkOptions} provides.
+   *
+   * @param active whether NullAway runs
+   * @param jspecifyMode whether NullAway runs in JSpecify mode
+   * @return no options while NullAway is off; otherwise {@code OnlyNullMarked}, plus {@code
+   *     JSpecifyMode} when it's on
+   */
+  static Map<String, String> options(boolean active, boolean jspecifyMode) {
+    if (!active) {
+      return Map.of();
+    }
+    return jspecifyMode
+        ? Map.of(CHECK + ":OnlyNullMarked", "true", CHECK + ":JSpecifyMode", "true")
+        : Map.of(CHECK + ":OnlyNullMarked", "true");
   }
 }

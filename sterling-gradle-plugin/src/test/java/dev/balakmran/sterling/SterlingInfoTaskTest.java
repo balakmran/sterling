@@ -63,6 +63,13 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void nullAwayReportsJspecifyModeWhenOn() {
+    sterling.getProfile().set(Profile.STRICT);
+
+    assertThat(render()).contains("; @NullMarked code only; JSpecify mode)");
+  }
+
+  @Test
   void nullAwayReportsErrorProneOff() {
     sterling.getErrorProne().getEnabled().set(false);
 

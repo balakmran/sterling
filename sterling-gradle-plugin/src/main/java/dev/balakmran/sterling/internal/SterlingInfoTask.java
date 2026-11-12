@@ -98,6 +98,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<Boolean> getNullAwayEnabled();
 
   /**
+   * Whether NullAway runs in JSpecify mode.
+   *
+   * @return whether JSpecify mode is on
+   */
+  @Input
+  public abstract Property<Boolean> getJspecifyMode();
+
+  /**
    * Whether SpotBugs is on.
    *
    * @return whether SpotBugs is on
@@ -210,7 +218,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + versions.get("nullaway")
         + "; JSpecify "
         + versions.get("jspecify")
-        + "; @NullMarked code only)";
+        + "; @NullMarked code only"
+        + (getJspecifyMode().get() ? "; JSpecify mode" : "")
+        + ")";
   }
 
   private String spotbugsDetail(Map<String, String> versions) {

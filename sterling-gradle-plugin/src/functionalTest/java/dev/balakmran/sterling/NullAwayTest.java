@@ -39,6 +39,38 @@ class NullAwayTest {
       import org.jspecify.annotations.NullMarked;
       """;
 
+  // Dereferences a @Nullable type argument: only NullAway's JSpecify mode sees it.
+  private static final String NULLABLE_TYPE_ARGUMENT =
+      """
+      package generic;
+
+      import org.jspecify.annotations.Nullable;
+
+      public class Box<T extends @Nullable Object> {
+        private final T value;
+
+        public Box(T value) {
+          this.value = value;
+        }
+
+        public T get() {
+          return value;
+        }
+
+        public static int length(Box<@Nullable String> box) {
+          return box.get().length();
+        }
+      }
+      """;
+
+  private static final String GENERIC_NULL_MARKED =
+      """
+      @NullMarked
+      package generic;
+
+      import org.jspecify.annotations.NullMarked;
+      """;
+
   @TempDir Path dir;
 
   private Fixture fixture(String script) {
@@ -129,6 +161,37 @@ class NullAwayTest {
             .build("compileJava");
 
     assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  private Fixture genericFixture(String script) {
+    return fixture(script)
+        .file("src/main/java/generic/Box.java", NULLABLE_TYPE_ARGUMENT)
+        .file("src/main/java/generic/package-info.java", GENERIC_NULL_MARKED);
+  }
+
+  @Test
+  void jspecifyModeIsOffUnderStandardSoTypeArgumentsAreNotChecked() {
+    BuildResult result = genericFixture("").build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void strictTurnsOnJspecifyModeWhichChecksTypeArguments() {
+    BuildResult result =
+        genericFixture("").buildAndFail("compileJava", "-Psterling.profile=strict");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput()).contains("[NullAway]");
+  }
+
+  @Test
+  void jspecifyModeSetExplicitlyWinsOverTheProfile() {
+    BuildResult result =
+        genericFixture("sterling { nullAway { jspecifyMode = true } }").buildAndFail("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput()).contains("[NullAway]");
   }
 
   @Test

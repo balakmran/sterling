@@ -113,6 +113,7 @@ Coverage:             on   (instruction >= 80%, branch >= 70%; 1 exclude)
 | `errorProne.enabled` | true | true | true |
 | `errorProne.warningsAsErrors` | false | false | true |
 | `nullAway.enabled` | true | true | true |
+| `nullAway.jspecifyMode` | false | false | true |
 | `spotbugs.enabled` | false | true | true |
 | `coverage.enabled` | false | true | true |
 | `coverage.instruction` | 0 | 80 | 95 |
@@ -124,7 +125,8 @@ Coverage:             on   (instruction >= 80%, branch >= 70%; 1 exclude)
 - `STRICT`'s `warningsAsErrors` adds `-Werror`, which also fails on javac's own
   warnings, such as `[removal]`.
 - NullAway is on in every profile because it does nothing until a package opts
-  in (see [Null checking](#null-checking-with-nullaway)).
+  in (see [Null checking](#null-checking-with-nullaway)). Its JSpecify mode is
+  on only in `STRICT`.
 
 ### Choosing the profile without editing the build script
 
@@ -164,6 +166,7 @@ sterling {
     }
     nullAway {
         enabled = true                  // needs Error Prone
+        jspecifyMode = false            // default from profile
     }
     spotbugs {
         enabled = true
@@ -195,6 +198,7 @@ build with a message naming the setting.
 | `errorProne.disabledChecks` | Set of check names | Empty |
 | `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
 | `nullAway.enabled` | Boolean | true (needs Error Prone) |
+| `nullAway.jspecifyMode` | Boolean | From the profile |
 | `spotbugs.enabled` | Boolean | From the profile |
 | `spotbugs.excludeFilter` | File | None |
 | `coverage.enabled` | Boolean | From the profile |
@@ -246,6 +250,12 @@ import org.jspecify.annotations.NullMarked;
 
 Inside that package, anything that may be null must be annotated `@Nullable`,
 and NullAway fails compilation where such a value is used without a check.
+
+`nullAway.jspecifyMode` also checks nullness in generic type arguments
+(`List<@Nullable String>`), arrays and varargs. It's on only in `STRICT`:
+Spring calls the mode still under development and recommends turning it on as
+a second step, once a codebase is clean without it, because most false
+positives on generic and lambda-heavy code come from it.
 
 Sterling adds [JSpecify](https://jspecify.dev) to `compileOnly` and
 `testCompileOnly` while NullAway is on, so the annotations work without a

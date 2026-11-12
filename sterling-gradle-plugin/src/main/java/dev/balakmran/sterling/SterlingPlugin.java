@@ -113,6 +113,7 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
     sterling.getNullAway().getEnabled().convention(true);
+    sterling.getNullAway().getJspecifyMode().convention(profile.map(p -> p.jspecifyMode));
     sterling.getSpotbugs().getEnabled().convention(profile.map(p -> p.spotbugs));
     sterling.getCoverage().getEnabled().convention(profile.map(p -> p.coverage));
     sterling.getCoverage().getInstruction().convention(profile.map(p -> p.instruction));
@@ -157,6 +158,7 @@ public class SterlingPlugin implements Plugin<Project> {
           task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
           task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
           task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
+          task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
           task.getSpotbugsEnabled().set(sterling.getSpotbugs().getEnabled());
           task.getConsumerExcludeFilter()
               .set(sterling.getSpotbugs().getExcludeFilter().map(file -> true).orElse(false));
