@@ -29,9 +29,9 @@ class SterlingExtensionTest {
     // attachToCheck, warningsAsErrors, spotbugs, coverage, instruction, branch
     Map<Profile, List<Object>> expected =
         Map.of(
-            Profile.LENIENT, List.of(false, false, false, false, 0, 0),
-            Profile.STANDARD, List.of(true, false, true, true, 80, 70),
-            Profile.STRICT, List.of(true, true, true, true, 95, 85));
+            Profile.LENIENT, List.of(false, false, false, false, false, 0, 0),
+            Profile.STANDARD, List.of(true, false, false, true, true, 80, 70),
+            Profile.STRICT, List.of(true, true, true, true, true, 95, 85));
 
     expected.forEach((profile, values) -> {
       sterling.getProfile().set(profile);
@@ -40,6 +40,7 @@ class SterlingExtensionTest {
           List.of(
               sterling.getAttachToCheck().get(),
               sterling.getErrorProne().getWarningsAsErrors().get(),
+              sterling.getNullAway().getJspecifyMode().get(),
               sterling.getSpotbugs().getEnabled().get(),
               sterling.getCoverage().getEnabled().get(),
               sterling.getCoverage().getInstruction().get(),
@@ -57,8 +58,10 @@ class SterlingExtensionTest {
     sterling.getAttachToCheck().set(true);
     sterling.getSpotbugs().getEnabled().set(true);
     sterling.getCoverage().getInstruction().set(90);
+    sterling.getNullAway().getJspecifyMode().set(true);
 
     assertThat(sterling.getAttachToCheck().get()).isTrue();
+    assertThat(sterling.getNullAway().getJspecifyMode().get()).isTrue();
     assertThat(sterling.getSpotbugs().getEnabled().get()).isTrue();
     assertThat(sterling.getCoverage().getInstruction().get()).isEqualTo(90);
     assertThat(sterling.getCoverage().getBranch().get()).isEqualTo(0);

@@ -20,6 +20,8 @@ import org.gradle.api.InvalidUserDataException;
  *   <tr><th scope="row">{@code errorProne.warningsAsErrors}</th>
  *       <td>false</td><td>false</td><td>true</td></tr>
  *   <tr><th scope="row">{@code nullAway.enabled}</th><td>true</td><td>true</td><td>true</td></tr>
+ *   <tr><th scope="row">{@code nullAway.jspecifyMode}</th>
+ *       <td>false</td><td>false</td><td>true</td></tr>
  *   <tr><th scope="row">{@code spotbugs.enabled}</th><td>false</td><td>true</td><td>true</td></tr>
  *   <tr><th scope="row">{@code coverage.enabled}</th><td>false</td><td>true</td><td>true</td></tr>
  *   <tr><th scope="row">{@code coverage.instruction}</th><td>0</td><td>80</td><td>95</td></tr>
@@ -34,25 +36,26 @@ public enum Profile {
    * <p>Error Prone and NullAway still run inside compilation, so their error-level findings still
    * fail the build.
    */
-  LENIENT(false, false, false, false, 0, 0),
+  LENIENT(false, false, false, false, false, 0, 0),
 
   /**
    * The default: every tool on, {@code check} runs the gate, and coverage must reach 80% of
    * instructions and 70% of branches.
    */
-  STANDARD(true, false, true, true, 80, 70),
+  STANDARD(true, false, false, true, true, 80, 70),
 
   /**
-   * {@link #STANDARD} plus compiler warnings as errors, and coverage of 95% of instructions and 85%
-   * of branches.
+   * {@link #STANDARD} plus compiler warnings as errors, NullAway's JSpecify mode, and coverage of
+   * 95% of instructions and 85% of branches.
    */
-  STRICT(true, true, true, true, 95, 85);
+  STRICT(true, true, true, true, true, 95, 85);
 
   /** The Gradle property that chooses the profile when the build script doesn't. */
   static final String PROPERTY = "sterling.profile";
 
   final boolean attachToCheck;
   final boolean warningsAsErrors;
+  final boolean jspecifyMode;
   final boolean spotbugs;
   final boolean coverage;
   final int instruction;
@@ -61,12 +64,14 @@ public enum Profile {
   Profile(
       boolean attachToCheck,
       boolean warningsAsErrors,
+      boolean jspecifyMode,
       boolean spotbugs,
       boolean coverage,
       int instruction,
       int branch) {
     this.attachToCheck = attachToCheck;
     this.warningsAsErrors = warningsAsErrors;
+    this.jspecifyMode = jspecifyMode;
     this.spotbugs = spotbugs;
     this.coverage = coverage;
     this.instruction = instruction;

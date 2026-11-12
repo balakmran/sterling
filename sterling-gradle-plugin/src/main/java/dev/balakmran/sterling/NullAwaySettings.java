@@ -22,4 +22,16 @@ public abstract class NullAwaySettings {
    * @return the enabled property
    */
   public abstract Property<Boolean> getEnabled();
+
+  /**
+   * Whether NullAway runs in JSpecify mode, which also checks nullness in generic type arguments,
+   * arrays and varargs.
+   *
+   * <p>Defaults to true only in {@code STRICT}. Spring describes the mode as still under
+   * development and recommends turning it on as a second step, once a codebase is clean without it;
+   * most false positives on generic and lambda-heavy code come from it.
+   *
+   * @return the JSpecify mode property
+   */
+  public abstract Property<Boolean> getJspecifyMode();
 }

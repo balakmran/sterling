@@ -55,6 +55,8 @@ final class ErrorProne {
 
     Provider<Map<String, CheckSeverity>> disabled =
         settings.getDisabledChecks().zip(nullAway, ErrorProne::off);
+    Provider<Map<String, String>> nullAwayOptions =
+        NullAway.checkOptions(nullAway, sterling.getNullAway().getJspecifyMode());
     project
         .getTasks()
         .withType(JavaCompile.class)
@@ -70,7 +72,7 @@ final class ErrorProne {
           // NullAway first, so errorProne.disable("NullAway") can still turn it off.
           options.getChecks().putAll(NullAway.checks(nullAway));
           options.getChecks().putAll(disabled);
-          options.getCheckOptions().putAll(NullAway.checkOptions(nullAway));
+          options.getCheckOptions().putAll(nullAwayOptions);
           compile
               .getOptions()
               .getCompilerArgumentProviders()
