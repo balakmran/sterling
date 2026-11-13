@@ -140,7 +140,8 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
   Kotlin DSL. No Kotlin source code.
 - Functional tests run against Gradle 9.0.0 and the latest stable Gradle, with
   consumer toolchains 21 and 25. `-Psterling.test.gradle=9.0.0` and
-  `-Psterling.test.java=25` pick a cell (default: latest × 21); CI runs all four.
+  `-Psterling.test.java=25` pick a cell (default: latest × 21). CI runs only
+  9.0.0 × 25 for now, to keep PRs fast; `ci.yml` says how to restore all four.
   Before declaring a change done, run at least the default cell and the
   9.0.0 × 25 one; Gradle API newer than 9.0 only fails there.
 
