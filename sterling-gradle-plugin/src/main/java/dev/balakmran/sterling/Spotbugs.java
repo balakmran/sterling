@@ -33,6 +33,17 @@ final class Spotbugs {
   static final String FILTER_TASK = "stlSpotbugsFilter";
   static final String DEFAULT_FILTER = "spotbugs-exclude.xml";
 
+  /**
+   * The full SpotBugs plugin, which registers {@code spotbugsMain} and {@code spotbugsTest} and
+   * attaches them to {@code check}: both Sterling's job.
+   */
+  static final String FULL_PLUGIN = "com.github.spotbugs";
+
+  /** Why a project can't apply {@link #FULL_PLUGIN} as well as Sterling, and what to do. */
+  static final String FULL_PLUGIN_MESSAGE =
+      "Sterling applies SpotBugs itself, with com.github.spotbugs-base, and registers spotbugsMain."
+          + " Remove the com.github.spotbugs plugin; spotbugs { } settings keep working.";
+
   private Spotbugs() {}
 
   /**

@@ -71,6 +71,40 @@ individual checks off with `errorProne { disable("CheckName") }` while you
 work through them. The `LENIENT` profile is a gentler start: the tools run on
 demand, but `build` doesn't fail on the gate.
 
+### Already applying Spotless or SpotBugs
+
+A hand-written `build-logic` often sets these tools up already. Sterling
+applies both itself, so:
+
+- **Spotless:** keeping `com.diffplug.spotless` is fine, at any version.
+  Gradle loads one Spotless for the whole build script, the higher of yours
+  and Sterling's (8.11.0). Remove `googleJavaFormat()` and
+  `formatAnnotations()` from your `spotless { java { } }` block: Sterling adds
+  both, google-java-format at its pinned version, and a second one fails.
+  Other steps, such as a license header, work alongside them.
+  `removeUnusedImports()`, `trimTrailingWhitespace()` and `endWithNewline()`
+  on Java are redundant: google-java-format already does all three.
+- **SpotBugs:** remove the `com.github.spotbugs` plugin. It registers
+  `spotbugsMain` and attaches SpotBugs to `check`, both of which Sterling
+  does. Your `spotbugs { }` settings keep working; a convention plugin that
+  sets them applies `com.github.spotbugs-base` instead. Effort and report
+  level set there win over Sterling's profile, so prefer
+  `sterling { spotbugs { } }` for those.
+
+Apply Sterling after your convention plugins, last in `plugins { }`. Then
+both clashes fail with a message from Sterling that names the fix. Applied
+first, Sterling can't step in: the error comes from the other plugin, as
+"Cannot add task 'spotbugsMain'" under `com.github.spotbugs`, or
+"Multiple steps with name 'google-java-format'" from Spotless. The same
+Spotless error comes from a `spotless { }` block in the build script itself,
+which always runs after Sterling. The fix is the same either way.
+
+Spotless settings you set explicitly win over Sterling's, as with every
+tool. `enforceCheck = true` attaches `spotlessCheck` to `check` beside
+Sterling's gate, and a `lineEndings` other than `PRESERVE` can read git
+settings while configuring, which stops the configuration cache from being
+reused.
+
 ## Tasks
 
 All in the `sterling` group:

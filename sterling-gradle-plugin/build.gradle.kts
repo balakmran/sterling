@@ -122,6 +122,10 @@ testing {
                     )
                     systemProperty("sterling.nullawayVersion", libs.versions.nullaway.get())
                     systemProperty("sterling.jspecifyVersion", libs.versions.jspecify.get())
+                    systemProperty(
+                        "sterling.googleJavaFormatVersion",
+                        libs.versions.google.java.format.get(),
+                    )
                 }
             }
         }
