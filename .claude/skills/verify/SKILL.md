@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run Sterling's required checks before calling a change done - the build plus the default and Gradle 9.0.0 x Java 25 functional-test cells - and summarise what failed. Use after changing plugin code, tests or build scripts, or when asked to verify.
+description: Run Sterling's required checks before calling a change done - the build, the default and Gradle 9.0.0 x Java 25 functional-test cells, and the dogfood service for plugin changes - and summarise what failed. Use after changing plugin code, tests or build scripts, or when asked to verify.
 ---
 
 # Verify a Sterling change
@@ -35,7 +35,12 @@ Gradle API newer than 9.0 only fails in the second.
    - A download timeout (a Gradle distribution, Maven Central) is
      infrastructure: rerun that command once before treating it as a failure.
 
-3. Report in a short table: each command, pass or fail, and per failure the
+3. If the change touches plugin behaviour (anything under
+   `sterling-gradle-plugin/src/main`), run the dogfood step from CLAUDE.md
+   ("Dogfooding after a plugin change") in `../blade-svc-java-webmvc`, with
+   `--include-build ../sterling`. Skip it when the earlier commands failed.
+
+4. Report in a short table: each command, pass or fail, and per failure the
    test (class and method), the cause in one line, and the file to look at.
    Say plainly when everything passed; don't hedge.
 

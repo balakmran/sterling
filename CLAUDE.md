@@ -64,11 +64,29 @@ v0.5.0 in `ROADMAP.md`. Do not create it yet.
 ./gradlew build                          # compile, unit tests, validatePlugins, buildHealth
 ./gradlew functionalTest                 # TestKit tests: Gradle x toolchain matrix
 ./gradlew spotlessApply                  # format this repo's Java and build scripts
-./gradlew publishToMavenLocal            # for dogfooding in a consumer project
 ./gradlew publishPlugins --validate-only # publishing dry run
 ```
 
 Run `./gradlew build functionalTest` before declaring any task done.
+
+## Dogfooding after a plugin change
+
+After any change to the plugin's behaviour, run it in the dogfood service,
+`../blade-svc-java-webmvc` (a Spring Boot 4 service on Java 25 with Lombok),
+before calling the change done. `--include-build ../sterling` swaps in this
+checkout for the version the service pins, so nothing is published and
+`mavenLocal()` never shadows a released version:
+
+```bash
+./gradlew --include-build ../sterling stlInfo
+./gradlew --include-build ../sterling build
+./gradlew --include-build ../sterling build -Psterling.profile=strict
+```
+
+Check that `stlInfo` shows the change and that both builds pass, or that a new
+failure is one the change intends. Exercise the change itself too (a setting
+it adds, a flag it turns off). Don't edit the service to make a build pass;
+report what failed. Docs-only and CI-only changes skip this.
 
 ## Plugin authoring rules
 
