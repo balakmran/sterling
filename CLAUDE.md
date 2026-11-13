@@ -174,8 +174,9 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - Trunk-based: never commit to `main`. Branch from it as `feat/`, `fix/`,
   `ci/`, `docs/`, `build/` or `test/` plus a short name, open a PR, and
   rebase-merge once CI passes, so commit messages reach `main` unchanged. CI
-  runs on PRs only. release-please's PRs run no CI (`GITHUB_TOKEN` starts no
-  workflows); they're merged with the admin bypass.
+  runs on PRs only. CI on release-please's PRs waits for approval (they're
+  opened with `GITHUB_TOKEN`); approve the run, or merge with the admin
+  bypass.
 - Sterling's own Java is formatted with google-java-format, and build scripts
   with ktfmt, both via Spotless. javac runs with `-Xlint:all -Werror`.
 - Code comments (`//` and `/* */` inside method bodies, fields and build

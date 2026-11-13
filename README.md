@@ -117,13 +117,18 @@ All in the `sterling` group:
 | `stlSec` | Runs SpotBugs on the main classes. |
 | `stlCov` | Runs the tests and fails if coverage is below the thresholds. |
 | `stlCheck` | Runs `stlFmtCheck`, `stlLint`, `stlSec` and `stlCov`. `check` depends on it unless `attachToCheck` is off. |
-| `stlInfo` | Prints the resolved configuration. |
+| `stlInfo` | Prints Sterling's resolved settings. |
 
 A tool that's off makes its task do nothing. The tools' own tasks
 (`spotlessApply`, `spotbugsMain`, `jacocoTestReport` and so on) keep working,
 but none of them attaches itself to `check`: only `stlCheck` does.
 
-`./gradlew stlInfo` shows what Sterling will do:
+`./gradlew stlInfo` prints Sterling's settings, after the profile, the
+`sterling.profile` property and the `sterling { }` block have been applied.
+Anything set through a tool's own DSL (see
+[Configuring the tools directly](#configuring-the-tools-directly)), such as
+`spotbugs { effort = ... }` or `options.errorprone { }`, still applies but
+isn't shown:
 
 ```
 Sterling 0.1.0
@@ -265,6 +270,22 @@ Sterling configures these versions of each tool:
 | JSpecify | 1.0.1 |
 | SpotBugs | 4.10.5 |
 | JaCoCo | 0.8.16 |
+
+### What an upgrade can change
+
+Sterling's version number says whether upgrading it can fail a build that
+changed nothing:
+
+- **Minor release** (0.1.x to 0.2.0): may raise Error Prone, NullAway,
+  SpotBugs or google-java-format. A new Error Prone or NullAway can add
+  checks, a new SpotBugs can find more, and a new google-java-format can
+  reformat code. The changelog says what may newly fail. Before 1.0, a minor
+  release may also change a setting or a profile default.
+- **Patch release** (0.1.0 to 0.1.1): fixes, and bumps that can't change
+  findings, such as JSpecify or JaCoCo.
+
+Pin Sterling's version, and take minor releases on purpose: in their own
+pull request, with `stlFmt` run and any new findings fixed or disabled.
 
 ## Tool notes
 
