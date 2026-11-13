@@ -3,6 +3,8 @@ package dev.balakmran.sterling;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.balakmran.sterling.SpotbugsSettings.Confidence;
+import dev.balakmran.sterling.SpotbugsSettings.Effort;
 import java.util.List;
 import java.util.Map;
 import org.gradle.api.InvalidUserDataException;
@@ -26,12 +28,16 @@ class SterlingExtensionTest {
 
   @Test
   void profileSetsEveryDefault() {
-    // attachToCheck, warningsAsErrors, spotbugs, coverage, instruction, branch
+    // attachToCheck, warningsAsErrors, jspecifyMode, spotbugs, effort, reportLevel, coverage,
+    // instruction, branch
     Map<Profile, List<Object>> expected =
         Map.of(
-            Profile.LENIENT, List.of(false, false, false, false, false, 0, 0),
-            Profile.STANDARD, List.of(true, false, false, true, true, 80, 70),
-            Profile.STRICT, List.of(true, true, true, true, true, 95, 85));
+            Profile.LENIENT,
+            List.of(false, false, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
+            Profile.STANDARD,
+            List.of(true, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
+            Profile.STRICT,
+            List.of(true, true, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85));
 
     expected.forEach((profile, values) -> {
       sterling.getProfile().set(profile);
@@ -42,6 +48,8 @@ class SterlingExtensionTest {
               sterling.getErrorProne().getWarningsAsErrors().get(),
               sterling.getNullAway().getJspecifyMode().get(),
               sterling.getSpotbugs().getEnabled().get(),
+              sterling.getSpotbugs().getEffort().get(),
+              sterling.getSpotbugs().getReportLevel().get(),
               sterling.getCoverage().getEnabled().get(),
               sterling.getCoverage().getInstruction().get(),
               sterling.getCoverage().getBranch().get());
@@ -59,10 +67,14 @@ class SterlingExtensionTest {
     sterling.getSpotbugs().getEnabled().set(true);
     sterling.getCoverage().getInstruction().set(90);
     sterling.getNullAway().getJspecifyMode().set(true);
+    sterling.getSpotbugs().getEffort().set(Effort.MIN);
+    sterling.getSpotbugs().getReportLevel().set(Confidence.LOW);
 
     assertThat(sterling.getAttachToCheck().get()).isTrue();
     assertThat(sterling.getNullAway().getJspecifyMode().get()).isTrue();
     assertThat(sterling.getSpotbugs().getEnabled().get()).isTrue();
+    assertThat(sterling.getSpotbugs().getEffort().get()).isEqualTo(Effort.MIN);
+    assertThat(sterling.getSpotbugs().getReportLevel().get()).isEqualTo(Confidence.LOW);
     assertThat(sterling.getCoverage().getInstruction().get()).isEqualTo(90);
     assertThat(sterling.getCoverage().getBranch().get()).isEqualTo(0);
   }
