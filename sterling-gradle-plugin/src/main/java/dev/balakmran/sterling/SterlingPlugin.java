@@ -115,6 +115,8 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getNullAway().getEnabled().convention(true);
     sterling.getNullAway().getJspecifyMode().convention(profile.map(p -> p.jspecifyMode));
     sterling.getSpotbugs().getEnabled().convention(profile.map(p -> p.spotbugs));
+    sterling.getSpotbugs().getEffort().convention(profile.map(p -> p.effort));
+    sterling.getSpotbugs().getReportLevel().convention(profile.map(p -> p.reportLevel));
     sterling.getCoverage().getEnabled().convention(profile.map(p -> p.coverage));
     sterling.getCoverage().getInstruction().convention(profile.map(p -> p.instruction));
     sterling.getCoverage().getBranch().convention(profile.map(p -> p.branch));
@@ -160,6 +162,8 @@ public class SterlingPlugin implements Plugin<Project> {
           task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
           task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
           task.getSpotbugsEnabled().set(sterling.getSpotbugs().getEnabled());
+          task.getSpotbugsEffort().set(sterling.getSpotbugs().getEffort());
+          task.getSpotbugsReportLevel().set(sterling.getSpotbugs().getReportLevel());
           task.getConsumerExcludeFilter()
               .set(sterling.getSpotbugs().getExcludeFilter().map(file -> true).orElse(false));
           task.getCoverageEnabled().set(sterling.getCoverage().getEnabled());

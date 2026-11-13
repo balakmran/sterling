@@ -42,6 +42,36 @@ class SpotbugsTest {
       }
       """;
 
+  // Declares throws Exception: a finding SpotBugs reports only at low confidence.
+  private static final String THROWS_EXCEPTION =
+      """
+      package app;
+
+      public class Job {
+        public void run() throws Exception {
+          if (System.nanoTime() < 0) {
+            throw new Exception("never");
+          }
+        }
+      }
+      """;
+
+  // Prints the effort and report level spotbugsMain will run with.
+  private static final String PRINT_LEVELS =
+      """
+
+      abstract class PrintLevels : DefaultTask() {
+          @get:Input abstract val levels: Property<String>
+
+          @TaskAction fun print() = println("SPOTBUGS " + levels.get())
+      }
+
+      tasks.register<PrintLevels>("printLevels") {
+          levels = tasks.named<com.github.spotbugs.snom.SpotBugsTask>("spotbugsMain")
+              .flatMap { task -> task.effort.zip(task.reportLevel) { e: Any, r: Any -> "$e $r" } }
+      }
+      """;
+
   @TempDir Path dir;
 
   private Fixture fixture(String sterling) {
@@ -112,6 +142,57 @@ class SpotbugsTest {
             .build("check");
 
     assertThat(outcome(result, SPOTBUGS)).isNull();
+  }
+
+  @Test
+  void aLowConfidenceFindingPassesUntilTheReportLevelIsLow() {
+    Fixture standard = fixture("").file("src/main/java/app/Job.java", THROWS_EXCEPTION);
+    assertThat(outcome(standard.build("stlSec"), SPOTBUGS)).isEqualTo(TaskOutcome.SUCCESS);
+
+    BuildResult low =
+        fixture(
+                """
+                sterling {
+                    spotbugs { reportLevel = dev.balakmran.sterling.SpotbugsSettings.Confidence.LOW }
+                }
+                """)
+            .buildAndFail("stlSec");
+    assertThat(outcome(low, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+  }
+
+  @Test
+  void theProfileSetsTheEffortAndReportLevel() {
+    Fixture fixture = fixture(PRINT_LEVELS);
+
+    assertThat(fixture.build("printLevels").getOutput()).contains("SPOTBUGS DEFAULT MEDIUM");
+    assertThat(fixture.build("printLevels", "-Psterling.profile=strict").getOutput())
+        .contains("SPOTBUGS MAX MEDIUM");
+    assertThat(fixture.build("printLevels", "-Psterling.profile=lenient").getOutput())
+        .contains("SPOTBUGS DEFAULT HIGH");
+  }
+
+  @Test
+  void sterlingSettingsWinOverTheProfileAndTheProjectsSpotbugsBlockWinsOverBoth() {
+    String sterling =
+        """
+        sterling {
+            spotbugs {
+                effort = dev.balakmran.sterling.SpotbugsSettings.Effort.MIN
+                reportLevel = dev.balakmran.sterling.SpotbugsSettings.Confidence.HIGH
+            }
+        }
+        """;
+
+    assertThat(fixture(sterling + PRINT_LEVELS).build("printLevels").getOutput())
+        .contains("SPOTBUGS MIN HIGH");
+    assertThat(
+            fixture(
+                    sterling
+                        + "spotbugs { effort = com.github.spotbugs.snom.Effort.LESS }"
+                        + PRINT_LEVELS)
+                .build("printLevels")
+                .getOutput())
+        .contains("SPOTBUGS LESS HIGH");
   }
 
   @Test

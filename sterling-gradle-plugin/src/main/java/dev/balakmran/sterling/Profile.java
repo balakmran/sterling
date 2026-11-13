@@ -1,5 +1,7 @@
 package dev.balakmran.sterling;
 
+import dev.balakmran.sterling.SpotbugsSettings.Confidence;
+import dev.balakmran.sterling.SpotbugsSettings.Effort;
 import org.gradle.api.InvalidUserDataException;
 
 /**
@@ -23,6 +25,10 @@ import org.gradle.api.InvalidUserDataException;
  *   <tr><th scope="row">{@code nullAway.jspecifyMode}</th>
  *       <td>false</td><td>false</td><td>true</td></tr>
  *   <tr><th scope="row">{@code spotbugs.enabled}</th><td>false</td><td>true</td><td>true</td></tr>
+ *   <tr><th scope="row">{@code spotbugs.effort}</th>
+ *       <td>DEFAULT</td><td>DEFAULT</td><td>MAX</td></tr>
+ *   <tr><th scope="row">{@code spotbugs.reportLevel}</th>
+ *       <td>HIGH</td><td>MEDIUM</td><td>MEDIUM</td></tr>
  *   <tr><th scope="row">{@code coverage.enabled}</th><td>false</td><td>true</td><td>true</td></tr>
  *   <tr><th scope="row">{@code coverage.instruction}</th><td>0</td><td>80</td><td>95</td></tr>
  *   <tr><th scope="row">{@code coverage.branch}</th><td>0</td><td>70</td><td>85</td></tr>
@@ -31,24 +37,25 @@ import org.gradle.api.InvalidUserDataException;
 public enum Profile {
   /**
    * For adopting Sterling gradually: the tools run on demand, but {@code check} doesn't depend on
-   * the gate, and SpotBugs and coverage are off.
+   * the gate, and SpotBugs and coverage are off. Turned on, SpotBugs reports only its
+   * high-confidence findings.
    *
    * <p>Error Prone and NullAway still run inside compilation, so their error-level findings still
    * fail the build.
    */
-  LENIENT(false, false, false, false, false, 0, 0),
+  LENIENT(false, false, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
 
   /**
    * The default: every tool on, {@code check} runs the gate, and coverage must reach 80% of
    * instructions and 70% of branches.
    */
-  STANDARD(true, false, false, true, true, 80, 70),
+  STANDARD(true, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
 
   /**
-   * {@link #STANDARD} plus compiler warnings as errors, NullAway's JSpecify mode, and coverage of
-   * 95% of instructions and 85% of branches.
+   * {@link #STANDARD} plus compiler warnings as errors, NullAway's JSpecify mode, SpotBugs at its
+   * maximum effort, and coverage of 95% of instructions and 85% of branches.
    */
-  STRICT(true, true, true, true, true, 95, 85);
+  STRICT(true, true, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85);
 
   /** The Gradle property that chooses the profile when the build script doesn't. */
   static final String PROPERTY = "sterling.profile";
@@ -57,6 +64,8 @@ public enum Profile {
   final boolean warningsAsErrors;
   final boolean jspecifyMode;
   final boolean spotbugs;
+  final Effort effort;
+  final Confidence reportLevel;
   final boolean coverage;
   final int instruction;
   final int branch;
@@ -66,6 +75,8 @@ public enum Profile {
       boolean warningsAsErrors,
       boolean jspecifyMode,
       boolean spotbugs,
+      Effort effort,
+      Confidence reportLevel,
       boolean coverage,
       int instruction,
       int branch) {
@@ -73,6 +84,8 @@ public enum Profile {
     this.warningsAsErrors = warningsAsErrors;
     this.jspecifyMode = jspecifyMode;
     this.spotbugs = spotbugs;
+    this.effort = effort;
+    this.reportLevel = reportLevel;
     this.coverage = coverage;
     this.instruction = instruction;
     this.branch = branch;

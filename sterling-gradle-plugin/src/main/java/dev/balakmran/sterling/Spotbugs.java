@@ -2,6 +2,8 @@ package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Flags.whenOn;
 
+import com.github.spotbugs.snom.Confidence;
+import com.github.spotbugs.snom.Effort;
 import com.github.spotbugs.snom.SpotBugsExtension;
 import com.github.spotbugs.snom.SpotBugsTask;
 import dev.balakmran.sterling.internal.SpotbugsFilterTask;
@@ -41,11 +43,12 @@ final class Spotbugs {
    */
   static void configure(Project project, SterlingExtension sterling) {
     project.getPluginManager().apply("com.github.spotbugs-base");
-    project
-        .getExtensions()
-        .getByType(SpotBugsExtension.class)
-        .getToolVersion()
-        .convention(ToolVersions.get("spotbugs"));
+    SpotBugsExtension extension = project.getExtensions().getByType(SpotBugsExtension.class);
+    extension.getToolVersion().convention(ToolVersions.get("spotbugs"));
+    // Conventions on SpotBugs' own extension, so a project's spotbugs { } or task setting wins.
+    SpotbugsSettings settings = sterling.getSpotbugs();
+    extension.getEffort().convention(settings.getEffort().map(Spotbugs::effort));
+    extension.getReportLevel().convention(settings.getReportLevel().map(Spotbugs::confidence));
 
     TaskContainer tasks = project.getTasks();
     SourceSet main = project.getExtensions().getByType(SourceSetContainer.class).getByName("main");
@@ -100,6 +103,26 @@ final class Spotbugs {
         .configure(task ->
             task.dependsOn(
                 whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), spotbugsMain)));
+  }
+
+  /**
+   * SpotBugs' effort level for Sterling's.
+   *
+   * @param effort Sterling's effort level
+   * @return the SpotBugs plugin's level of the same name
+   */
+  static Effort effort(SpotbugsSettings.Effort effort) {
+    return Effort.valueOf(effort.name());
+  }
+
+  /**
+   * SpotBugs' report level for Sterling's.
+   *
+   * @param confidence Sterling's report level
+   * @return the SpotBugs plugin's level of the same name
+   */
+  static Confidence confidence(SpotbugsSettings.Confidence confidence) {
+    return Confidence.valueOf(confidence.name());
   }
 
   /**

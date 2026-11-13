@@ -42,7 +42,9 @@ class SterlingInfoTaskTest {
                 + "; JSpecify "
                 + ToolVersions.get("jspecify")
                 + "; @NullMarked code only)",
-            "SpotBugs:             on   (" + ToolVersions.get("spotbugs") + ")",
+            "SpotBugs:             on   ("
+                + ToolVersions.get("spotbugs")
+                + "; effort default; medium confidence and up)",
             "Coverage:             on   (instruction >= 80%, branch >= 70%)");
 
     assertThat(render()).isEqualTo(expected);
@@ -67,6 +69,13 @@ class SterlingInfoTaskTest {
     sterling.getProfile().set(Profile.STRICT);
 
     assertThat(render()).contains("; @NullMarked code only; JSpecify mode)");
+  }
+
+  @Test
+  void spotbugsReportsTheProfilesEffortAndReportLevel() {
+    sterling.getProfile().set(Profile.STRICT);
+
+    assertThat(render()).contains("; effort max; medium confidence and up)");
   }
 
   @Test

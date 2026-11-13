@@ -1,7 +1,9 @@
 package dev.balakmran.sterling.internal;
 
 import dev.balakmran.sterling.Profile;
+import dev.balakmran.sterling.SpotbugsSettings;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.JavaVersion;
@@ -112,6 +114,22 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @Input
   public abstract Property<Boolean> getSpotbugsEnabled();
+
+  /**
+   * SpotBugs' analysis effort.
+   *
+   * @return the effort
+   */
+  @Input
+  public abstract Property<SpotbugsSettings.Effort> getSpotbugsEffort();
+
+  /**
+   * The lowest confidence SpotBugs reports.
+   *
+   * @return the report level
+   */
+  @Input
+  public abstract Property<SpotbugsSettings.Confidence> getSpotbugsReportLevel();
 
   /**
    * Whether the build set a SpotBugs exclude filter of its own.
@@ -225,7 +243,13 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String spotbugsDetail(Map<String, String> versions) {
     String filter = getConsumerExcludeFilter().get() ? "; consumer filter merged" : "";
-    return versions.get("spotbugs") + filter;
+    return versions.get("spotbugs")
+        + "; effort "
+        + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
+        + "; "
+        + getSpotbugsReportLevel().get().name().toLowerCase(Locale.ROOT)
+        + " confidence and up"
+        + filter;
   }
 
   private String coverageDetail() {
