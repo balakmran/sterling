@@ -42,7 +42,7 @@ can be switched off or tuned on its own.
 ```kotlin
 plugins {
     java
-    id("dev.balakmran.sterling") version "0.1.0-alpha.5"
+    id("dev.balakmran.sterling") version "0.1.0-alpha.6"
 }
 
 repositories { mavenCentral() }
