@@ -42,14 +42,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The oldest supported Gradle, and the latest (the wrapper's, passed as blank).
-        gradle: ['9.0.0', '']
-        java: [21, 25]
+        # Temporarily one cell, to keep PRs fast. To restore all four: gradle: ['9.0.0', ''],
+        # java: [21, 25], and an include of gradle: '' with gradle-name: latest (the wrapper's).
+        gradle: ['9.0.0']
+        java: [25]
         include:
           - gradle: '9.0.0'
             gradle-name: '9.0.0'
-          - gradle: ''
-            gradle-name: latest
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -39,5 +39,5 @@ Gradle API newer than 9.0 only fails in the second.
    test (class and method), the cause in one line, and the file to look at.
    Say plainly when everything passed; don't hedge.
 
-The CI matrix also runs latest × 25 and 9.0.0 × 21. Mention that those two
-weren't run locally.
+CI runs only 9.0.0 × 25 for now, so latest × 25 and 9.0.0 × 21 run nowhere.
+Mention that.
