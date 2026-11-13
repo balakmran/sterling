@@ -21,6 +21,9 @@ import org.gradle.api.tasks.UntrackedTask;
  * <p>Each input is wired from the {@code sterling} extension when the task is registered, so the
  * output shows the values after the profile, the {@code sterling.profile} property and the build
  * script have all been applied. It never stays up to date, since printing is its only effect.
+ *
+ * <p>It shows Sterling's settings only. A value set through a tool's own DSL, such as {@code
+ * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown.
  */
 @UntrackedTask(because = "It only prints the resolved configuration.")
 public abstract class SterlingInfoTask extends DefaultTask {
