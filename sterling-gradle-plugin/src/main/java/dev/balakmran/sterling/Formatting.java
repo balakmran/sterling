@@ -4,6 +4,7 @@ import static dev.balakmran.sterling.Flags.whenOn;
 
 import com.diffplug.gradle.spotless.SpotlessExtension;
 import com.diffplug.spotless.LineEnding;
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 
@@ -16,6 +17,9 @@ import org.gradle.api.provider.Provider;
 final class Formatting {
   /** Generated sources, wherever a generator puts them under a build directory. */
   static final String GENERATED_SOURCES = "**/build/generated/**";
+
+  // Spotless's message when a format gets a second step of the same name.
+  private static final String DUPLICATE_STEP = "Multiple steps with name '";
 
   private Formatting() {}
 
@@ -34,9 +38,17 @@ final class Formatting {
     // cache. Formatting is about layout; keep each file's line endings as they are.
     spotless.setLineEndings(LineEnding.PRESERVE);
     spotless.java(java -> {
-      // The google-java-format step also removes unused imports.
-      java.googleJavaFormat(ToolVersions.get("google-java-format"));
-      java.formatAnnotations();
+      try {
+        // The google-java-format step also removes unused imports.
+        java.googleJavaFormat(ToolVersions.get("google-java-format"));
+        java.formatAnnotations();
+      } catch (GradleException e) {
+        // Fails here only when the project's step came first, as from a convention plugin.
+        if (e.getMessage() != null && e.getMessage().startsWith(DUPLICATE_STEP)) {
+          throw new GradleException(duplicateStepMessage(), e);
+        }
+        throw e;
+      }
       java.targetExclude(GENERATED_SOURCES);
     });
 
@@ -55,5 +67,17 @@ final class Formatting {
             task.dependsOn(
                 whenOn(
                     project.getProviders(), enabled, project.getTasks().named("spotlessCheck"))));
+  }
+
+  /**
+   * Why a project can't add Sterling's Spotless steps as well as Sterling, and what to do.
+   *
+   * @return the message, naming the version Sterling pins
+   */
+  static String duplicateStepMessage() {
+    return "Sterling adds google-java-format "
+        + ToolVersions.get("google-java-format")
+        + " and formatAnnotations() to Spotless itself. Remove both from the project's"
+        + " spotless { java { } } block; its other steps keep working.";
   }
 }

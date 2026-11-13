@@ -65,6 +65,14 @@ public class SterlingPlugin implements Plugin<Project> {
   @Override
   public void apply(Project project) {
     checkDaemonJvm(JavaVersion.current());
+    // Runs now if the full SpotBugs plugin is already applied, else whenever it is.
+    project
+        .getPluginManager()
+        .withPlugin(
+            Spotbugs.FULL_PLUGIN,
+            plugin -> {
+              throw new GradleException(Spotbugs.FULL_PLUGIN_MESSAGE);
+            });
     project.getPluginManager().apply(BasePlugin.class);
     SterlingExtension sterling = project.getExtensions().create(EXTENSION, SterlingExtension.class);
     applyConventions(sterling, project.getProviders());
