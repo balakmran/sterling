@@ -1,5 +1,7 @@
 /**
- * Sterling: opinionated, configurable code-quality enforcement for Gradle Java projects.
+ * One code-quality gate for Java 21+ Gradle builds: google-java-format, Error Prone, NullAway with
+ * JSpecify, SpotBugs and JaCoCo, at versions tested together, run by stlCheck and tuned by one
+ * profile.
  *
  * <p>Apply {@code dev.balakmran.sterling} to a project that uses the {@code java} plugin. It
  * formats with google-java-format, finds bugs at compile time with Error Prone and NullAway,

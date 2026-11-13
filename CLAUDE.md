@@ -1,6 +1,6 @@
 # Sterling
 
-Opinionated, configurable code-quality enforcement for Gradle Java projects.
+One code-quality gate for Java 21+ Gradle builds: google-java-format, Error Prone, NullAway with JSpecify, SpotBugs and JaCoCo, at versions tested together, run by stlCheck and tuned by one profile.
 Published as a Gradle plugin under `dev.balakmran.sterling`.
 
 Current milestone: **v0.1.0**. The plan, scope, configuration model and
@@ -51,9 +51,18 @@ sterling/
 │       ├── main/resources/          # SpotBugs exclude filter (versions.properties is generated)
 │       ├── test/java/...            # unit tests (ProjectBuilder)
 │       └── functionalTest/java/...  # TestKit tests (the important ones)
+├── README.md                        # overview, install, tasks, profiles; links to docs/guide
+├── CONTRIBUTING.md                  # building and testing Sterling
+├── docs/guide/                      # user docs: adopting, configuration, the tools
 ├── docs/plans/
 └── .github/workflows/
 ```
+
+The plugin's description in `sterling-gradle-plugin/build.gradle.kts`
+(`pluginDescription`) is the tagline under the title of `README.md` and this
+file, and the summary of `package-info.java`; `TaglineTest` fails if they
+differ. Settings and pinned versions are documented in `docs/guide/`, which
+`DocsTest` checks against the code.
 
 `sterling-rules` (Checkstyle config) arrives with Checkstyle, planned for
 v0.5.0 in `ROADMAP.md`. Do not create it yet.

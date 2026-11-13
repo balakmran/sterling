@@ -51,8 +51,8 @@ in full, not just the hunk, along with the code it calls.
      just log text.
    - A new or changed `enabled` flag has an "off" test showing the tool didn't
      run or resolve.
-   - New settings appear in the README settings reference (`ReadmeTest`
-     enforces this).
+   - New settings appear in the settings reference in
+     `docs/guide/configuration.md` (`DocsTest` enforces this).
 9. **Versions:** new versions live in `gradle/libs.versions.toml`, following
    its header rules.
 
