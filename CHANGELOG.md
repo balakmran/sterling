@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-11-13)
+
+
+### Features
+
+* add SpotBugs effort and report level, with profile defaults ([e698c89](https://github.com/balakmran/sterling/commit/e698c89a2814daeeddea5a08908bef66211ed015))
+* turn on NullAway's JSpecify mode only in STRICT ([4fb71f7](https://github.com/balakmran/sterling/commit/4fb71f7168089b2dcef4af9778c947cfedc587fe))
+
 ## [0.1.0-alpha.4](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-11-12)
 
 
