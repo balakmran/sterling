@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-11-13)
+
+
+### Features
+
+* fail with a named fix when a project also sets up SpotBugs or Sterling's Spotless steps ([9d69591](https://github.com/balakmran/sterling/commit/9d69591c038ecd4d3a656f1a9799a91ac027b44b))
+
 ## [0.1.0-alpha.5](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-11-13)
 
 
