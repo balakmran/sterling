@@ -67,10 +67,10 @@ Changes agreed before GA:
   come from.
 - **Dogfood checks:** a Lombok module (`@Data`, `@Builder`) compiles cleanly
   under Error Prone and NullAway and doesn't drag coverage down.
-- **Existing tool plugins:** a functional test and a README note for a project
+- **Existing tool plugins:** a functional test and a docs note for a project
   that already applies Spotless or SpotBugs at another plugin version, the
   first thing a brownfield build hits.
-- **Release policy** for tool bumps (rule 7), stated in the README.
+- **Release policy** for tool bumps (rule 7), stated in the docs.
 
 ### v0.2.0 — Adopt it on a real Spring Boot 4 service
 

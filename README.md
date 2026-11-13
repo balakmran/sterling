@@ -1,25 +1,44 @@
 # Sterling
 
-Opinionated, configurable code-quality enforcement for Gradle Java projects.
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.balakmran.sterling?include_prereleases)](https://plugins.gradle.org/plugin/dev.balakmran.sterling)
+[![CI](https://github.com/balakmran/sterling/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/balakmran/sterling/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-Apply one plugin and `./gradlew build` formats-checks, lints, null-checks,
-bug-scans and coverage-verifies your code:
+One code-quality gate for Java 21+ Gradle builds: google-java-format, Error Prone, NullAway with JSpecify, SpotBugs and JaCoCo, at versions tested together, run by stlCheck and tuned by one profile.
+
+Apply one plugin, and `./gradlew build` checks formatting, finds bugs and
+possible `NullPointerException`s at compile time, scans the bytecode, and
+enforces test coverage:
 
 | Tool | What it does | Sterling task |
 |---|---|---|
 | [google-java-format](https://github.com/google/google-java-format), via [Spotless](https://github.com/diffplug/spotless) | Formats Java sources | `stlFmt`, `stlFmtCheck` |
 | [Error Prone](https://errorprone.info) | Finds common bugs at compile time | `stlLint` |
-| [NullAway](https://github.com/uber/NullAway) | Finds possible `NullPointerException`s at compile time | `stlLint` |
+| [NullAway](https://github.com/uber/NullAway), with [JSpecify](https://jspecify.dev) annotations | Finds possible `NullPointerException`s at compile time, in code marked `@NullMarked` | `stlLint` |
 | [SpotBugs](https://spotbugs.github.io) | Finds bug patterns in bytecode | `stlSec` |
 | [JaCoCo](https://www.jacoco.org/jacoco/) | Measures and enforces test coverage | `stlCov` |
 
-One setting, the **profile**, decides how strict all of them are. Every tool
+One setting, the [**profile**](#profiles), decides how strict all of them are. Every tool
 can be switched off or tuned on its own.
 
-> **Status: pre-release.** Versions before 0.1.0 are alphas, and the DSL may
-> still change. Until a version is on the Gradle Plugin Portal, try it from a
-> local clone (see [Trying it before release](#trying-it-before-release)).
-> What comes after 0.1.0 is in the [roadmap](ROADMAP.md).
+## Why Sterling
+
+- **One plugin instead of a hand-written `build-logic`.** Five tools, wired
+  so that only one gate attaches to `check`, with no `afterEvaluate`, and
+  compatible with the configuration cache.
+- **Versions tested together.** Each Sterling release pins every tool and is
+  tested on Gradle 9.0 and the latest, with Java 21 and 25. A tool upgrade
+  that can fail your build arrives as a minor release, with a note saying so.
+- **One gate for people and coding agents.** `stlFmt` fixes formatting, and
+  `stlCheck` answers "is this ready?" the same way locally and in CI.
+
+Spring's own `io.spring.nullability` plugin sets up Error Prone and NullAway
+only. Sterling adds formatting, SpotBugs and coverage, and one profile for
+all five.
+
+> **Status: pre-release.** Versions before 0.1.0 are alphas on the Gradle
+> Plugin Portal, and the DSL may still change. What comes after 0.1.0 is in
+> the [roadmap](ROADMAP.md).
 
 ## Requirements
 
@@ -52,58 +71,55 @@ repositories { mavenCentral() }
 That's all most projects need. With the default `STANDARD` profile,
 `./gradlew build` now runs the whole gate. Sterling never applies `java` for
 you, and works whether it's applied before or after it. In a project without
-`java`, the tools stay off and the `stl*` tasks have nothing to run.
+`java`, the tools stay off and the `stl*` tasks have nothing to run. In a
+Groovy build script, use `id 'dev.balakmran.sterling' version '...'`; the
+`sterling { }` block is the same.
 
-### Adopting it in an existing project
-
-google-java-format 2.0 formats some code differently from 1.x, and Sterling
-enforces it. Reformat in one commit, then tell `git blame` to skip it:
+### First run
 
 ```bash
-./gradlew stlFmt
-git commit -am "style: reformat with google-java-format 2.0"
-git rev-parse HEAD >> .git-blame-ignore-revs
-git config blame.ignoreRevsFile .git-blame-ignore-revs
+./gradlew stlInfo    # what Sterling will check, and how strictly
+./gradlew stlFmt     # format every source once
+./gradlew build      # compile, test, and run the gate
 ```
 
-Error Prone will likely report a first batch of findings. Fix them, or turn
-individual checks off with `errorProne { disable("CheckName") }` while you
-work through them. The `LENIENT` profile is a gentler start: the tools run on
-demand, but `build` doesn't fail on the gate.
+Adding it to a project that already has code, or that sets up Spotless or
+SpotBugs itself? See [Adopting Sterling](docs/guide/adopting.md).
 
-### Already applying Spotless or SpotBugs
+### Spring Boot
 
-A hand-written `build-logic` often sets these tools up already. Sterling
-applies both itself, so:
+Apply Sterling next to the Spring Boot plugin. Tests rarely run the
+application class's `main` method, so leave it out of coverage:
 
-- **Spotless:** keeping `com.diffplug.spotless` is fine, at any version.
-  Gradle loads one Spotless for the whole build script, the higher of yours
-  and Sterling's (8.11.0). Remove `googleJavaFormat()` and
-  `formatAnnotations()` from your `spotless { java { } }` block: Sterling adds
-  both, google-java-format at its pinned version, and a second one fails.
-  Other steps, such as a license header, work alongside them.
-  `removeUnusedImports()`, `trimTrailingWhitespace()` and `endWithNewline()`
-  on Java are redundant: google-java-format already does all three.
-- **SpotBugs:** remove the `com.github.spotbugs` plugin. It registers
-  `spotbugsMain` and attaches SpotBugs to `check`, both of which Sterling
-  does. Your `spotbugs { }` settings keep working; a convention plugin that
-  sets them applies `com.github.spotbugs-base` instead. Effort and report
-  level set there win over Sterling's profile, so prefer
-  `sterling { spotbugs { } }` for those.
+```kotlin
+sterling {
+    coverage {
+        excludes.add("com/example/Application*")
+    }
+}
+```
 
-Apply Sterling after your convention plugins, last in `plugins { }`. Then
-both clashes fail with a message from Sterling that names the fix. Applied
-first, Sterling can't step in: the error comes from the other plugin, as
-"Cannot add task 'spotbugsMain'" under `com.github.spotbugs`, or
-"Multiple steps with name 'google-java-format'" from Spotless. The same
-Spotless error comes from a `spotless { }` block in the build script itself,
-which always runs after Sterling. The fix is the same either way.
+### Multi-module builds
 
-Spotless settings you set explicitly win over Sterling's, as with every
-tool. `enforceCheck = true` attaches `spotlessCheck` to `check` beside
-Sterling's gate, and a `lineEndings` other than `PRESERVE` can read git
-settings while configuring, which stops the configuration cache from being
-reused.
+Apply Sterling in every module that has Java code, in each build script or
+from a convention plugin in `build-logic`. Each module gets its own `stl*`
+tasks and gate, and `./gradlew stlCheck` at the root runs them all.
+
+## Profiles
+
+| | `LENIENT` | `STANDARD` (default) | `STRICT` |
+|---|---|---|---|
+| `check` runs the gate | no | yes | yes |
+| SpotBugs and coverage | off | on | on |
+| Coverage: instructions, branches | off | 80%, 70% | 95%, 85% |
+| Compiler warnings fail the build | no | no | yes |
+| NullAway's JSpecify mode | off | off | on |
+| SpotBugs effort, lowest confidence reported | default, high | default, medium | max, medium |
+
+Formatting, Error Prone and NullAway are on in every profile. Pick one with
+`sterling { profile = Profile.STRICT }`, or `-Psterling.profile=strict`
+without editing the build script. Every default, and every setting you can
+change on its own: [Configuring Sterling](docs/guide/configuration.md).
 
 ## Tasks
 
@@ -126,7 +142,7 @@ but none of them attaches itself to `check`: only `stlCheck` does.
 `./gradlew stlInfo` prints Sterling's settings, after the profile, the
 `sterling.profile` property and the `sterling { }` block have been applied.
 Anything set through a tool's own DSL (see
-[Configuring the tools directly](#configuring-the-tools-directly)), such as
+[Configuring the tools directly](docs/guide/configuration.md#configuring-the-tools-directly)), such as
 `spotbugs { effort = ... }` or `options.errorprone { }`, still applies but
 isn't shown:
 
@@ -143,347 +159,16 @@ SpotBugs:             on   (4.10.5; effort default; medium confidence and up)
 Coverage:             on   (instruction >= 80%, branch >= 70%; 1 exclude)
 ```
 
-## Profiles
-
-| Setting | `LENIENT` | `STANDARD` (default) | `STRICT` |
-|---|---|---|---|
-| `attachToCheck` | false | true | true |
-| `format.enabled` | true | true | true |
-| `errorProne.enabled` | true | true | true |
-| `errorProne.warningsAsErrors` | false | false | true |
-| `nullAway.enabled` | true | true | true |
-| `nullAway.jspecifyMode` | false | false | true |
-| `spotbugs.enabled` | false | true | true |
-| `spotbugs.effort` | `DEFAULT` | `DEFAULT` | `MAX` |
-| `spotbugs.reportLevel` | `HIGH` | `MEDIUM` | `MEDIUM` |
-| `coverage.enabled` | false | true | true |
-| `coverage.instruction` | 0 | 80 | 95 |
-| `coverage.branch` | 0 | 70 | 85 |
-
-- `LENIENT` still compiles with Error Prone and NullAway, so their
-  error-level findings still fail the build. It only stops `check` from
-  running the gate.
-- `STRICT`'s `warningsAsErrors` adds `-Werror`, which also fails on javac's own
-  warnings, such as `[removal]`.
-- NullAway is on in every profile because it does nothing until a package opts
-  in (see [Null checking](#null-checking-with-nullaway)). Its JSpecify mode is
-  on only in `STRICT`.
-- SpotBugs reports medium- and high-confidence findings, SpotBugs' own
-  default, and only high-confidence ones under `LENIENT`. No profile reports
-  low-confidence findings: on Spring code they're mostly noise, such as a
-  `@Bean` method declared `throws Exception` because Spring's API requires it.
-  `STRICT` analyses at maximum effort.
-
-### Choosing the profile without editing the build script
-
-Set the `sterling.profile` Gradle property, in any case. A project keeps its
-choice in `gradle.properties`, and CI can override it:
-
-```properties
-sterling.profile=standard
-```
-
-```bash
-./gradlew build -Psterling.profile=strict
-```
-
-A `profile = ...` in the build script wins over the property, so leave it out
-of the script if CI should choose.
-
-## Settings
-
-Every setting defaults from the profile. Set any of them to override that
-setting alone:
-
-```kotlin
-import dev.balakmran.sterling.Profile
-import dev.balakmran.sterling.SpotbugsSettings
-
-sterling {
-    profile = Profile.STANDARD          // LENIENT | STANDARD | STRICT
-    attachToCheck = true                // whether check runs stlCheck
-
-    format {
-        enabled = true
-    }
-    errorProne {
-        enabled = true
-        warningsAsErrors = false        // adds -Werror to javac
-        disable("UnusedVariable")       // turns checks off by name
-    }
-    nullAway {
-        enabled = true                  // needs Error Prone
-        jspecifyMode = false            // default from profile
-    }
-    spotbugs {
-        enabled = true
-        effort = SpotbugsSettings.Effort.DEFAULT       // MIN | LESS | DEFAULT | MORE | MAX
-        reportLevel = SpotbugsSettings.Confidence.MEDIUM // LOW | MEDIUM | HIGH
-        excludeFilter = file("config/spotbugs-exclude.xml") // added to Sterling's
-    }
-    coverage {
-        enabled = true
-        instruction = 80                // minimum percent, 0 to 100
-        branch = 70                     // minimum percent, 0 to 100
-        excludes.add("com/example/Application*") // class files to leave out
-    }
-}
-```
-
-In Groovy build scripts the block is the same, with
-`profile = dev.balakmran.sterling.Profile.STANDARD` (likewise for the
-SpotBugs levels) and single-quoted strings.
-A threshold outside 0 to 100, or an unknown `sterling.profile`, fails the
-build with a message naming the setting.
-
-### Settings reference
-
-| Setting | Type | Default |
-|---|---|---|
-| `profile` | `Profile`: `LENIENT`, `STANDARD` or `STRICT` | The `sterling.profile` property, else `STANDARD` |
-| `attachToCheck` | Boolean | From the profile |
-| `format.enabled` | Boolean | true |
-| `errorProne.enabled` | Boolean | true |
-| `errorProne.warningsAsErrors` | Boolean | From the profile |
-| `errorProne.disabledChecks` | Set of check names | Empty |
-| `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
-| `nullAway.enabled` | Boolean | true (needs Error Prone) |
-| `nullAway.jspecifyMode` | Boolean | From the profile |
-| `spotbugs.enabled` | Boolean | From the profile |
-| `spotbugs.effort` | `SpotbugsSettings.Effort`: `MIN`, `LESS`, `DEFAULT`, `MORE` or `MAX` | From the profile |
-| `spotbugs.reportLevel` | `SpotbugsSettings.Confidence`: `LOW`, `MEDIUM` or `HIGH` | From the profile |
-| `spotbugs.excludeFilter` | File | None |
-| `coverage.enabled` | Boolean | From the profile |
-| `coverage.instruction` | Percent, 0 to 100 | From the profile |
-| `coverage.branch` | Percent, 0 to 100 | From the profile |
-| `coverage.excludes` | List of class-file patterns | Empty |
-
-## Pinned tool versions
-
-Sterling configures these versions of each tool:
-
-| Tool | Version |
-|---|---|
-| google-java-format | 2.0.0 |
-| Error Prone | 2.52.0 |
-| NullAway | 0.14.3 |
-| JSpecify | 1.0.1 |
-| SpotBugs | 4.10.5 |
-| JaCoCo | 0.8.16 |
-
-### What an upgrade can change
-
-Sterling's version number says whether upgrading it can fail a build that
-changed nothing:
-
-- **Minor release** (0.1.x to 0.2.0): may raise Error Prone, NullAway,
-  SpotBugs or google-java-format. A new Error Prone or NullAway can add
-  checks, a new SpotBugs can find more, and a new google-java-format can
-  reformat code. The changelog says what may newly fail. Before 1.0, a minor
-  release may also change a setting or a profile default.
-- **Patch release** (0.1.0 to 0.1.1): fixes, and bumps that can't change
-  findings, such as JSpecify or JaCoCo.
-
-Pin Sterling's version, and take minor releases on purpose: in their own
-pull request, with `stlFmt` run and any new findings fixed or disabled.
-
-## Tool notes
-
-### Formatting
-
-`stlFmt` and `stlFmtCheck` cover every source set. Sources under any
-`build/generated` directory (OpenAPI generators, annotation processors,
-Spring AOT) are left alone. Each file keeps the line endings it has; enforce
-those with `.gitattributes` or Spotless's own `lineEndings` setting.
-
-### Error Prone
-
-Error Prone runs inside every Java compilation. Error-level findings always
-fail it; warnings fail it only with `warningsAsErrors`. Sources under
-`build/generated` are skipped entirely, and warnings in code annotated
-`@Generated` are ignored.
-
-### Null checking with NullAway
-
-NullAway only checks packages marked `@NullMarked`, so you adopt it one package
-at a time:
-
-```java
-// src/main/java/com/example/orders/package-info.java
-@NullMarked
-package com.example.orders;
-
-import org.jspecify.annotations.NullMarked;
-```
-
-Inside that package, anything that may be null must be annotated `@Nullable`,
-and NullAway fails compilation where such a value is used without a check.
-
-`nullAway.jspecifyMode` also checks nullness in generic type arguments
-(`List<@Nullable String>`), arrays and varargs. It's on only in `STRICT`:
-Spring calls the mode still under development and recommends turning it on as
-a second step, once a codebase is clean without it, because most false
-positives on generic and lambda-heavy code come from it.
-
-Sterling adds [JSpecify](https://jspecify.dev) to `compileOnly` and
-`testCompileOnly` while NullAway is on, so the annotations work without a
-dependency of your own. Spring Boot 4 apps get it through `spring-core` too.
-A **library** whose public API uses these annotations should still declare
-`api("org.jspecify:jspecify:1.0.1")`, so Kotlin callers and other tools see
-them.
-
-### SpotBugs
-
-`stlSec` analyses the main classes, not tests, and writes HTML, XML and SARIF
-reports under `build/reports/spotbugs`. Sterling's default exclude filter
-skips three patterns that Spring constructor injection and records trigger
-in ordinary code: `EI_EXPOSE_REP`, `EI_EXPOSE_REP2` and `CT_CONSTRUCTOR_THROW`.
-
-It also skips every class compiled from generated sources: those in source
-directories under `build/generated` (OpenAPI generators and the like) and
-annotation processors' output (MapStruct and others). Spring AOT's classes
-aren't analysed at all.
-
-`spotbugs.excludeFilter` adds your own exclusions to Sterling's, for example
-for generated code that lives somewhere else:
-
-```xml
-<FindBugsFilter>
-  <Match>
-    <Package name="~com\.example\.api\.generated(\..*)?"/>
-  </Match>
-</FindBugsFilter>
-```
-
-### Coverage
-
-Coverage is measured on the `test` task. After it runs, `jacocoTestReport`
-writes HTML and XML reports, and `stlCov` checks them against the
-thresholds. With coverage off, tests run without the JaCoCo agent at all.
-
-JaCoCo already ignores classes and methods annotated with any annotation whose
-name contains `Generated` and that's kept in the class file, such as Lombok's
-`@Generated` or one of your own. It's Java's equivalent of
-`# pragma: no cover`. Annotations kept only in source, like MapStruct's or
-`jakarta.annotation.Generated`, aren't seen; use `coverage.excludes` for those.
-
-`coverage.excludes` patterns match class files under the classes directory,
-such as `com/example/Application*`. End them with `*`: nested and anonymous
-classes compile to their own files, like `Application$1.class`, which
-`com/example/Application.class` alone would miss.
-
-## Configuring the tools directly
-
-Sterling covers the common settings. For anything else, configure the tool
-through its own DSL; that configuration applies alongside Sterling's.
-
-```kotlin
-import com.github.spotbugs.snom.SpotBugsTask
-import net.ltgt.gradle.errorprone.errorprone
-
-// Another Spotless step: a license header on every Java file.
-spotless {
-    java {
-        licenseHeader("/* Copyright (C) Example Corp */")
-    }
-}
-
-// Error Prone: make a warning-level check fail compilation.
-tasks.withType<JavaCompile>().configureEach {
-    options.errorprone {
-        error("MissingOverride")
-    }
-}
-
-// SpotBugs: more memory for a large codebase.
-tasks.named<SpotBugsTask>("spotbugsMain") {
-    maxHeapSize = "2g"
-}
-```
-
-Sterling already adds Spotless's google-java-format step, so calling
-`googleJavaFormat()` again fails with "Multiple steps with name
-'google-java-format'". Add other steps instead.
-
-Pointing a tool at a newer version than Sterling pins (for example
-`spotbugs { toolVersion = "..." }`) works too, but isn't tested yet.
-
-## Git hooks
-
-To check formatting before every commit and run the whole gate before every
-push, with [prek](https://github.com/j178/prek) or pre-commit, add this
-`.pre-commit-config.yaml`:
-
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: stl-fmt-check
-        name: Check formatting
-        entry: ./gradlew stlFmtCheck -q
-        language: system
-        pass_filenames: false
-        stages: [pre-commit]
-      - id: stl-check
-        name: Run the Sterling gate
-        entry: ./gradlew stlCheck -q
-        language: system
-        pass_filenames: false
-        stages: [pre-push]
-```
-
-```bash
-prek install --hook-type pre-commit --hook-type pre-push
-```
-
-To have [Claude Code](https://claude.com/claude-code) format and lint whenever
-it finishes a turn, add a `Stop` hook to `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [{ "type": "command", "command": "./gradlew stlFmt stlLint -q" }]
-      }
-    ]
-  }
-}
-```
-
-## Trying it before release
-
-Clone Sterling next to your project and include its build from your
-project's `settings.gradle.kts`:
-
-```kotlin
-pluginManagement {
-    includeBuild("../sterling")
-}
-```
-
-Then apply `id("dev.balakmran.sterling")` without a version.
-
-## Building Sterling
-
-Sterling is written in Java; its build scripts use the Gradle Kotlin DSL.
-Building it needs JDK 21; its functional tests also need JDK 17, to check the
-"needs Java 21" errors, and JDK 25, a consumer toolchain they test. Gradle
-finds installed JDKs, including SDKMAN's, and doesn't download any.
-
-```bash
-./gradlew build                 # compile, unit tests, Javadoc, plugin validation, dependency checks
-./gradlew functionalTest        # tests that run real builds with TestKit
-./gradlew spotlessApply         # format Sterling's own code
-```
-
-Functional tests run consumer builds on the latest Gradle with a Java 21
-toolchain by default. CI also runs Gradle 9.0.0 and Java 25; to run one of
-those combinations locally (JDK 25 must be installed):
-
-```bash
-./gradlew functionalTest -Psterling.test.gradle=9.0.0 -Psterling.test.java=25
-```
+## Documentation
+
+- [Adopting Sterling](docs/guide/adopting.md): a first reformat, projects
+  that already apply Spotless or SpotBugs, git hooks, unreleased builds.
+- [Configuring Sterling](docs/guide/configuration.md): profiles, the
+  `sterling { }` block, every setting, and the tools' own DSLs.
+- [The tools](docs/guide/tools.md): pinned versions, what an upgrade can
+  change, and notes on each tool.
+- [Roadmap](ROADMAP.md) and [changelog](CHANGELOG.md).
+- [Contributing](CONTRIBUTING.md): building and testing Sterling.
 
 ## License
 

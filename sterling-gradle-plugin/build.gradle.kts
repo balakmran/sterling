@@ -58,6 +58,12 @@ val versionResource =
 
 sourceSets.main { resources.srcDir(files(generatedResources).builtBy(versionResource)) }
 
+// The Plugin Portal description, and the tagline the README, CLAUDE.md and package-info repeat.
+val pluginDescription =
+    "One code-quality gate for Java 21+ Gradle builds: google-java-format, " +
+        "Error Prone, NullAway with JSpecify, SpotBugs and JaCoCo, at versions " +
+        "tested together, run by stlCheck and tuned by one profile."
+
 testing {
     suites {
         named<JvmTestSuite>("test") {
@@ -68,18 +74,30 @@ testing {
                 implementation(libs.assertj)
                 implementation(libs.junit.jupiter.api)
             }
-            // The pin and README tests compare the code with these files.
+            // The pin, docs and tagline tests compare the code with these files.
             targets.configureEach {
                 testTask.configure {
                     val catalog = layout.settingsDirectory.file("gradle/libs.versions.toml")
                     val versionFile = layout.settingsDirectory.file("version.txt")
                     val readme = layout.settingsDirectory.file("README.md")
+                    val claude = layout.settingsDirectory.file("CLAUDE.md")
+                    val packageInfo =
+                        layout.projectDirectory.file(
+                            "src/main/java/dev/balakmran/sterling/package-info.java"
+                        )
+                    val guide = layout.settingsDirectory.dir("docs/guide")
                     inputs
-                        .files(catalog, versionFile, readme)
+                        .files(catalog, versionFile, readme, claude, packageInfo)
                         .withPathSensitivity(PathSensitivity.RELATIVE)
+                    inputs.dir(guide).withPathSensitivity(PathSensitivity.RELATIVE)
+                    inputs.property("pluginDescription", pluginDescription)
                     systemProperty("sterling.catalog", catalog.asFile.absolutePath)
                     systemProperty("sterling.versionFile", versionFile.asFile.absolutePath)
                     systemProperty("sterling.readme", readme.asFile.absolutePath)
+                    systemProperty("sterling.guide", guide.asFile.absolutePath)
+                    systemProperty("sterling.claude", claude.asFile.absolutePath)
+                    systemProperty("sterling.packageInfo", packageInfo.asFile.absolutePath)
+                    systemProperty("sterling.description", pluginDescription)
                 }
             }
         }
@@ -141,8 +159,20 @@ gradlePlugin {
     testSourceSets(sourceSets["functionalTest"])
     website = "https://github.com/balakmran/sterling"
     vcsUrl = "https://github.com/balakmran/sterling"
-    val tools =
-        listOf("code-quality", "formatting", "error-prone", "nullaway", "spotbugs", "jacoco")
+    // Search terms first, then the tools by name.
+    val portalTags =
+        listOf(
+            "java",
+            "code-quality",
+            "static-analysis",
+            "spring-boot",
+            "google-java-format",
+            "error-prone",
+            "nullaway",
+            "jspecify",
+            "spotbugs",
+            "jacoco",
+        )
     plugins {
         register("sterling") {
             id = "dev.balakmran.sterling"
@@ -150,11 +180,8 @@ gradlePlugin {
             displayName = "Sterling"
             // Every functional test runs with --configuration-cache-problems=fail.
             compatibility { features { configurationCache = true } }
-            description =
-                "Opinionated, configurable code-quality gate for Java 21+ projects: " +
-                    "google-java-format, Error Prone, NullAway, SpotBugs and JaCoCo, " +
-                    "with strictness set by one profile."
-            tags = tools
+            description = pluginDescription
+            tags = portalTags
         }
     }
 }
