@@ -42,8 +42,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Temporarily one cell, to keep PRs fast. To restore all four: gradle: ['9.0.0', ''],
-        # java: [21, 25], and an include of gradle: '' with gradle-name: latest (the wrapper's).
+        # One cell, to keep PRs fast; functionalTestLocal runs the other three before a PR. To run
+        # all four: gradle: ['9.0.0', ''], java: [21, 25], and an include of gradle: '' with
+        # gradle-name: latest (the wrapper's).
         gradle: ['9.0.0']
         java: [25]
         include:
