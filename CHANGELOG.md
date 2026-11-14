@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.6...v0.1.0) (2026-11-14)
+
+
+### Bug Fixes
+
+* list spotbugsMain with the verification tasks, not in the sterling group ([07e9e13](https://github.com/balakmran/sterling/commit/07e9e13ab7a3158eb2c7879d41d8e8f1077dfa45))
+* show the Spotless and JaCoCo versions in stlInfo ([c1bcc13](https://github.com/balakmran/sterling/commit/c1bcc13c7c73bc9296ad604b1ec8fd8bd7c9de76))
+
 ## [0.1.0-alpha.6](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-11-13)
 
 
