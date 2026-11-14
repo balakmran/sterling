@@ -27,6 +27,7 @@ class DocsTest {
   private static final Map<String, String> TOOL_NAMES =
       Map.of(
           "google-java-format", "google-java-format",
+          "spotless", "Spotless",
           "errorprone", "Error Prone",
           "nullaway", "NullAway",
           "jspecify", "JSpecify",

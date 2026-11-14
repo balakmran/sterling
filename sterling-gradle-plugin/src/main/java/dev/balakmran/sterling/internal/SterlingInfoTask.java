@@ -202,11 +202,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
                 "Formatting",
                 onOff(
                     getFormatEnabled().get(),
-                    "google-java-format " + versions.get("google-java-format"))),
+                    "google-java-format "
+                        + versions.get("google-java-format")
+                        + " via Spotless "
+                        + versions.get("spotless"))),
             List.of("Error Prone", onOff(getErrorProneEnabled().get(), errorProneDetail(versions))),
             List.of("NullAway", nullAwayStatus(versions)),
             List.of("SpotBugs", onOff(getSpotbugsEnabled().get(), spotbugsDetail(versions))),
-            List.of("Coverage", onOff(getCoverageEnabled().get(), coverageDetail())));
+            List.of("Coverage", onOff(getCoverageEnabled().get(), coverageDetail(versions))));
 
     StringBuilder report = new StringBuilder("Sterling ").append(versions.get("sterling"));
     for (List<String> row : rows) {
@@ -255,8 +258,10 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + filter;
   }
 
-  private String coverageDetail() {
-    return "instruction >= "
+  private String coverageDetail(Map<String, String> versions) {
+    return "JaCoCo "
+        + versions.get("jacoco")
+        + "; instruction >= "
         + getInstruction().get()
         + "%, branch >= "
         + getBranch().get()

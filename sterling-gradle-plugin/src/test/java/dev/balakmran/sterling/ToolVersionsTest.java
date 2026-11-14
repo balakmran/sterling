@@ -22,7 +22,13 @@ class ToolVersionsTest {
 
     assertThat(tools.keySet())
         .containsExactlyInAnyOrder(
-            "google-java-format", "errorprone", "nullaway", "jspecify", "spotbugs", "jacoco");
+            "google-java-format",
+            "spotless",
+            "errorprone",
+            "nullaway",
+            "jspecify",
+            "spotbugs",
+            "jacoco");
     tools.forEach(
         (key, version) -> assertThat(catalog.get(key)).describedAs(key).isEqualTo(version));
   }
