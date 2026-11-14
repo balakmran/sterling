@@ -315,17 +315,17 @@ agent form, so the plugin belongs there.
 
 ### v0.2.0 features in the skills
 
-From `ROADMAP.md`'s v0.2.0 list. If a feature slips out of 0.2.0, its row
+From [`v0.2.0.md`](v0.2.0.md), which specifies each feature. If a feature slips out of 0.2.0, its row
 moves with it.
 
 | v0.2.0 feature | `adopt-sterling` | `upgrade-sterling` (from 0.1.0) | Others |
 |---|---|---|---|
 | `format.style` (`GOOGLE`, `AOSP`) | Plan offers both; default `GOOGLE`. Detection reports whether most Java files use 4-space indentation, and if so the plan says `AOSP` would shrink the reformat. The user chooses | Keeps the project's style | `sterling-conventions` reads the style from `stlInfo --json` |
 | `format.ratchetFrom` | Offered as the alternative to the reformat commit: with it, steps 2–3 are skipped and only changed files are formatted. Default stays the reformat commit | Leaves it as set | — |
-| Spring-aware NullAway defaults (`CustomContractAnnotations`, test options) | Removes the project's own copies of options Sterling now sets | Removes copies Sterling now sets | `fix-sterling-findings` doesn't suppress NullAway findings that these defaults resolve |
+| Spring-aware NullAway defaults (`CheckContracts`, `HandleTestAssertionLibraries`; no `CustomContractAnnotations`, which NullAway doesn't need) | Removes the project's own copies of options Sterling now sets, and a redundant `CustomContractAnnotations` | Removes the same, and the `Application*` exclude 0.1's README suggested | `fix-sterling-findings` doesn't suppress NullAway findings that these defaults resolve |
 | Spring Boot reactions (application class out of coverage) | Doesn't add a `coverage.excludes` entry for the application class; removes an existing one Sterling makes redundant | Removes such an entry | — |
 | Lombok | Detected and reported; nothing to configure | — | — |
-| Coverage of extra `Test` tasks and generated classes | Thresholds are measured from the report Sterling produces, so they include `integrationTest` when Sterling counts it; excludes for generated classes become redundant and are removed | Re-measures if the counted tasks changed, and reports the change; never lowers thresholds below the new measurement without saying so | — |
+| Coverage of every `Test` task (`coverage.testTasks` narrows it) and generated classes | Thresholds are measured from the report Sterling produces, so they include `integrationTest`; excludes for generated classes become redundant and are removed | Re-measures if the counted tasks changed, and reports the change; never lowers thresholds below the new measurement without saying so | — |
 | Supported tool version overrides | A project pin older than or equal to Sterling's is removed; a newer one is kept and reported | Removes overrides the new Sterling version meets | — |
 | Console summary for `stlSec` and `stlCov` | — | — | `fix-sterling-findings` still reads the XML reports; the summary is for people |
 | Multi-module recipe (`build-logic` convention plugin) | Multi-module builds get Sterling through the recipe | — | — |
