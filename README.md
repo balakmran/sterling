@@ -1,6 +1,6 @@
 # Sterling
 
-[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.balakmran.sterling?include_prereleases)](https://plugins.gradle.org/plugin/dev.balakmran.sterling)
+[![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/dev.balakmran.sterling)](https://plugins.gradle.org/plugin/dev.balakmran.sterling)
 [![CI](https://github.com/balakmran/sterling/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/balakmran/sterling/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
@@ -36,9 +36,9 @@ Spring's own `io.spring.nullability` plugin sets up Error Prone and NullAway
 only. Sterling adds formatting, SpotBugs and coverage, and one profile for
 all five.
 
-> **Status: pre-release.** Versions before 0.1.0 are alphas on the Gradle
-> Plugin Portal, and the DSL may still change. What comes after 0.1.0 is in
-> the [roadmap](ROADMAP.md).
+> **Status: pre-1.0.** Until 1.0, a minor release may change the DSL or a
+> profile default, and the [changelog](CHANGELOG.md) says when. What comes
+> next is in the [roadmap](ROADMAP.md).
 
 ## Requirements
 
