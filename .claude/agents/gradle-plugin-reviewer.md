@@ -38,8 +38,10 @@ in full, not just the hunk, along with the code it calls.
      NullAway off.
 5. **Wrapping:** `stl*` tasks only `dependsOn` tool tasks; tools never attach
    to `check`; a task either changes sources or verifies them, not both.
-6. **Tasks:** `group = "sterling"`, a one-line `description`, and every
-   property annotated for strict validation.
+6. **Tasks:** `group = "sterling"` for `stl*` tasks only (a tool's task
+   Sterling registers, such as `spotbugsMain`, keeps the tool's group), a
+   one-line `description`, and every property annotated for strict
+   validation.
 7. **Code:**
    - Java 17 language level only.
    - Public API only in `dev.balakmran.sterling`, with Javadoc on everything

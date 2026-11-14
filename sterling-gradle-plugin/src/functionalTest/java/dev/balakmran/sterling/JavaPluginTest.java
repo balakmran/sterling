@@ -42,6 +42,28 @@ class JavaPluginTest {
   }
 
   @Test
+  void sterlingGroupListsOnlyStlTasksAndSpotbugsMainIsAVerificationTask() {
+    BuildResult result =
+        new Fixture(dir).file("build.gradle.kts", JAVA_AND_STERLING).build("tasks");
+
+    assertThat(section(result, "Sterling tasks"))
+        .isNotEmpty()
+        .allMatch(task -> task.startsWith("stl"));
+    assertThat(section(result, "Verification tasks")).contains("spotbugsMain");
+  }
+
+  // The task names a `tasks` report lists under a group heading, up to the next blank line.
+  private static List<String> section(BuildResult result, String heading) {
+    return result
+        .getOutput()
+        .split(heading + "\n-+\n", 2)[1]
+        .lines()
+        .takeWhile(line -> !line.isBlank())
+        .map(line -> line.split(" ", 2)[0])
+        .toList();
+  }
+
+  @Test
   void toolchainOnTheFloorPassesTheCheckThenStaysUpToDate() {
     Fixture fixture =
         new Fixture(dir)

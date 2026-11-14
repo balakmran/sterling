@@ -130,7 +130,10 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
    says so.
 8. **Change or verify, never both.** A task either modifies sources (`stlFmt`)
    or verifies them. Never one task that does both.
-9. **Every task has `group = "sterling"` and a one-line `description`.**
+9. **Every task has a group and a one-line `description`.** `stl*` tasks
+   use `group = "sterling"`, so that group lists only them. A tool's task
+   that Sterling registers keeps the tool's own group: `spotbugsMain` is in
+   `verification`, as the full SpotBugs plugin puts it.
 10. **Strict validation passes.** `validatePlugins` runs with
     `enableStricterValidation = true`; annotate every task property.
 
