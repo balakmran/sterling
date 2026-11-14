@@ -18,6 +18,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 /**
  * Configures SpotBugs on the main classes for {@code stlSec}.
@@ -98,7 +99,8 @@ final class Spotbugs {
             TASK,
             SpotBugsTask.class,
             task -> {
-              task.setGroup(SterlingPlugin.GROUP);
+              // SpotBugs' own group for it, so the sterling group lists only stl* tasks.
+              task.setGroup(LifecycleBasePlugin.VERIFICATION_GROUP);
               task.setDescription("Analyses the main classes with SpotBugs.");
               task.getClassDirs().from(main.getOutput().getClassesDirs());
               task.getSourceDirs().from(main.getAllSource().getSourceDirectories());
