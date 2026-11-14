@@ -49,6 +49,7 @@ val versionResource =
         }
         property("sterling", version)
         property("google-java-format", libs.versions.google.java.format)
+        property("spotless", libs.versions.spotless.asProvider())
         property("errorprone", libs.versions.errorprone.asProvider())
         property("nullaway", libs.versions.nullaway)
         property("jspecify", libs.versions.jspecify)

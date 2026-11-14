@@ -152,11 +152,11 @@ Profile:              STANDARD
 Gate wired to check:  yes
 Daemon JVM:           25
 Java toolchain:       25
-Formatting:           on   (google-java-format 2.0.0)
+Formatting:           on   (google-java-format 2.0.0 via Spotless 8.11.0)
 Error Prone:          on   (2.52.0; warnings are not errors; 1 check disabled)
 NullAway:             on   (0.14.3; JSpecify 1.0.1; @NullMarked code only)
 SpotBugs:             on   (4.10.5; effort default; medium confidence and up)
-Coverage:             on   (instruction >= 80%, branch >= 70%; 1 exclude)
+Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; 1 exclude)
 ```
 
 ## Documentation

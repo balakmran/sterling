@@ -7,11 +7,16 @@ Sterling configures these versions of each tool:
 | Tool | Version |
 |---|---|
 | google-java-format | 2.0.0 |
+| Spotless | 8.11.0 |
 | Error Prone | 2.52.0 |
 | NullAway | 0.14.3 |
 | JSpecify | 1.0.1 |
 | SpotBugs | 4.10.5 |
 | JaCoCo | 0.8.16 |
+
+Spotless is the Gradle plugin that runs google-java-format. It's on the
+build script classpath rather than downloaded, so a build that also asks
+for a newer Spotless gets that one: Gradle picks the higher version.
 
 ## What an upgrade can change
 

@@ -33,6 +33,8 @@ class SterlingInfoTaskTest {
             "Java toolchain:       not active (java plugin not applied)",
             "Formatting:           on   (google-java-format "
                 + ToolVersions.get("google-java-format")
+                + " via Spotless "
+                + ToolVersions.get("spotless")
                 + ")",
             "Error Prone:          on   ("
                 + ToolVersions.get("errorprone")
@@ -45,7 +47,9 @@ class SterlingInfoTaskTest {
             "SpotBugs:             on   ("
                 + ToolVersions.get("spotbugs")
                 + "; effort default; medium confidence and up)",
-            "Coverage:             on   (instruction >= 80%, branch >= 70%)");
+            "Coverage:             on   (JaCoCo "
+                + ToolVersions.get("jacoco")
+                + "; instruction >= 80%, branch >= 70%)");
 
     assertThat(render()).isEqualTo(expected);
   }
