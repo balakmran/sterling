@@ -112,43 +112,73 @@ testing {
             }
             targets.configureEach {
                 testTask.configure {
-                    shouldRunAfter(tasks.test)
-                    // The matrix cell: -Psterling.test.gradle=9.0.0 -Psterling.test.java=25.
+                    // The cell CI runs: -Psterling.test.gradle=9.0.0 -Psterling.test.java=25.
                     // A blank Gradle version means the wrapper's.
-                    systemProperty(
-                        "sterling.gradleVersion",
+                    functionalTestCell(
                         providers.gradleProperty("sterling.test.gradle").getOrElse(""),
-                    )
-                    systemProperty(
-                        "sterling.javaVersion",
                         providers.gradleProperty("sterling.test.java").getOrElse("21"),
-                    )
-                    // JDK 17 checks the below-21 failures; 21 and 25 are consumer toolchains.
-                    val jdks = listOf(17, 21, 25).associateWith { jdkPath(it) }
-                    jvmArgumentProviders.add(
-                        CommandLineArgumentProvider {
-                            jdks.map { (version, path) -> "-Dsterling.jdk$version=${path.get()}" }
-                        }
-                    )
-                    // Lets tests assert pinned versions without repeating them.
-                    systemProperty(
-                        "sterling.spotbugsVersion",
-                        libs.versions.spotbugs.asProvider().get(),
-                    )
-                    systemProperty(
-                        "sterling.errorproneVersion",
-                        libs.versions.errorprone.asProvider().get(),
-                    )
-                    systemProperty("sterling.nullawayVersion", libs.versions.nullaway.get())
-                    systemProperty("sterling.jspecifyVersion", libs.versions.jspecify.get())
-                    systemProperty(
-                        "sterling.googleJavaFormatVersion",
-                        libs.versions.google.java.format.get(),
                     )
                 }
             }
         }
     }
+}
+
+// Sets up a functional-test task for one cell: the Gradle version ("" for the wrapper's) and the
+// consumer toolchain.
+fun Test.functionalTestCell(gradle: String, java: String) {
+    shouldRunAfter(tasks.test)
+    systemProperty("sterling.gradleVersion", gradle)
+    systemProperty("sterling.javaVersion", java)
+    // JDK 17 checks the below-21 failures; 21 and 25 are consumer toolchains.
+    val jdks = listOf(17, 21, 25).associateWith { jdkPath(it) }
+    jvmArgumentProviders.add(
+        CommandLineArgumentProvider {
+            jdks.map { (version, path) -> "-Dsterling.jdk$version=${path.get()}" }
+        }
+    )
+    // Lets tests assert pinned versions without repeating them.
+    systemProperty(
+        "sterling.spotbugsVersion",
+        libs.versions.spotbugs.asProvider().get(),
+    )
+    systemProperty(
+        "sterling.errorproneVersion",
+        libs.versions.errorprone.asProvider().get(),
+    )
+    systemProperty("sterling.nullawayVersion", libs.versions.nullaway.get())
+    systemProperty("sterling.jspecifyVersion", libs.versions.jspecify.get())
+    systemProperty(
+        "sterling.googleJavaFormatVersion",
+        libs.versions.google.java.format.get(),
+    )
+}
+
+// The three cells CI skips, run locally by functionalTestLocal; CI runs Gradle 9.0.0 with Java 25.
+val localCells =
+    mapOf(
+        "functionalTestLatestJava21" to ("" to "21"),
+        "functionalTestLatestJava25" to ("" to "25"),
+        "functionalTestGradle90Java21" to ("9.0.0" to "21"),
+    )
+
+localCells.forEach { (name, cell) ->
+    val (gradle, java) = cell
+    tasks.register<Test>(name) {
+        group = "verification"
+        val gradleName = if (gradle.isEmpty()) "the latest Gradle" else "Gradle $gradle"
+        description = "Runs the functional tests with $gradleName and Java $java."
+        testClassesDirs = sourceSets["functionalTest"].output.classesDirs
+        classpath = sourceSets["functionalTest"].runtimeClasspath
+        useJUnitPlatform()
+        functionalTestCell(gradle, java)
+    }
+}
+
+tasks.register("functionalTestLocal") {
+    group = "verification"
+    description = "Runs the functional tests in the three cells CI doesn't run."
+    dependsOn(localCells.keys)
 }
 
 fun jdkPath(version: Int): Provider<String> =

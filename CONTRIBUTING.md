@@ -7,13 +7,14 @@ finds installed JDKs, including SDKMAN's, and doesn't download any.
 
 ```bash
 ./gradlew build                 # compile, unit tests, Javadoc, plugin validation, dependency checks
-./gradlew functionalTest        # tests that run real builds with TestKit
+./gradlew functionalTestLocal   # tests that run real builds with TestKit
 ./gradlew spotlessApply         # format Sterling's own code
 ```
 
-Functional tests run consumer builds on the latest Gradle with a Java 21
-toolchain by default. CI runs Gradle 9.0.0 with Java 25; to run that
-combination locally (JDK 25 must be installed):
+Functional tests run consumer builds on Gradle 9.0.0 and the latest Gradle,
+with Java 21 and 25 toolchains. CI runs Gradle 9.0.0 with Java 25, and
+`functionalTestLocal` runs the other three combinations; run it before
+opening a pull request. To run one combination, CI's for example:
 
 ```bash
 ./gradlew functionalTest -Psterling.test.gradle=9.0.0 -Psterling.test.java=25

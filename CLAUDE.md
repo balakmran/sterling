@@ -71,12 +71,13 @@ v0.5.0 in `ROADMAP.md`. Do not create it yet.
 
 ```bash
 ./gradlew build                          # compile, unit tests, validatePlugins, buildHealth
-./gradlew functionalTest                 # TestKit tests: Gradle x toolchain matrix
+./gradlew functionalTestLocal            # TestKit tests in the three cells CI skips
+./gradlew functionalTest                 # TestKit tests in one cell, picked by -P flags
 ./gradlew spotlessApply                  # format this repo's Java and build scripts
 ./gradlew publishPlugins --validate-only # publishing dry run
 ```
 
-Run `./gradlew build functionalTest` before declaring any task done.
+Run `./gradlew build functionalTestLocal` before declaring any task done.
 
 ## Dogfooding after a plugin change
 
@@ -151,11 +152,11 @@ These are non-negotiable. Most Gradle plugin bugs come from breaking one of them
   `--release 17`, so Java 17 language features only. Build scripts are Gradle
   Kotlin DSL. No Kotlin source code.
 - Functional tests run against Gradle 9.0.0 and the latest stable Gradle, with
-  consumer toolchains 21 and 25. `-Psterling.test.gradle=9.0.0` and
-  `-Psterling.test.java=25` pick a cell (default: latest × 21). CI runs only
-  9.0.0 × 25 for now, to keep PRs fast; `ci.yml` says how to restore all four.
-  Before declaring a change done, run at least the default cell and the
-  9.0.0 × 25 one; Gradle API newer than 9.0 only fails there.
+  consumer toolchains 21 and 25. CI runs one cell, 9.0.0 × 25, to keep PRs
+  fast (`ci.yml` says how to restore all four); `functionalTestLocal` runs the
+  other three locally, and must pass before a change is done. For a single
+  cell, `functionalTest` takes `-Psterling.test.gradle=9.0.0` and
+  `-Psterling.test.java=25` (default: latest × 21).
 
 When pinning a version (Gradle, Spotless, google-java-format, Error Prone,
 NullAway, JSpecify, SpotBugs, JaCoCo), check the current stable release rather
