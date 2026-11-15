@@ -72,3 +72,22 @@ jobs:
           ./gradlew functionalTest --warning-mode=fail
           -Psterling.test.gradle=${{ matrix.gradle }}
           -Psterling.test.java=${{ matrix.java }}
+
+  agent-plugin:
+    name: Agent plugin
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Copilot and Codex have no validator; the schema check and AgentPluginTest cover them.
+      - name: Validate with Claude Code
+        run: npx --yes @anthropic-ai/claude-code@2.1.325 plugin validate agent-plugins/sterling --strict
+
+      - name: Check plugin.json against the Agent Plugins 1.0 schema
+        run: >-
+          pipx run check-jsonschema==0.39.0
+          --schemafile agent-plugins/schemas/agent-plugins-1.0.0-plugin.schema.json
+          agent-plugins/sterling/plugin.json

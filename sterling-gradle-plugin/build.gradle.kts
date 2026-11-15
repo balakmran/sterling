@@ -87,15 +87,21 @@ testing {
                             "src/main/java/dev/balakmran/sterling/package-info.java"
                         )
                     val guide = layout.settingsDirectory.dir("docs/guide")
+                    val agentPlugins = layout.settingsDirectory.dir("agent-plugins")
                     inputs
                         .files(catalog, versionFile, readme, claude, packageInfo)
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                     inputs.dir(guide).withPathSensitivity(PathSensitivity.RELATIVE)
+                    inputs.dir(agentPlugins).withPathSensitivity(PathSensitivity.RELATIVE)
+                    inputs
+                        .file(layout.settingsDirectory.file("release-please-config.json"))
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
                     inputs.property("pluginDescription", pluginDescription)
                     systemProperty("sterling.catalog", catalog.asFile.absolutePath)
                     systemProperty("sterling.versionFile", versionFile.asFile.absolutePath)
                     systemProperty("sterling.readme", readme.asFile.absolutePath)
                     systemProperty("sterling.guide", guide.asFile.absolutePath)
+                    systemProperty("sterling.agentPlugins", agentPlugins.asFile.absolutePath)
                     systemProperty("sterling.claude", claude.asFile.absolutePath)
                     systemProperty("sterling.packageInfo", packageInfo.asFile.absolutePath)
                     systemProperty("sterling.description", pluginDescription)

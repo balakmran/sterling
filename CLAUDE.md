@@ -55,8 +55,17 @@ sterling/
 ├── CONTRIBUTING.md                  # building and testing Sterling
 ├── docs/guide/                      # user docs: adopting, configuration, the tools
 ├── docs/plans/
+├── agent-plugins/
+│   ├── sterling/                    # the agent plugin: manifests per agent, skills/
+│   └── schemas/                     # Agent Plugins schema, vendored for CI
 └── .github/workflows/
 ```
+
+The agent plugin's version is always Sterling's: release-please bumps its three
+manifests and each skill's `metadata.sterling-version`, and `AgentPluginTest`
+fails if they differ from `version.txt`. Its plan is
+`docs/plans/agent-plugin.md`. A new skill's `SKILL.md` must be added to
+`extra-files` in `release-please-config.json`.
 
 The plugin's description in `sterling-gradle-plugin/build.gradle.kts`
 (`pluginDescription`) is the tagline under the title of `README.md` and this
