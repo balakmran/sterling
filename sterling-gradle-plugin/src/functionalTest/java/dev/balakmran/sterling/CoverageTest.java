@@ -13,6 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** JaCoCo on the test tasks, verified by stlCov against the coverage thresholds. */
 class CoverageTest {
   private static final String VERIFY = ":jacocoTestCoverageVerification";
+  private static final String SUMMARY = ":stlCovSummary";
 
   // abs(5) alone covers 50% of Calc's instructions and 50% of its branches.
   private static final String CALC =
@@ -112,6 +113,41 @@ class CoverageTest {
   }
 
   @Test
+  void aFailedVerificationPrintsTheMeasurementsAndTheMostMissedFiles() {
+    BuildResult result =
+        fixture("")
+            .file("src/main/java/app/Uncovered.java", CALC.replace("Calc", "Uncovered"))
+            .buildAndFail("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(outcome(result, SUMMARY)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput())
+        .contains("Coverage is below the thresholds:")
+        .containsPattern("(?m)^  instruction: [0-9.]+% \\(below minimum 80%\\)$")
+        .containsPattern("(?m)^  branch: [0-9.]+% \\(below minimum 70%\\)$")
+        .containsPattern("(?m)^app/Uncovered\\.java \\[JaCoCo:INSTRUCTION\\] (\\d+) of \\1 missed$")
+        .containsPattern("(?m)^app/Calc\\.java \\[JaCoCo:INSTRUCTION\\] \\d+ of \\d+ missed$");
+    // Most missed first.
+    assertThat(result.getOutput().indexOf("app/Uncovered.java"))
+        .isLessThan(result.getOutput().indexOf("app/Calc.java"));
+  }
+
+  @Test
+  void aPassingVerificationPrintsNoSummary() {
+    // A failed run first, so a marker left behind would show up in the passing run.
+    Fixture fixture = fixture(thresholds(90, 90));
+    assertThat(outcome(fixture.buildAndFail("stlCov"), SUMMARY)).isEqualTo(TaskOutcome.SUCCESS);
+
+    // A different length, so the configuration cache sees the script change.
+    fixture.file("build.gradle.kts", fixture.read("build.gradle.kts").replace("90", "5"));
+    BuildResult result = fixture.build("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, SUMMARY)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput()).doesNotContain("Coverage is below the thresholds");
+  }
+
+  @Test
   void thresholdsAboveActualCoverageFailThenPassOnceLowered() {
     Fixture fixture = fixture(thresholds(90, 90));
     assertThat(outcome(fixture.buildAndFail("stlCov"), VERIFY)).isEqualTo(TaskOutcome.FAILED);
@@ -197,6 +233,7 @@ class CoverageTest {
     assertThat(outcome(result, ":test")).isEqualTo(TaskOutcome.SUCCESS);
     assertThat(outcome(result, ":jacocoTestReport")).isNull();
     assertThat(outcome(result, VERIFY)).isNull();
+    assertThat(outcome(result, SUMMARY)).isNull();
     assertThat(Files.exists(dir.resolve("build/jacoco/test.exec"))).isFalse();
   }
 
@@ -281,6 +318,17 @@ class CoverageTest {
             .build("stlInfo");
 
     assertThat(result.getOutput()).contains("branch >= 70%; nope)");
+  }
+
+  @Test
+  void theSummaryFollowsAMovedBuildDirectory() {
+    BuildResult result =
+        fixture(
+                "tasks.withType<JacocoCoverageVerification> { }\nlayout.buildDirectory = file(\"out\")\n")
+            .buildAndFail("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput()).contains("Coverage is below the thresholds:");
   }
 
   @Test

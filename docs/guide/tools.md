@@ -152,6 +152,21 @@ classes compile to their own files, like `Legacy$1.class`, which
 | SpotBugs | `build/reports/spotbugs/main.html`, `main.xml` and `main.sarif` |
 | JaCoCo | `build/reports/jacoco/test/html/index.html` and `jacocoTestReport.xml` |
 
+When `stlSec` or `stlCov` fails, the console says why, so neither report has
+to be opened first:
+
+- **SpotBugs** (`stlSecSummary`, after `spotbugsMain`): one line per finding,
+  `src/main/java/com/example/Foo.java:42 [SpotBugs:NP_NULL_ON_SOME_PATH] message`,
+  at most 50, then `... and N more:` with the HTML report's path.
+- **JaCoCo** (`stlCovSummary`, after a failed verification): the measured
+  instruction and branch coverage against the thresholds, then the ten source
+  files with the most missed instructions, such as
+  `com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed`. It prints
+  nothing when the verification passes.
+
+Neither changes the outcome: `spotbugsMain` and the verification fail as
+they always did.
+
 ## Suppressing one finding
 
 Fix the code when you can. When a finding is wrong, or right but not worth

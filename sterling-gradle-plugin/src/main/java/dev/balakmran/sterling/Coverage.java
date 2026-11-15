@@ -2,6 +2,7 @@ package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Flags.whenOn;
 
+import dev.balakmran.sterling.internal.CoverageSummaryTask;
 import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.File;
@@ -50,10 +51,14 @@ import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
  * verification, through a {@link CoverageExclusion} that reads {@code stlGeneratedClasses}' list.
  * With the {@code org.springframework.boot} plugin applied, so is the application's main class,
  * read from the file Spring Boot's {@code resolveMainClassName} writes.
+ *
+ * <p>When the verification fails, {@code stlCovSummary} prints the measured coverage and the source
+ * files with the most missed instructions.
  */
 final class Coverage {
   private static final String REPORT = "jacocoTestReport";
   private static final String VERIFICATION = "jacocoTestCoverageVerification";
+  private static final String SUMMARY = "stlCovSummary";
   private static final String SPRING_BOOT = "org.springframework.boot";
   // Spring Boot's task, which writes the main class's name to its one output file.
   private static final String RESOLVE_MAIN_CLASS = "resolveMainClassName";
@@ -124,6 +129,37 @@ final class Coverage {
         .configure(verification -> {
           verification.dependsOn(counted);
           declareExclusionInputs(verification, generatedList);
+        });
+
+    // The verification's first action leaves a marker that its last action, run on success,
+    // removes; the summary prints only while the marker is there.
+    Provider<RegularFile> failedMarker =
+        project.getLayout().getBuildDirectory().file("sterling/coverage-verification-failed");
+    var summary =
+        tasks.register(
+            SUMMARY,
+            CoverageSummaryTask.class,
+            task -> {
+              // Internal: no group, so tasks lists only the stl* tasks people run.
+              task.setDescription("Prints the coverage shortfall when the verification fails.");
+              task.onlyIf("the XML report exists", CoverageSummaryTask.reportExists());
+              // JaCoCo's report locations carry no task, so the dependency is explicit.
+              task.getXmlReport()
+                  .set(
+                      project.provider(
+                          () -> report.get().getReports().getXml().getOutputLocation().get()));
+              task.dependsOn(report);
+              task.getFailedMarker().set(failedMarker);
+              task.getInstruction()
+                  .set(Validation.percent(coverage.getInstruction(), "coverage.instruction"));
+              task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
+            });
+    tasks
+        .named(VERIFICATION)
+        .configure(verification -> {
+          verification.doFirst(CoverageSummaryTask.markFailed(failedMarker));
+          verification.doLast(CoverageSummaryTask.clearFailed(failedMarker));
+          verification.finalizedBy(whenOn(providers, enabled, summary));
         });
 
     // Only with Spring Boot: without it, nothing about the main class is registered.

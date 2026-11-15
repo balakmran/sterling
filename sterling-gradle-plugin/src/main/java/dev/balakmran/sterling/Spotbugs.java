@@ -8,6 +8,7 @@ import com.github.spotbugs.snom.SpotBugsExtension;
 import com.github.spotbugs.snom.SpotBugsTask;
 import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SpotbugsFilterTask;
+import dev.balakmran.sterling.internal.SpotbugsSummaryTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +16,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
@@ -28,12 +30,14 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
  * to {@code check}, and registers {@code spotbugsMain} itself. Test classes aren't analysed. The
  * exclude filter is Sterling's default merged with the project's own, plus every class compiled
  * from generated sources, as listed by {@code stlGeneratedClasses}, written by {@code
- * stlSpotbugsFilter}. {@code spotbugs.enabled} decides whether {@code stlSec} runs {@code
- * spotbugsMain}; the task itself always exists.
+ * stlSpotbugsFilter}. When {@code spotbugsMain} runs, {@code stlSecSummary} prints its findings on
+ * the console. {@code spotbugs.enabled} decides whether {@code stlSec} runs {@code spotbugsMain};
+ * the task itself always exists.
  */
 final class Spotbugs {
   static final String TASK = "spotbugsMain";
   static final String FILTER_TASK = "stlSpotbugsFilter";
+  static final String SUMMARY_TASK = "stlSecSummary";
   static final String DEFAULT_FILTER = "spotbugs-exclude.xml";
 
   /**
@@ -111,11 +115,34 @@ final class Spotbugs {
           spotbugsMain.flatMap(task -> task.getReports().getByName(format).getOutputLocation()));
     }
 
+    var summary =
+        tasks.register(
+            SUMMARY_TASK,
+            SpotbugsSummaryTask.class,
+            task -> {
+              // Internal: no group, so tasks lists only the stl* tasks people run.
+              task.setDescription("Prints spotbugsMain's findings on the console.");
+              task.onlyIf("the XML report exists", SpotbugsSummaryTask.reportExists());
+              // No task dependency: spotbugsMain failing must not stop its summary.
+              task.getXmlReport().set(project.provider(() -> report(spotbugsMain, "xml")));
+              task.getHtmlReport().set(project.provider(() -> report(spotbugsMain, "html")));
+              task.mustRunAfter(spotbugsMain);
+              task.getSourceDirectories().from(main.getJava().getSourceDirectories());
+              task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+            });
+    spotbugsMain.configure(task ->
+        task.finalizedBy(
+            whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), summary)));
+
     tasks
         .named(SterlingPlugin.SEC)
         .configure(task ->
             task.dependsOn(
                 whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), spotbugsMain)));
+  }
+
+  private static RegularFile report(TaskProvider<SpotBugsTask> task, String format) {
+    return task.get().getReports().getByName(format).getOutputLocation().get();
   }
 
   /**

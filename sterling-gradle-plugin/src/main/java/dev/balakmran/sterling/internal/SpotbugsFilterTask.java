@@ -8,8 +8,6 @@ import java.nio.file.Files;
 import java.util.List;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -129,7 +127,7 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
    */
   public static String merge(
       String sterlingFilter, String consumerFilter, List<String> generatedClasses) {
-    DocumentBuilder builder = secureBuilder();
+    DocumentBuilder builder = Xml.strictBuilder();
     Document merged = builder.newDocument();
     Element root = merged.createElement(ROOT);
     merged.appendChild(root);
@@ -181,19 +179,6 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
       } else {
         dropBlankText(child);
       }
-    }
-  }
-
-  private static DocumentBuilder secureBuilder() {
-    try {
-      DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-      factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-      factory.setXIncludeAware(false);
-      factory.setExpandEntityReferences(false);
-      return factory.newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
-      throw new IllegalStateException("No secure XML parser available", e);
     }
   }
 
