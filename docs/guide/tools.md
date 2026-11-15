@@ -183,15 +183,32 @@ for generated code that lives somewhere else:
 
 ## Coverage
 
-Coverage is measured on the `test` task. After it runs, `jacocoTestReport`
-writes HTML and XML reports, and `stlCov` checks them against the
-thresholds. With coverage off, tests run without the JaCoCo agent at all.
+Coverage is measured on every `Test` task in the project: `test`, and any
+JVM test suite such as `integrationTest`. `stlCov` runs them all, then
+`jacocoTestReport` writes HTML and XML reports from their combined execution
+data and `stlCov` checks them against the thresholds. To count only some of
+them, name them in `coverage.testTasks`; the others run without the JaCoCo
+agent. With coverage off, no test task gets the agent at all.
 
-JaCoCo already ignores classes and methods annotated with any annotation whose
+Classes compiled from generated sources are always left out of the report
+and the verification: the same classes SpotBugs skips, from source
+directories under `build/generated` (OpenAPI generators and the like) and
+annotation processors' output (MapStruct and others), each with its nested
+classes. `stlGeneratedClasses` lists them in
+`build/sterling/generated-classes.txt`. There's no setting for this: JaCoCo
+can't filter by source path, and the `@Generated` those generators add
+(`javax` or `jakarta`) is kept only in source, where JaCoCo can't see it.
+
+With the `org.springframework.boot` plugin applied, the application's main
+class is left out too, with its nested classes: the class Spring Boot's
+`resolveMainClassName` finds, or the one `springBoot { mainClass }` names.
+Tests rarely run its `main` method, and every Boot service used to need an
+exclude for it.
+
+JaCoCo itself ignores classes and methods annotated with any annotation whose
 name contains `Generated` and that's kept in the class file, such as one of
-your own. It's Java's equivalent of `# pragma: no cover`. Annotations kept
-only in source, like MapStruct's or `jakarta.annotation.Generated`, aren't
-seen; use `coverage.excludes` for those.
+your own. It's Java's equivalent of `# pragma: no cover`. For generated code
+that lives somewhere else, use `coverage.excludes`.
 
 **Lombok** 1.18.34 and later mark the code they write with
 `@lombok.Generated`, so getters, `equals`, builders and the rest don't count
@@ -209,9 +226,9 @@ NullAway's Lombok support is best effort: `@Builder`, `@Data`, `@Value` and
 `@Builder.Default` on a `@Nullable` field work in `@NullMarked` code.
 
 `coverage.excludes` patterns match class files under the classes directory,
-such as `com/example/Application*`. End them with `*`: nested and anonymous
-classes compile to their own files, like `Application$1.class`, which
-`com/example/Application.class` alone would miss.
+such as `com/example/Legacy*`. End them with `*`: nested and anonymous
+classes compile to their own files, like `Legacy$1.class`, which
+`com/example/Legacy.class` alone would miss.
 
 ## Where the reports are
 
@@ -221,6 +238,21 @@ classes compile to their own files, like `Application$1.class`, which
 | Error Prone and NullAway | The compiler output of `compileJava` and `compileTestJava`, with no report file |
 | SpotBugs | `build/reports/spotbugs/main.html`, `main.xml` and `main.sarif` |
 | JaCoCo | `build/reports/jacoco/test/html/index.html` and `jacocoTestReport.xml` |
+
+When `stlSec` or `stlCov` fails, the console says why, so neither report has
+to be opened first:
+
+- **SpotBugs** (`stlSecSummary`, after `spotbugsMain`): one line per finding,
+  `src/main/java/com/example/Foo.java:42 [SpotBugs:NP_NULL_ON_SOME_PATH] message`,
+  at most 50, then `... and N more:` with the HTML report's path.
+- **JaCoCo** (`stlCovSummary`, after a failed verification): the measured
+  instruction and branch coverage against the thresholds, then the ten source
+  files with the most missed instructions, such as
+  `com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed`. It prints
+  nothing when the verification passes.
+
+Neither changes the outcome: `spotbugsMain` and the verification fail as
+they always did.
 
 ## Suppressing one finding
 

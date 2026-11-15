@@ -48,5 +48,7 @@ coverage.versionSource
 coverage.instruction
 coverage.branch
 coverage.excludes
+coverage.testTasks
+coverage.excludesMainClass
 coverage.reports
 coverage.reports.xml

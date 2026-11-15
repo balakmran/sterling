@@ -80,6 +80,16 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void coverageListsTheCountedTestTasks() {
+    project
+        .getTasks()
+        .named(SterlingPlugin.INFO, SterlingInfoTask.class)
+        .configure(task -> task.getCoverageTestTasks().set(List.of("test", "integrationTest")));
+
+    assertThat(render()).contains("branch >= 70%; test, integrationTest)");
+  }
+
+  @Test
   void formattingReportsAStyleOtherThanGoogle() {
     sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
 

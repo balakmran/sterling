@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** SpotBugs on the main classes, run by stlSec behind the spotbugs flag. */
 class SpotbugsTest {
   private static final String SPOTBUGS = ":spotbugsMain";
+  private static final String SUMMARY = ":stlSecSummary";
 
   // Dereferences a value that is always null: a high-priority correctness bug.
   private static final String BAD =
@@ -102,6 +103,39 @@ class SpotbugsTest {
   }
 
   @Test
+  void aBugIsPrintedWithItsPathLineAndPattern() {
+    BuildResult result = fixture("").file("src/main/java/app/Bad.java", BAD).buildAndFail("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(outcome(result, SUMMARY)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput())
+        .containsPattern("(?m)^src/main/java/app/Bad\\.java:6 \\[SpotBugs:NP_[A-Z_]+\\] .*text");
+  }
+
+  @Test
+  void printsFiftyFindingsThenPointsAtTheReport() {
+    Fixture fixture = fixture("");
+    for (int i = 0; i < 51; i++) {
+      fixture.file("src/main/java/app/Bad" + i + ".java", BAD.replace("Bad", "Bad" + i));
+    }
+
+    BuildResult result = fixture.buildAndFail("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput().lines().filter(line -> line.contains(" [SpotBugs:"))).hasSize(50);
+    assertThat(result.getOutput()).contains("... and 1 more: build/reports/spotbugs/main.html");
+  }
+
+  @Test
+  void noFindingsPrintNothing() {
+    BuildResult result = fixture("").file("src/main/java/app/Holder.java", HOLDER).build("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, SUMMARY)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput()).doesNotContain("[SpotBugs:");
+  }
+
+  @Test
   void spotbugsDisabledStlSecDoesntRunIt() {
     BuildResult result =
         fixture("sterling { spotbugs { enabled = false } }")
@@ -110,6 +144,7 @@ class SpotbugsTest {
 
     assertThat(outcome(result, ":stlSec")).isEqualTo(TaskOutcome.UP_TO_DATE);
     assertThat(outcome(result, SPOTBUGS)).isNull();
+    assertThat(outcome(result, SUMMARY)).isNull();
   }
 
   @Test

@@ -91,13 +91,15 @@ sterling {
         enabled = true
         instruction = 80                // minimum percent, 0 to 100
         branch = 70                     // minimum percent, 0 to 100
-        excludes.add("com/example/Application*") // class files to leave out
+        testTasks = setOf("test", "integrationTest") // default: every Test task
+        excludes.add("com/example/Legacy*") // class files to leave out
     }
 }
 ```
 
-A threshold outside 0 to 100, or an unknown `sterling.profile`, fails the
-build with a message naming the setting.
+A threshold outside 0 to 100, a `coverage.testTasks` name that isn't a
+`Test` task, or an unknown `sterling.profile`, fails the build with a message
+naming the setting.
 
 An empty `format.ratchetFrom` fails too; leave it unset to format every file.
 
@@ -127,7 +129,7 @@ sterling {
         effort = SpotbugsSettings.Effort.MAX
     }
     coverage {
-        excludes.add('com/example/Application*')
+        excludes.add('com/example/Legacy*')
     }
 }
 ```
@@ -154,6 +156,7 @@ sterling {
 | `coverage.enabled` | Boolean | From the profile |
 | `coverage.instruction` | Percent, 0 to 100 | From the profile |
 | `coverage.branch` | Percent, 0 to 100 | From the profile |
+| `coverage.testTasks` | Set of `Test` task names | Empty, meaning every `Test` task |
 | `coverage.excludes` | List of class-file patterns | Empty |
 
 ## Reading the configuration as JSON
@@ -218,6 +221,8 @@ given as an absolute path.
 | `coverage.instruction` | Percent |
 | `coverage.branch` | Percent |
 | `coverage.excludes` | Class-file patterns |
+| `coverage.testTasks` | The test tasks that count: the setting, or every `Test` task when it's empty; `[]` without the `java` plugin |
+| `coverage.excludesMainClass` | Whether the Spring Boot main class is left out: true with the `org.springframework.boot` plugin |
 | `coverage.reports` | Object; absent without the `java` plugin |
 | `coverage.reports.xml` | Path |
 

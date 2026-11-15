@@ -6,19 +6,21 @@ import com.github.spotbugs.snom.Confidence;
 import com.github.spotbugs.snom.Effort;
 import com.github.spotbugs.snom.SpotBugsExtension;
 import com.github.spotbugs.snom.SpotBugsTask;
+import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SpotbugsFilterTask;
+import dev.balakmran.sterling.internal.SpotbugsSummaryTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.gradle.api.Project;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
-import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
 /**
@@ -27,12 +29,15 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
  * <p>Sterling applies {@code com.github.spotbugs-base}, which creates no tasks and doesn't attach
  * to {@code check}, and registers {@code spotbugsMain} itself. Test classes aren't analysed. The
  * exclude filter is Sterling's default merged with the project's own, plus every class compiled
- * from generated sources, written by {@code stlSpotbugsFilter}. {@code spotbugs.enabled} decides
- * whether {@code stlSec} runs {@code spotbugsMain}; the task itself always exists.
+ * from generated sources, as listed by {@code stlGeneratedClasses}, written by {@code
+ * stlSpotbugsFilter}. When {@code spotbugsMain} runs, {@code stlSecSummary} prints its findings on
+ * the console. {@code spotbugs.enabled} decides whether {@code stlSec} runs {@code spotbugsMain};
+ * the task itself always exists.
  */
 final class Spotbugs {
   static final String TASK = "spotbugsMain";
   static final String FILTER_TASK = "stlSpotbugsFilter";
+  static final String SUMMARY_TASK = "stlSecSummary";
   static final String DEFAULT_FILTER = "spotbugs-exclude.xml";
 
   /**
@@ -53,8 +58,10 @@ final class Spotbugs {
    *
    * @param project a project with the {@code java} plugin applied
    * @param sterling the project's {@code sterling} extension
+   * @param generated {@code stlGeneratedClasses}, whose list the filter excludes
    */
-  static void configure(Project project, SterlingExtension sterling) {
+  static void configure(
+      Project project, SterlingExtension sterling, TaskProvider<GeneratedClassesTask> generated) {
     project.getPluginManager().apply("com.github.spotbugs-base");
     SpotBugsExtension extension = project.getExtensions().getByType(SpotBugsExtension.class);
     extension.getToolVersion().convention(ToolVersions.get("spotbugs"));
@@ -74,19 +81,7 @@ final class Spotbugs {
               task.setDescription("Merges Sterling's SpotBugs exclude filter with the project's.");
               task.getSterlingFilter().set(defaultFilter());
               task.getConsumerFilter().set(sterling.getSpotbugs().getExcludeFilter());
-              // Generators' source directories, and javac's annotation-processor output.
-              task.getGeneratedSources()
-                  .from(
-                      project.provider(() ->
-                          main.getJava().getSrcDirs().stream()
-                              .filter(Spotbugs::isGenerated)
-                              .toList()));
-              task.getGeneratedSources()
-                  .from(
-                      tasks
-                          .named(main.getCompileJavaTaskName(), JavaCompile.class)
-                          .flatMap(
-                              compile -> compile.getOptions().getGeneratedSourceOutputDirectory()));
+              task.getGeneratedClasses().set(generated.flatMap(GeneratedClassesTask::getClassList));
               task.getMergedFilter()
                   .set(
                       project
@@ -120,11 +115,34 @@ final class Spotbugs {
           spotbugsMain.flatMap(task -> task.getReports().getByName(format).getOutputLocation()));
     }
 
+    var summary =
+        tasks.register(
+            SUMMARY_TASK,
+            SpotbugsSummaryTask.class,
+            task -> {
+              // Internal: no group, so tasks lists only the stl* tasks people run.
+              task.setDescription("Prints spotbugsMain's findings on the console.");
+              task.onlyIf("the XML report exists", SpotbugsSummaryTask.reportExists());
+              // No task dependency: spotbugsMain failing must not stop its summary.
+              task.getXmlReport().set(project.provider(() -> report(spotbugsMain, "xml")));
+              task.getHtmlReport().set(project.provider(() -> report(spotbugsMain, "html")));
+              task.mustRunAfter(spotbugsMain);
+              task.getSourceDirectories().from(main.getJava().getSourceDirectories());
+              task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+            });
+    spotbugsMain.configure(task ->
+        task.finalizedBy(
+            whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), summary)));
+
     tasks
         .named(SterlingPlugin.SEC)
         .configure(task ->
             task.dependsOn(
                 whenOn(project.getProviders(), sterling.getSpotbugs().getEnabled(), spotbugsMain)));
+  }
+
+  private static RegularFile report(TaskProvider<SpotBugsTask> task, String format) {
+    return task.get().getReports().getByName(format).getOutputLocation().get();
   }
 
   /**
@@ -145,17 +163,6 @@ final class Spotbugs {
    */
   static Confidence confidence(SpotbugsSettings.Confidence confidence) {
     return Confidence.valueOf(confidence.name());
-  }
-
-  /**
-   * Whether a source directory holds generated code: whether it's under a {@code build/generated}
-   * directory, the same rule Spotless and Error Prone apply.
-   *
-   * @param directory a source directory
-   * @return true for generated sources
-   */
-  static boolean isGenerated(File directory) {
-    return (directory.getPath() + File.separator).matches(ErrorProne.GENERATED_PATHS);
   }
 
   /**
