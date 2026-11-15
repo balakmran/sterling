@@ -12,7 +12,7 @@ block, and the `errorprone(...)` declarations that went with it.
 
 | In your build | What to do |
 |---|---|
-| The `com.github.spotbugs` plugin | Remove it (commit 1: Sterling won't configure beside it). Keep its `spotbugs { }` settings for commit 4 |
+| The `com.github.spotbugs` plugin | Remove it (commit 1: Sterling won't configure beside it), and move its `spotbugs { }` settings into `sterling { spotbugs { } }` in the same commit: the block can't compile without the plugin |
 | `spotbugs { effort }` and `spotbugs { reportLevel }` | Move to `sterling { spotbugs { effort; reportLevel } }`, same values |
 | `spotbugs { excludeFilter }` | Move to `sterling { spotbugs { excludeFilter } }`, same file |
 | `googleJavaFormat()` in `spotless { java { } }` | Remove (commit 1: a second one fails) |
@@ -41,6 +41,9 @@ block, and the `errorprone(...)` declarations that went with it.
 - `target(...)` and `isEnforceCheck`/`enforceCheck` in a `spotless { }` block
   are not steps: leave them and mention them in the report.
 - Checkstyle and PMD stay as they are.
+- When nothing but `target(...)` or `isEnforceCheck` is left in a `spotless { }`
+  block, keep the block and the Spotless plugin. When the block is empty,
+  remove it and the plugin, and the Spotless dependency from `build-logic`.
 - A tool plugin that's declared in a convention plugin stays there if other
   code in it still needs it (a Spotless license-header step, for example);
   apply Sterling after it, last in `plugins { }`.

@@ -46,7 +46,8 @@ These hold for the whole run.
    write an agent's project or workspace plugin settings.
 6. Never use `--no-verify`, `-x <task>` or `--offline` to get something to pass.
 7. Show the plan and wait for confirmation before the first change, unless the
-   request already approved it.
+   request already approved it. Create the branch (guardrail 1) once the plan is
+   confirmed.
 8. End with the report (below).
 
 ## 1. Detect
@@ -81,7 +82,9 @@ show it, and wait for confirmation (guardrail 7). It names:
 - `format.style`: `GOOGLE` unless the user picks `AOSP`. When
   `fourSpaceIndentShare` is 50 or more in the Java projects, say that `AOSP`
   (4-space indentation, same formatter) would make the reformat far smaller,
-  and let the user choose, even when the request already named a style
+  and let the user choose when you can ask. When you can't, or the request
+  already named a style, use that style and say in the report that `AOSP`
+  would have shrunk the reformat
 - the reformat commit, or `format.ratchetFrom` instead, which formats only
   changed files and skips the reformat and blame commits (needs the base
   branch fetched in CI)
@@ -91,12 +94,14 @@ show it, and wait for confirmation (guardrail 7). It names:
 
 ## 3a. New project
 
-1. Add the plugin and `stlFmt` the sources; commit as
+1. Add the plugin as in 3b commit 1 (last in `plugins { }` when there is no
+   catalog or convention plugin) and `stlFmt` the sources; commit both as
    `build: add Sterling <version>`. No `sterling.profile`: the default is
-   `STANDARD`.
+   `STANDARD`. There is no separate reformat or blame commit.
 2. `scripts/outcomes.sh stlCheck`. If it fails, report the failing tasks and
    point to `fix-sterling-findings`; don't lower anything.
-3. Add the hook (`reference/hooks.md`) and commit it.
+3. Add the hook (`reference/hooks.md`) and commit it as
+   `chore: check formatting before every commit`.
 
 ## 3b. Existing project
 
@@ -110,12 +115,18 @@ After each, `git status` is clean.
    refuses to configure beside the `com.github.spotbugs` plugin or Spotless's
    `googleJavaFormat()`/`formatAnnotations()` steps, so remove exactly those in
    this commit and name them in its body; the rest of the duplicates go in
-   commit 4. Apply Sterling after any plugin it replaces. Then
+   commit 4. A `spotbugs { }` block and its `com.github.spotbugs.snom` imports
+   can't compile without that plugin, so move those settings to
+   `sterling { spotbugs { } }` in this commit (see `reference/settings.md` for
+   the types), put their values in the commit body, and drop the SpotBugs
+   plugin dependency from `build-logic` with them. Apply Sterling after any plugin it replaces. Then
    `scripts/outcomes.sh compileJava compileTestJava` must succeed; Error
    Prone's error-level findings fail compilation in every profile. If it
    fails, stop and hand over to `fix-sterling-findings` (with the user's
    go-ahead).
-2. **`style: reformat with google-java-format <version>`** (the version is
+2. **`style: reformat with google-java-format <version>`** (skip this and
+   commit 3 when `stlFmt` changes nothing: the sources were already formatted,
+   and the report says so and leaves out the `blame.ignoreRevsFile` step) (the version is
    the formatter's, from `stlInfo --json`; skip when using
    `format.ratchetFrom`). Set `format.style` first when it isn't `GOOGLE`, in
    commit 1. Run `scripts/outcomes.sh stlFmt`, commit only that: stage with
@@ -140,8 +151,9 @@ After each, `git status` is clean.
    `scripts/outcomes.sh test jacocoTestReport -Psterling.profile=standard`,
    which runs every `Test` task with the agent on. For each module, take
    `coverage.reports.xml` from `scripts/outcomes.sh -q stlInfo --json` (one
-   line per module, `project` names it) and run
-   `scripts/coverage.sh <that file>`. Put the rounded-down values in that
+   line per module, `project` names it). The path is relative to that module's
+   directory, so prefix the module's directory, and run
+   `scripts/coverage.sh <that file>` from the project root. Put the rounded-down values in that
    module's own build script: `sterling { coverage { instruction = N; branch = M } }`,
    even when a convention plugin applies Sterling. A module with `branches` of 0
    gets `branch = 0`; say so in the report. Never set a value above the

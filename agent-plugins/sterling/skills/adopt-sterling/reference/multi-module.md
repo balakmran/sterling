@@ -17,7 +17,17 @@ version and settings. Detection's `buildLogic` says whether the build has
 
    Keep the Spotless dependency only if the convention plugin still applies
    `com.diffplug.spotless` for steps of its own. If the version comes from the
-   version catalog, add the library there and use it.
+   version catalog, add the library there and use it:
+
+   ```toml
+   [versions]
+   sterling = "<version>"
+
+   [libraries]
+   sterling-gradle-plugin = { module = "dev.balakmran.sterling:sterling-gradle-plugin", version.ref = "sterling" }
+   ```
+
+   then `implementation(libs.sterling.gradle.plugin)`.
 2. In the convention plugin, apply `id("dev.balakmran.sterling")` last in
    `plugins { }`. The modules that apply the convention plugin get Sterling.
 3. Shared settings (`format.style`, `errorProne { disable(...) }`) go in the

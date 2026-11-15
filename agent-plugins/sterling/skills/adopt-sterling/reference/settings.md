@@ -9,7 +9,7 @@ Every setting below exists in Sterling's DSL (`sterling { }`). Detection and
 | `format.ratchetFrom` | Only when the user picks it instead of the reformat commit: `sterling { format { ratchetFrom = "origin/main" } }`. The reference must exist locally; CI needs `fetch-depth: 0`. Say so in the report |
 | `errorProne.disable(...)` | Moves the project's own disabled checks; never add one to make a build pass |
 | `nullAway.jspecifyMode` | Only to keep a mode the project already had on |
-| `spotbugs.effort`, `spotbugs.reportLevel`, `spotbugs.excludeFilter` | Move the project's own SpotBugs settings here (see `duplicate-config.md`) |
+| `spotbugs.effort`, `spotbugs.reportLevel`, `spotbugs.excludeFilter` | Move the project's own SpotBugs settings here (see `duplicate-config.md`). They take Sterling's types: `import dev.balakmran.sterling.SpotbugsSettings`, then `SpotbugsSettings.Effort.MAX` and `SpotbugsSettings.Confidence.LOW`, in place of the `com.github.spotbugs.snom` enums |
 | `coverage.instruction`, `coverage.branch` | From the measurement, per module, in that module's build script |
 | `coverage.testTasks` | Leave unset: every `Test` task counts, so an `integrationTest` suite is in the measurement. Set it only if the project's old coverage deliberately counted fewer |
 | `coverage.excludes` | Moves the project's existing excludes. Don't add one for the Spring Boot main class or for generated sources: Sterling leaves both out |

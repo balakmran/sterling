@@ -79,11 +79,13 @@ if [[ -n "$reformat_sha" ]]; then
   others="$(git log --format=%H "$initial..HEAD" | grep -v "$reformat_sha")"
   src_touched=false
   for sha in $others; do
-    git diff-tree --no-commit-id --name-only -r "$sha" | grep -qE '(^|/)src/' && src_touched=true
+    git diff-tree --no-commit-id --name-only -r "$sha" | grep -vE '^(build-logic|buildSrc)/' | grep -qE '(^|/)src/' && src_touched=true
   done
   check "no other commit touches src/" test "$src_touched" = false
 else
-  bad "no reformat commit (expected unless format.ratchetFrom was chosen)"
+  # Fine when the sources were already formatted, or format.ratchetFrom was chosen.
+  check "no reformat commit, so stlFmtCheck passes as it is" ./gradlew --console=plain -q stlFmtCheck
+  check "and no blame-ignore file was made" test ! -f .git-blame-ignore-revs
 fi
 
 for pattern in 'id\("com.github.spotbugs"\)' 'googleJavaFormat\(' 'removeUnusedImports' 'trimTrailingWhitespace' \
