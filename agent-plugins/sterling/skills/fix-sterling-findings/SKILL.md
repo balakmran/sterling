@@ -10,7 +10,7 @@ description: >-
 license: Apache-2.0
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/outcomes.sh:*) Bash(${CLAUDE_SKILL_DIR}/scripts/findings.sh)
 metadata:
-  sterling-version: "0.1.0" # x-release-please-version
+  sterling-version: "0.2.0" # x-release-please-version
 ---
 
 # Fix Sterling's findings

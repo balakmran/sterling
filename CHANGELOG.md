@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0](https://github.com/balakmran/sterling/compare/v0.1.0...v0.2.0) (2026-11-15)
+
+
+### Features
+
+* add format and version sources to stlInfo --json ([de4ee48](https://github.com/balakmran/sterling/commit/de4ee48b7eb9cc62cbf453fba4bfa95cc92ff5ec))
+* add stlInfo --json ([3be9b5a](https://github.com/balakmran/sterling/commit/3be9b5a3ae4933b64f5fa669d99671c92dec5e0a))
+* agent plugin skills and evals ([#34](https://github.com/balakmran/sterling/issues/34)) ([b300ae5](https://github.com/balakmran/sterling/commit/b300ae541e029d18fc322ae197efae9941be9f85))
+* check NullAway contracts and test assertions ([26a9163](https://github.com/balakmran/sterling/commit/26a9163c42e767a5bdb77a863bfaf49ae97e4546))
+* coverage counts every test task, skips generated and Boot main classes, and failures print ([#30](https://github.com/balakmran/sterling/issues/30)) ([c9e2126](https://github.com/balakmran/sterling/commit/c9e21261a87decee1b8d697152cfa7a8ed530e61))
+* format.ratchetFrom ([faf3334](https://github.com/balakmran/sterling/commit/faf3334ff45106370162d3b4c13479ff9fbdfccc))
+* format.style ([b8b815b](https://github.com/balakmran/sterling/commit/b8b815b7e2f27b1509794cdeb48f4be39bea5440))
+* show tool version overrides ([806b560](https://github.com/balakmran/sterling/commit/806b560c490cfee0fbc5ee7c48b27f6a35f1b3dd))
+* **skills:** detection, task outcome and coverage scripts ([f2aa0f9](https://github.com/balakmran/sterling/commit/f2aa0f9170fde07170d0f9488402a2c7c5c5f695))
+
 ## [0.1.0](https://github.com/balakmran/sterling/compare/v0.1.0-alpha.6...v0.1.0) (2026-11-14)
 
 
