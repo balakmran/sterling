@@ -76,11 +76,10 @@ Changes agreed before GA:
 
 Remove the reasons a Spring team backs out in the first hour.
 
-- Spring-aware NullAway defaults, starting with
-  `CustomContractAnnotations=org.springframework.lang.Contract`, and README
-  guidance for NullAway's known limitations with Spring and Reactor APIs.
-  Compare with what `io.spring.nullability` sets first, including its test
-  options (AssertJ's `Contract`, `HandleTestAssertionLibraries`).
+- Spring-aware NullAway defaults: `CheckContracts` and
+  `HandleTestAssertionLibraries` on every compilation, and guidance on
+  NullAway's known limits with Spring. `CustomContractAnnotations` is dropped:
+  NullAway honours any annotation named `Contract`.
 - Spring Boot behaviour, such as leaving the application class out of
   coverage, switched on by reacting to `org.springframework.boot`.
 - Lombok: a functional test and a README section.
@@ -102,6 +101,12 @@ Remove the reasons a Spring team backs out in the first hour.
   `build-logic`.
 - Releases: a Dependabot bump that passes the matrix and changes no findings
   becomes a patch release with no manual steps (rule 7 covers the rest).
+- An agent plugin for GitHub Copilot (CLI and VS Code), Claude Code and
+  Codex, installed at user scope from the `balakmran/agent-plugins`
+  marketplace: skills to adopt Sterling, fix its findings, upgrade it and
+  write code that passes it, plus `stlInfo --json` for them to read. Its
+  version is Sterling's. Plan:
+  [`docs/plans/agent-plugin.md`](docs/plans/agent-plugin.md).
 
 **Done when** a Spring Boot 4 service with Lombok, generated OpenAPI code and an
 integration test suite adopts Sterling with nothing in its build but the
@@ -178,3 +183,6 @@ and at least five public projects build with Sterling.
 | 2026-11-11 | The Spring Boot 4 example moves from 1.0 to 0.2 | Target users are closed-source services; without it there is no public proof |
 | 2026-11-11 | Spotless `misc` and `kotlinGradle` move from 0.2 to 0.5 | Breadth, and `kotlinGradle` adds a formatter pin; adoption work comes first |
 | 2026-11-11 | No Maven support | A Maven plugin is a second codebase with its own lifecycle; one maintainer can't keep both tested every month |
+| 2026-11-15 | `CustomContractAnnotations` dropped from 0.2.0 | NullAway accepts any annotation named `Contract` since 0.12.11, so setting it is redundant; a functional test proves Spring's is honoured |
+| 2026-11-15 | An agent plugin ships with 0.2.0, at the same version | Adopting Sterling on a real service is the milestone's goal; skills do the reformat, config removal and measured thresholds that teams back out of by hand |
+| 2026-11-15 | The agent plugin is installed at user scope from a separate marketplace repository | Every agent has its own plugin manager; nothing is written into consumer projects |

@@ -103,6 +103,48 @@ plugin in `build-logic`, so the version and shared settings live in one place
 gets its own `stl*` tasks and gate, can override any setting in its own
 `sterling { }` block, and `./gradlew stlCheck` at the root runs them all.
 
+## Using Sterling with a coding agent
+
+An agent plugin adds Sterling to a project, fixes what the gate finds,
+upgrades Sterling, and keeps the code an agent writes inside the gate. It
+works with GitHub Copilot (CLI and VS Code), Claude Code and Codex, and you
+install it once, for your user: nothing is added to your projects. Each command
+below adds the `balakmran` marketplace and installs `sterling` from it.
+
+```bash
+# Claude Code
+claude plugin marketplace add balakmran/agent-plugins --scope user
+claude plugin install sterling@balakmran --scope user
+
+# GitHub Copilot CLI (VS Code picks up plugins installed here)
+copilot plugin marketplace add balakmran/agent-plugins
+copilot plugin install sterling@balakmran
+
+# Codex CLI
+codex plugin marketplace add balakmran/agent-plugins
+codex plugin add sterling@balakmran
+```
+
+In VS Code, open the Agents window, then Customizations, Plugins and
+Configure Marketplaces, add `balakmran/agent-plugins`, and install Sterling
+under **User**. The Codex IDE extension doesn't support plugins.
+
+| Skill | What it does |
+|---|---|
+| `adopt-sterling` | Adds Sterling to a new or existing Gradle project as reviewable commits: the plugin, one reformat commit hidden from `git blame`, the old tool config removed, coverage thresholds set from the measured value, and a pre-commit hook. Stops when Gradle is below 9.0 or the JDK below 21 |
+| `fix-sterling-findings` | Fixes what `stlCheck` reports, in rounds, one commit per tool. Suppresses only as a last resort, with a reason |
+| `upgrade-sterling` | Moves a project to the Sterling version the plugin shipped with, following [the upgrade notes](docs/guide/upgrading.md) |
+| `sterling-conventions` | Loads automatically while the agent writes Java in a project that applies Sterling, so the code passes the gate the first time |
+
+Ask the agent in plain words ("add Sterling to this project") or invoke a
+skill by name; in Claude Code it's `/sterling:adopt-sterling`. The skills
+never push, never open pull requests and never lower a threshold, and each
+ends with a report of what it ran and committed. Each applies the Sterling
+version it was released with, never "latest", so keep the plugin and Sterling
+in step. To update the plugin, run `claude plugin update sterling@balakmran`
+(auto-update is off for third-party marketplaces), `copilot plugin update`,
+`codex plugin marketplace upgrade`, or *Chat: Update Plugins* in VS Code.
+
 ## Profiles
 
 | | `LENIENT` | `STANDARD` (default) | `STRICT` |

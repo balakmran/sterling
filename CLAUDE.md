@@ -3,10 +3,11 @@
 One code-quality gate for Java 21+ Gradle builds: google-java-format, Error Prone, NullAway with JSpecify, SpotBugs and JaCoCo, at versions tested together, run by stlCheck and tuned by one profile.
 Published as a Gradle plugin under `dev.balakmran.sterling`.
 
-Current milestone: **v0.1.0**. The plan, scope, configuration model and
-acceptance criteria are in `docs/plans/v0.1.0.md`. Read it before starting work
-and do not build anything listed under "Out" there. Later milestones are in
-`ROADMAP.md`.
+Current milestone: **v0.2.0**. The plan, scope, configuration model and
+acceptance criteria are in `docs/plans/v0.2.0.md`, and the agent plugin that
+ships with it has its own, `docs/plans/agent-plugin.md`. Read them before
+starting work and do not build anything listed under "Out" there. Later
+milestones are in `ROADMAP.md`; v0.1.0's plan is `docs/plans/v0.1.0.md`.
 
 ## Identifiers
 
@@ -22,7 +23,7 @@ and do not build anything listed under "Out" there. Later milestones are in
 
 These are frozen. Do not rename them.
 
-## What v0.1.0 ships
+## What Sterling ships
 
 Five tools, each with an `enabled` flag whose default comes from `profile`:
 
@@ -57,6 +58,7 @@ sterling/
 ├── docs/plans/
 ├── agent-plugins/
 │   ├── sterling/                    # the agent plugin: manifests per agent, skills/
+│   ├── evals/                       # fixtures, run.sh and verify scripts for the skills
 │   └── schemas/                     # Agent Plugins schema, vendored for CI
 └── .github/workflows/
 ```
