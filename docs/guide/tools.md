@@ -41,6 +41,10 @@ pull request, with `stlFmt` run and any new findings fixed or disabled.
 Spring AOT) are left alone. Each file keeps the line endings it has; enforce
 those with `.gitattributes` or Spotless's own `lineEndings` setting.
 
+`format.style = FormatSettings.Style.AOSP` runs the same google-java-format
+with 4-space indentation instead of 2, for a codebase that already indents
+by 4 (see [Reformatting](adopting.md#reformatting-and-first-findings)).
+
 ## Error Prone
 
 Error Prone runs inside every Java compilation. Error-level findings always

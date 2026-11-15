@@ -9,6 +9,7 @@ own in the `sterling { }` block.
 |---|---|---|---|
 | `attachToCheck` | false | true | true |
 | `format.enabled` | true | true | true |
+| `format.style` | `GOOGLE` | `GOOGLE` | `GOOGLE` |
 | `errorProne.enabled` | true | true | true |
 | `errorProne.warningsAsErrors` | false | false | true |
 | `nullAway.enabled` | true | true | true |
@@ -58,6 +59,7 @@ Set any setting to override that setting alone. The values below are
 `STANDARD`'s defaults:
 
 ```kotlin
+import dev.balakmran.sterling.FormatSettings
 import dev.balakmran.sterling.Profile
 import dev.balakmran.sterling.SpotbugsSettings
 
@@ -67,6 +69,7 @@ sterling {
 
     format {
         enabled = true
+        style = FormatSettings.Style.GOOGLE // GOOGLE | AOSP (4-space indentation)
     }
     errorProne {
         enabled = true
@@ -94,6 +97,12 @@ sterling {
 
 A threshold outside 0 to 100, or an unknown `sterling.profile`, fails the
 build with a message naming the setting.
+
+`format.style` is read once, when Spotless configures `spotlessJava`,
+normally after every build script has run. A build that realises
+`spotlessJava` early and sets it later, in an `afterEvaluate` block for
+example, fails with Gradle's "final" error rather than having the value
+ignored.
 
 In a Groovy build script, the block is the same apart from quotes:
 
@@ -127,6 +136,7 @@ sterling {
 | `profile` | `Profile`: `LENIENT`, `STANDARD` or `STRICT` | The `sterling.profile` property, else `STANDARD` |
 | `attachToCheck` | Boolean | From the profile |
 | `format.enabled` | Boolean | true |
+| `format.style` | `FormatSettings.Style`: `GOOGLE` or `AOSP` | `GOOGLE` |
 | `errorProne.enabled` | Boolean | true |
 | `errorProne.warningsAsErrors` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |
