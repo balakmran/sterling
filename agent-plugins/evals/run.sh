@@ -8,7 +8,9 @@
 #        run.sh --verify <work directory>
 #   agent      claude (copilot and codex have no headless runner here yet)
 #   skill      adopt-sterling | fix-sterling-findings | upgrade-sterling | sterling-conventions
-#   fixture    a directory name under fixtures/, e.g. brownfield-service or unsupported/gradle-8
+#   fixture    a directory name under fixtures/, e.g. brownfield-service or unsupported/gradle-8,
+#              or the path of any project directory (its settings files may carry the
+#              `// @sterling-eval-repo` marker in a plugin repositories block)
 #
 # By default the run simulates the release: the repository is copied, its version bumped to
 # --sterling-version (default 0.2.0) in version.txt, the three manifests and every skill, and the
@@ -56,7 +58,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ "$agent" == claude || $prepare_only == true ]] || { echo "run.sh: no headless runner for '$agent' yet; only claude." >&2; exit 2; }
-[[ -d "$here/fixtures/$fixture" ]] || { echo "run.sh: no fixture '$fixture'." >&2; exit 2; }
+if [[ -d "$here/fixtures/$fixture" ]]; then
+  fixture_dir="$here/fixtures/$fixture"
+elif [[ -d "$fixture" ]]; then
+  fixture_dir="$(cd "$fixture" && pwd)"
+else
+  echo "run.sh: no fixture '$fixture'." >&2
+  exit 2
+fi
 [[ -x "$here/verify/$skill.sh" ]] || { echo "run.sh: no verify script for '$skill'." >&2; exit 2; }
 command -v claude >/dev/null || { echo "run.sh: claude is not on PATH." >&2; exit 2; }
 
@@ -97,7 +106,7 @@ fi
 
 # --- The project: the fixture, the repo's wrapper, a git history of one commit.
 mkdir -p "$project"
-cp -R "$here/fixtures/$fixture/." "$project/"
+cp -R "$fixture_dir/." "$project/"
 cp "$repo/gradlew" "$project/gradlew"
 mkdir -p "$project/gradle/wrapper"
 cp "$repo/gradle/wrapper/gradle-wrapper.jar" "$project/gradle/wrapper/"
