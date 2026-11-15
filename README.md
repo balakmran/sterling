@@ -101,9 +101,11 @@ sterling {
 
 ### Multi-module builds
 
-Apply Sterling in every module that has Java code, in each build script or
-from a convention plugin in `build-logic`. Each module gets its own `stl*`
-tasks and gate, and `./gradlew stlCheck` at the root runs them all.
+Apply Sterling in every module that has Java code, best from a convention
+plugin in `build-logic`, so the version and shared settings live in one place
+(see [the recipe](docs/guide/adopting.md#multi-module-builds)). Each module
+gets its own `stl*` tasks and gate, can override any setting in its own
+`sterling { }` block, and `./gradlew stlCheck` at the root runs them all.
 
 ## Profiles
 
