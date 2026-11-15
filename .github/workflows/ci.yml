@@ -91,3 +91,6 @@ jobs:
           pipx run check-jsonschema==0.39.0
           --schemafile agent-plugins/schemas/agent-plugins-1.0.0-plugin.schema.json
           agent-plugins/sterling/plugin.json
+
+      - name: Check the scripts
+        run: shellcheck agent-plugins/sterling/skills/*/scripts/*.sh
