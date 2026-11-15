@@ -106,11 +106,19 @@ Coverage is measured on the `test` task. After it runs, `jacocoTestReport`
 writes HTML and XML reports, and `stlCov` checks them against the
 thresholds. With coverage off, tests run without the JaCoCo agent at all.
 
-JaCoCo already ignores classes and methods annotated with any annotation whose
+Classes compiled from generated sources are always left out of the report
+and the verification: the same classes SpotBugs skips, from source
+directories under `build/generated` (OpenAPI generators and the like) and
+annotation processors' output (MapStruct and others), each with its nested
+classes. `stlGeneratedClasses` lists them in
+`build/sterling/generated-classes.txt`. There's no setting for this: JaCoCo
+can't filter by source path, and the `@Generated` those generators add
+(`javax` or `jakarta`) is kept only in source, where JaCoCo can't see it.
+
+JaCoCo itself ignores classes and methods annotated with any annotation whose
 name contains `Generated` and that's kept in the class file, such as one of
-your own. It's Java's equivalent of `# pragma: no cover`. Annotations kept
-only in source, like MapStruct's or `jakarta.annotation.Generated`, aren't
-seen; use `coverage.excludes` for those.
+your own. It's Java's equivalent of `# pragma: no cover`. For generated code
+that lives somewhere else, use `coverage.excludes`.
 
 **Lombok** marks the code it writes with `@lombok.Generated` only when told
 to. Without this `lombok.config` at the project root, every getter, `equals`

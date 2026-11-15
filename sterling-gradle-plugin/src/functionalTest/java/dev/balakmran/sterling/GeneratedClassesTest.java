@@ -107,6 +107,53 @@ class GeneratedClassesTest {
             """);
   }
 
+  // Covers every hand-written class; the generated ones stay untested.
+  private static final String TESTS =
+      """
+      package app;
+
+      import static org.junit.jupiter.api.Assertions.assertEquals;
+
+      import org.junit.jupiter.api.Test;
+
+      class OrderTest {
+        @Test
+        void records() {
+          assertEquals("1", new Order("1").id());
+          assertEquals("1", new OrderView("1").id());
+        }
+      }
+      """;
+
+  @Test
+  void coverageLeavesOutGeneratedClasses() {
+    Fixture fixture = fixture("").file("src/test/java/app/OrderTest.java", TESTS);
+
+    BuildResult result = fixture.build("stlCov", "jacocoTestReport");
+
+    assertThat(outcome(result, ":jacocoTestCoverageVerification"))
+        .describedAs(result.getOutput())
+        .isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("build/sterling/generated-classes.txt"))
+        .isEqualTo("app.OrderMapperImpl\ngen.api.OrderDto\n");
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("app/Order\"")
+        .doesNotContain("OrderMapperImpl")
+        .doesNotContain("OrderDto");
+  }
+
+  @Test
+  void coverageReusesTheConfigurationCacheAndStaysUpToDate() {
+    Fixture fixture = fixture("").file("src/test/java/app/OrderTest.java", TESTS);
+    fixture.build("stlCov");
+
+    BuildResult second = fixture.build("stlCov");
+
+    assertThat(second.getOutput()).contains("Reusing configuration cache.");
+    assertThat(outcome(second, ":jacocoTestCoverageVerification"))
+        .isEqualTo(TaskOutcome.UP_TO_DATE);
+  }
+
   @Test
   void theListIsUpToDateUntilTheGeneratedSourcesChange() {
     Fixture fixture = fixture("");

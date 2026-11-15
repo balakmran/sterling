@@ -2,15 +2,19 @@ package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Flags.whenOn;
 
+import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.math.BigDecimal;
 import java.util.List;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension;
@@ -32,6 +36,9 @@ import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
  * early when a build script creates the tasks before its {@code sterling { }} block, as Spring
  * Initializr's {@code tasks.withType<Test> { }} does; it would see the profile's defaults instead
  * of the project's settings.
+ *
+ * <p>Classes compiled from generated sources are always left out of the report and the
+ * verification, through a {@link CoverageExclusion} that reads {@code stlGeneratedClasses}' list.
  */
 final class Coverage {
   private static final String TEST = "test";
@@ -45,8 +52,10 @@ final class Coverage {
    *
    * @param project a project with the {@code java} plugin applied
    * @param sterling the project's {@code sterling} extension
+   * @param generated {@code stlGeneratedClasses}, whose classes are left out
    */
-  static void configure(Project project, SterlingExtension sterling) {
+  static void configure(
+      Project project, SterlingExtension sterling, TaskProvider<GeneratedClassesTask> generated) {
     project.getPluginManager().apply(JacocoPlugin.class);
     // A plain field, not a Property: set now so the consumer's script, which runs later, wins.
     project
@@ -58,6 +67,7 @@ final class Coverage {
     Provider<Boolean> enabled = coverage.getEnabled();
     TaskContainer tasks = project.getTasks();
 
+    Provider<RegularFile> generatedList = generated.flatMap(GeneratedClassesTask::getClassList);
     // Every build script has run by now. The result is stored in the configuration cache.
     project
         .getGradle()
@@ -65,7 +75,7 @@ final class Coverage {
         .whenReady(graph ->
             graph.getAllTasks().stream()
                 .filter(task -> task.getProject() == project)
-                .forEach(task -> applySettings(project, task, coverage)));
+                .forEach(task -> applySettings(project, task, coverage, generatedList)));
     tasks
         .named(TEST)
         .configure(
@@ -80,6 +90,7 @@ final class Coverage {
           report.onlyIf("coverage is enabled", Flags.onlyIf(enabled));
           report.getReports().getXml().getRequired().set(true);
           report.getReports().getHtml().getRequired().set(true);
+          declareExclusionInputs(report, generatedList);
         });
 
     SterlingPlugin.reportToInfo(
@@ -92,7 +103,10 @@ final class Coverage {
 
     tasks
         .named(VERIFICATION, JacocoCoverageVerification.class)
-        .configure(verification -> verification.dependsOn(TEST));
+        .configure(verification -> {
+          verification.dependsOn(TEST);
+          declareExclusionInputs(verification, generatedList);
+        });
 
     tasks
         .named(SterlingPlugin.COV)
@@ -100,8 +114,17 @@ final class Coverage {
             task.dependsOn(whenOn(project.getProviders(), enabled, tasks.named(VERIFICATION))));
   }
 
+  // The exclusion reads these files, so a change to one must rerun the task.
+  private static void declareExclusionInputs(Task task, Provider<RegularFile> generatedList) {
+    task.getInputs()
+        .file(generatedList)
+        .withPropertyName("sterlingGeneratedClasses")
+        .withPathSensitivity(PathSensitivity.NONE);
+  }
+
   // The values from sterling { }, for one task about to run.
-  private static void applySettings(Project project, Task task, CoverageSettings coverage) {
+  private static void applySettings(
+      Project project, Task task, CoverageSettings coverage, Provider<RegularFile> generatedList) {
     if (task instanceof Test test) {
       // Coverage off means no agent, so a JDK that JaCoCo doesn't support yet can't break tests.
       test.getExtensions()
@@ -117,9 +140,9 @@ final class Coverage {
             rule.limit(limit -> minimum(limit, "INSTRUCTION", instruction));
             rule.limit(limit -> minimum(limit, "BRANCH", branch));
           });
-      applyExcludes(project, verification, coverage);
+      applyExcludes(project, verification, coverage, generatedList);
     } else if (task instanceof JacocoReport report && REPORT.equals(task.getName())) {
-      applyExcludes(project, report, coverage);
+      applyExcludes(project, report, coverage, generatedList);
     }
   }
 
@@ -131,11 +154,12 @@ final class Coverage {
 
   // The same class files for the report and the verification, so their numbers agree.
   private static void applyExcludes(
-      Project project, JacocoReportBase task, CoverageSettings coverage) {
+      Project project,
+      JacocoReportBase task,
+      CoverageSettings coverage,
+      Provider<RegularFile> generatedList) {
     List<String> excludes = coverage.getExcludes().get();
-    if (excludes.isEmpty()) {
-      return;
-    }
+    var exclusion = new CoverageExclusion(generatedList.get().getAsFile());
     FileCollection classes =
         project
             .getExtensions()
@@ -144,6 +168,12 @@ final class Coverage {
             .getOutput()
             .getClassesDirs();
     task.getClassDirectories()
-        .setFrom(classes.getAsFileTree().matching(pattern -> pattern.exclude(excludes)));
+        .setFrom(
+            classes
+                .getAsFileTree()
+                .matching(pattern -> {
+                  pattern.exclude(excludes);
+                  pattern.exclude(exclusion);
+                }));
   }
 }

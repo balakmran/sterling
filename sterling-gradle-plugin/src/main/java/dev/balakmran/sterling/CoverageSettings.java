@@ -7,9 +7,12 @@ import org.gradle.api.provider.Property;
  * Settings for test coverage with JaCoCo.
  *
  * <p>Coverage is measured on the {@code test} task. After it runs, {@code jacocoTestReport} writes
- * HTML and XML reports, and {@code stlCov} fails when coverage is below either threshold. JaCoCo
- * already ignores classes and methods annotated with an annotation named {@code *Generated*} that
- * is kept in the class file, such as Lombok's {@code @Generated}.
+ * HTML and XML reports, and {@code stlCov} fails when coverage is below either threshold.
+ *
+ * <p>Classes compiled from generated sources (source directories under {@code build/generated}, and
+ * annotation processors' output) are always left out, with their nested classes. JaCoCo also
+ * ignores classes and methods annotated with an annotation named {@code *Generated*} that is kept
+ * in the class file, such as Lombok's {@code @Generated}.
  */
 public abstract class CoverageSettings {
   /** Creates the settings. Gradle instantiates this class for the {@code sterling} extension. */

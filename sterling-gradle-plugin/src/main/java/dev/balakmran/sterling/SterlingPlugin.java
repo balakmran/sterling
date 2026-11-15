@@ -274,7 +274,7 @@ public class SterlingPlugin implements Plugin<Project> {
 
     Formatting.configure(project, sterling);
     var generated = GeneratedClasses.register(project);
-    Coverage.configure(project, sterling);
+    Coverage.configure(project, sterling, generated);
     Spotbugs.configure(project, sterling, generated);
     ErrorProne.configure(project, sterling);
   }
