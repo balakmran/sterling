@@ -77,6 +77,60 @@ A **library** whose public API uses these annotations should still declare
 `api("org.jspecify:jspecify:1.0.1")`, so Kotlin callers and other tools see
 them.
 
+## NullAway with Spring
+
+While NullAway is on, Sterling passes it these options on every Java
+compilation:
+
+| Option | Value | What it does |
+|---|---|---|
+| `NullAway:OnlyNullMarked` | `true` | Checks only `@NullMarked` code |
+| `NullAway:CheckContracts` | `true` | Checks that a method's body keeps its `@Contract` when the contract ends in `!null`, such as `!null -> !null`; NullAway doesn't verify `-> fail` |
+| `NullAway:HandleTestAssertionLibraries` | `true` | Treats AssertJ's and JUnit's assertions, such as `assertThat(x).isNotNull()`, as null checks |
+| `NullAway:JSpecifyMode` | `true` when `nullAway.jspecifyMode` is on | See [above](#null-checking-with-nullaway) |
+
+Spring's `CustomContractAnnotations=org.springframework.lang.Contract` isn't
+needed: NullAway honours any annotation named `Contract`, so after
+`Assert.notNull(x, "...")` it knows `x` isn't null, and AssertJ's own
+contracts work the same way. `CheckContracts` can report findings in code
+that compiled before; it reports only in `@NullMarked` code.
+
+To change one of these, set it on the compilation. A project's own option
+wins over Sterling's:
+
+```kotlin
+import net.ltgt.gradle.errorprone.errorprone
+
+tasks.withType<JavaCompile>().configureEach {
+    options.errorprone.option("NullAway:CheckContracts", "false")
+}
+```
+
+JSpecify mode needs javac to keep type annotations on compiled classes: JDK
+22 or later, or JDK 21.0.8+ with `-XDaddTypeAnnotationsToSymbol=true`, which
+the Error Prone Gradle plugin adds. Some vendors' JDK 21 builds don't
+support the flag; use a JDK 22+ toolchain for `STRICT` if yours doesn't.
+
+NullAway can't follow every Spring pattern. Spring's
+[null-safety guide](https://docs.spring.io/spring-framework/reference/core/null-safety.html)
+lists the known limits and how it suppresses each:
+
+| Case | Suppression |
+|---|---|
+| A field set after construction, as in `InitializingBean.afterPropertiesSet()` | `@SuppressWarnings("NullAway.Init")` on the field, constructor or class |
+| A path that can't happen, which NullAway's dataflow can't see | `@SuppressWarnings("NullAway") // Dataflow analysis limitation` |
+| A null check outside a lambda, used inside it | `@SuppressWarnings("NullAway") // Lambda` |
+| Reflection known to return non-null | `@SuppressWarnings("NullAway") // Reflection` |
+| `Map.get` with a key known to be present | `@SuppressWarnings("NullAway") // Well-known map keys` |
+| Overriding a method whose superclass doesn't declare nullness | `@SuppressWarnings("NullAway") // Overridden method does not define nullability`; nullness annotations aren't inherited, so repeat them on overrides |
+| Nullness of a generic method's type variable | `@SuppressWarnings("NullAway")`, see [NullAway#1075](https://github.com/uber/NullAway/issues/1075) |
+
+Arrays need the annotation in the right place: `@Nullable Object[]` allows
+null elements, `Object @Nullable []` a null array, and both together allow
+both. NullAway checks array elements only in JSpecify mode. For a nested or
+qualified type, the annotation goes after the last dot:
+`Cache.@Nullable ValueWrapper`.
+
 ## SpotBugs
 
 `stlSec` analyses the main classes, not tests, and writes HTML, XML and SARIF

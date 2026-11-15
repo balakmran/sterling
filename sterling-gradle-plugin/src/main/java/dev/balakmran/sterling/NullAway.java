@@ -1,5 +1,7 @@
 package dev.balakmran.sterling;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import net.ltgt.gradle.errorprone.CheckSeverity;
 import org.gradle.api.Project;
@@ -66,8 +68,12 @@ final class NullAway {
   }
 
   /**
-   * NullAway's options while active: check only {@code @NullMarked} code, and use JSpecify mode
-   * when {@code jspecifyMode} is on.
+   * NullAway's options while active: check only {@code @NullMarked} code, check each method's body
+   * against its {@code @Contract}, treat test assertion libraries' assertions as null checks, and
+   * use JSpecify mode when {@code jspecifyMode} is on.
+   *
+   * <p>A project's own {@code options.errorprone.option(...)} for any of these wins, since it's
+   * added to the same map after Sterling's entries.
    *
    * @param active whether NullAway runs
    * @param jspecifyMode whether NullAway runs in JSpecify mode
@@ -81,17 +87,27 @@ final class NullAway {
   /**
    * The option entries {@link #checkOptions} provides.
    *
+   * <p>No {@code CustomContractAnnotations}: NullAway honours any annotation named {@code
+   * Contract}, such as Spring's and AssertJ's, without it.
+   *
    * @param active whether NullAway runs
    * @param jspecifyMode whether NullAway runs in JSpecify mode
-   * @return no options while NullAway is off; otherwise {@code OnlyNullMarked}, plus {@code
-   *     JSpecifyMode} when it's on
+   * @return no options while NullAway is off; otherwise {@code OnlyNullMarked}, {@code
+   *     CheckContracts} and {@code HandleTestAssertionLibraries}, plus {@code JSpecifyMode} when
+   *     it's on
    */
   static Map<String, String> options(boolean active, boolean jspecifyMode) {
     if (!active) {
       return Map.of();
     }
-    return jspecifyMode
-        ? Map.of(CHECK + ":OnlyNullMarked", "true", CHECK + ":JSpecifyMode", "true")
-        : Map.of(CHECK + ":OnlyNullMarked", "true");
+    // Ordered: Error Prone's options are a task input, and Map.copyOf's order differs per JVM.
+    Map<String, String> options = new LinkedHashMap<>();
+    options.put(CHECK + ":OnlyNullMarked", "true");
+    options.put(CHECK + ":CheckContracts", "true");
+    options.put(CHECK + ":HandleTestAssertionLibraries", "true");
+    if (jspecifyMode) {
+      options.put(CHECK + ":JSpecifyMode", "true");
+    }
+    return Collections.unmodifiableMap(options);
   }
 }
