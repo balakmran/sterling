@@ -55,8 +55,17 @@ sterling/
 ├── CONTRIBUTING.md                  # building and testing Sterling
 ├── docs/guide/                      # user docs: adopting, configuration, the tools
 ├── docs/plans/
+├── agent-plugins/
+│   ├── sterling/                    # the agent plugin: manifests per agent, skills/
+│   └── schemas/                     # Agent Plugins schema, vendored for CI
 └── .github/workflows/
 ```
+
+The agent plugin's version is always Sterling's: release-please bumps its three
+manifests and each skill's `metadata.sterling-version`, and `AgentPluginTest`
+fails if they differ from `version.txt`. Its plan is
+`docs/plans/agent-plugin.md`. A new skill's `SKILL.md` must be added to
+`extra-files` in `release-please-config.json`.
 
 The plugin's description in `sterling-gradle-plugin/build.gradle.kts`
 (`pluginDescription`) is the tagline under the title of `README.md` and this
@@ -187,9 +196,13 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - Trunk-based: never commit to `main`. Branch from it as `feat/`, `fix/`,
   `ci/`, `docs/`, `build/` or `test/` plus a short name, open a PR, and
   rebase-merge once CI passes, so commit messages reach `main` unchanged. CI
-  runs on PRs only. CI on release-please's PRs waits for approval (they're
-  opened with `GITHUB_TOKEN`); approve the run, or merge with the admin
-  bypass.
+  runs on PRs only. release-please opens its PRs with a GitHub App token, so
+  their CI runs like any other.
+- Dependency bumps: Dependabot commits Gradle bumps as `fix(deps):` and
+  auto-merges them once CI passes, except Error Prone, NullAway, SpotBugs and
+  google-java-format, which it labels `changes-findings`. Reword those to
+  `feat(deps):` with a note on what may newly fail (`ROADMAP.md` rule 7). A
+  release PR holding only `fix(deps):`/`ci(deps):` commits merges itself.
 - Sterling's own Java is formatted with google-java-format, and build scripts
   with ktfmt, both via Spotless. javac runs with `-Xlint:all -Werror`.
 - Code comments (`//` and `/* */` inside method bodies, fields and build

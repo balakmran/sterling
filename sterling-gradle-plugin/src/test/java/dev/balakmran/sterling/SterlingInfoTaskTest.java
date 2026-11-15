@@ -1,6 +1,7 @@
 package dev.balakmran.sterling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
@@ -85,6 +87,34 @@ class SterlingInfoTaskTest {
         .configure(task -> task.getCoverageTestTasks().set(List.of("test", "integrationTest")));
 
     assertThat(render()).contains("branch >= 70%; test, integrationTest)");
+  void formattingReportsAStyleOtherThanGoogle() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+
+    assertThat(render())
+        .contains(
+            "(google-java-format "
+                + ToolVersions.get("google-java-format")
+                + ", AOSP style via Spotless ");
+  }
+
+  @Test
+  void formattingReportsTheStyleAndRatchet() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+    sterling.getFormat().getRatchetFrom().set("origin/main");
+
+    assertThat(render())
+        .contains(
+            ", AOSP style, ratchet from origin/main via Spotless " + ToolVersions.get("spotless"));
+  }
+
+  @Test
+  void anEmptyRatchetFromFailsWithTheSettingNamed() {
+    sterling.getFormat().getRatchetFrom().set("");
+
+    assertThatThrownBy(this::render)
+        .rootCause()
+        .isInstanceOf(InvalidUserDataException.class)
+        .hasMessageContaining("sterling.format.ratchetFrom must not be empty");
   }
 
   @Test
@@ -159,6 +189,46 @@ class SterlingInfoTaskTest {
 
     assertThat(nullAway.get("enabled")).isEqualTo(true);
     assertThat(nullAway.get("active")).isEqualTo(false);
+  }
+
+  @Test
+  void jsonReportsTheFormatStyleAndRatchet() {
+    Map<?, ?> defaults = (Map<?, ?>) task().jsonModel("25").get("format");
+    assertThat(defaults.get("style")).isEqualTo("GOOGLE");
+    assertThat(defaults.containsKey("ratchetFrom")).isTrue();
+    assertThat(defaults.get("ratchetFrom")).isNull();
+  }
+
+  @Test
+  void jsonReportsASetStyleAndRatchet() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+    sterling.getFormat().getRatchetFrom().set("origin/main");
+
+    Map<?, ?> format = (Map<?, ?>) task().jsonModel("25").get("format");
+
+    assertThat(format.get("style")).isEqualTo("AOSP");
+    assertThat(format.get("ratchetFrom")).isEqualTo("origin/main");
+  }
+
+  @Test
+  void jsonGivesEachVersionItsSource() {
+    SterlingInfoTask task = task();
+    task.getVersionOverrides()
+        .set(Map.of("errorprone", "9.9.9", "jspecify", SterlingInfoTask.MANAGED));
+
+    Map<String, Object> model = task.jsonModel("25");
+    Map<?, ?> errorProne = (Map<?, ?>) model.get("errorProne");
+    Map<?, ?> nullAway = (Map<?, ?>) model.get("nullAway");
+    Map<?, ?> coverage = (Map<?, ?>) model.get("coverage");
+
+    assertThat(errorProne.get("version")).isEqualTo("9.9.9");
+    assertThat(errorProne.get("versionSource")).isEqualTo("project");
+    assertThat(nullAway.get("version")).isEqualTo(ToolVersions.get("nullaway"));
+    assertThat(nullAway.get("versionSource")).isEqualTo("sterling");
+    assertThat(nullAway.containsKey("jspecify")).isTrue();
+    assertThat(nullAway.get("jspecify")).isNull();
+    assertThat(nullAway.get("jspecifySource")).isEqualTo("project");
+    assertThat(coverage.get("versionSource")).isEqualTo("sterling");
   }
 
   // Dotted key paths in output order: "format.versions.spotless".

@@ -33,13 +33,23 @@ class ErrorProneTest {
   }
 
   @Test
-  void nullAwayOptionsAddJspecifyModeOnlyWhenItIsOn() {
-    assertThat(NullAway.options(true, false))
-        .containsExactlyEntriesOf(java.util.Map.of("NullAway:OnlyNullMarked", "true"));
-    assertThat(NullAway.options(true, true))
-        .containsExactlyInAnyOrderEntriesOf(
-            java.util.Map.of("NullAway:OnlyNullMarked", "true", "NullAway:JSpecifyMode", "true"));
+  void nullAwayOptionsCheckContractsAndTestAssertionsAndAddJspecifyModeOnlyWhenItIsOn() {
+    java.util.Map<String, String> always =
+        java.util.Map.of(
+            "NullAway:OnlyNullMarked", "true",
+            "NullAway:CheckContracts", "true",
+            "NullAway:HandleTestAssertionLibraries", "true");
+    assertThat(NullAway.options(true, false)).containsExactlyInAnyOrderEntriesOf(always);
+    java.util.Map<String, String> withJspecify = new java.util.HashMap<>(always);
+    withJspecify.put("NullAway:JSpecifyMode", "true");
+    assertThat(NullAway.options(true, true)).containsExactlyInAnyOrderEntriesOf(withJspecify);
     assertThat(NullAway.options(false, true)).isEmpty();
+  }
+
+  @Test
+  void nullAwayOptionsNeverNameCustomContractAnnotations() {
+    assertThat(NullAway.options(true, true))
+        .doesNotContainKey("NullAway:CustomContractAnnotations");
   }
 
   @Test

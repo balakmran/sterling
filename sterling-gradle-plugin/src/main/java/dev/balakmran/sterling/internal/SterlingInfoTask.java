@@ -1,5 +1,6 @@
 package dev.balakmran.sterling.internal;
 
+import dev.balakmran.sterling.FormatSettings;
 import dev.balakmran.sterling.Profile;
 import dev.balakmran.sterling.SpotbugsSettings;
 import java.util.ArrayList;
@@ -28,7 +29,9 @@ import org.gradle.api.tasks.options.Option;
  * script have all been applied. It never stays up to date, since printing is its only effect.
  *
  * <p>It shows Sterling's settings only. A value set through a tool's own DSL, such as {@code
- * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown.
+ * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown. The
+ * exception is a tool version: one the project chose instead of Sterling's pin is shown with
+ * "(project override)".
  *
  * <p>With {@code --json}, it prints the same configuration as one line of JSON per project, for
  * scripts and coding agents. The JSON's {@code schemaVersion} is {@value #SCHEMA_VERSION}: adding a
@@ -41,6 +44,12 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   // The toolchain line's prefix when the Java tools aren't active.
   private static final String NOT_ACTIVE = "not active (";
+
+  /**
+   * The version {@link #getVersionOverrides()} holds for a tool the project declared without a
+   * version, such as one a platform manages. The text form shows it as is; JSON gives {@code null}.
+   */
+  public static final String MANAGED = "managed";
 
   /** Creates the task. Sterling registers it as {@code stlInfo}; Gradle instantiates it. */
   public SterlingInfoTask() {}
@@ -80,6 +89,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract MapProperty<String, String> getToolVersions();
 
   /**
+   * The tool versions the project chose instead of Sterling's pins, keyed like {@link
+   * #getToolVersions()}. Each is shown with "(project override)".
+   *
+   * @return the overridden versions
+   */
+  @Input
+  public abstract MapProperty<String, String> getVersionOverrides();
+
+  /**
    * The resolved profile.
    *
    * @return the profile
@@ -110,6 +128,23 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @Input
   public abstract Property<Boolean> getFormatEnabled();
+
+  /**
+   * The google-java-format style.
+   *
+   * @return the style
+   */
+  @Input
+  public abstract Property<FormatSettings.Style> getFormatStyle();
+
+  /**
+   * The git reference formatting ratchets from, if any.
+   *
+   * @return the ratchet reference
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getFormatRatchetFrom();
 
   /**
    * Whether Error Prone is on.
@@ -277,14 +312,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
             List.of("Gate wired to check", getAttachToCheck().get() ? "yes" : "no"),
             List.of("Daemon JVM", daemonJvm),
             List.of("Java toolchain", getJavaToolchain().get()),
-            List.of(
-                "Formatting",
-                onOff(
-                    getFormatEnabled().get(),
-                    "google-java-format "
-                        + versions.get("google-java-format")
-                        + " via Spotless "
-                        + versions.get("spotless"))),
+            List.of("Formatting", onOff(getFormatEnabled().get(), formatDetail(versions))),
             List.of("Error Prone", onOff(getErrorProneEnabled().get(), errorProneDetail(versions))),
             List.of("NullAway", nullAwayStatus(versions)),
             List.of("SpotBugs", onOff(getSpotbugsEnabled().get(), spotbugsDetail(versions))),
@@ -297,14 +325,35 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return report.toString();
   }
 
+  // A tool's version as the project gets it: Sterling's pin, or the project's own choice.
+  private String version(Map<String, String> versions, String tool) {
+    String override = getVersionOverrides().get().get(tool);
+    return override == null ? versions.get(tool) : override + " (project override)";
+  }
+
   private static String onOff(boolean on, String detail) {
     return on ? "on   (" + detail + ")" : "off";
+  }
+
+  private String formatDetail(Map<String, String> versions) {
+    String style =
+        getFormatStyle().get() == FormatSettings.Style.GOOGLE
+            ? ""
+            : ", " + getFormatStyle().get().name() + " style";
+    return "google-java-format "
+        + versions.get("google-java-format")
+        + style
+        + (getFormatRatchetFrom().isPresent()
+            ? ", ratchet from " + getFormatRatchetFrom().get()
+            : "")
+        + " via Spotless "
+        + versions.get("spotless");
   }
 
   private String errorProneDetail(Map<String, String> versions) {
     String warnings =
         getWarningsAsErrors().get() ? "warnings are errors" : "warnings are not errors";
-    return versions.get("errorprone")
+    return version(versions, "errorprone")
         + "; "
         + warnings
         + count(getDisabledChecks().get().size(), "check", "disabled");
@@ -318,9 +367,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
       return "off (Error Prone off)";
     }
     return "on   ("
-        + versions.get("nullaway")
+        + version(versions, "nullaway")
         + "; JSpecify "
-        + versions.get("jspecify")
+        + version(versions, "jspecify")
         + "; @NullMarked code only"
         + (getJspecifyMode().get() ? "; JSpecify mode" : "")
         + ")";
@@ -328,7 +377,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String spotbugsDetail(Map<String, String> versions) {
     String filter = getExcludeFilter().isPresent() ? "; consumer filter merged" : "";
-    return versions.get("spotbugs")
+    return version(versions, "spotbugs")
         + "; effort "
         + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
         + "; "
@@ -339,7 +388,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String coverageDetail(Map<String, String> versions) {
     return "JaCoCo "
-        + versions.get("jacoco")
+        + version(versions, "jacoco")
         + "; instruction >= "
         + getInstruction().get()
         + "%, branch >= "
@@ -385,6 +434,8 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> format = new LinkedHashMap<>();
     format.put("enabled", getFormatEnabled().get());
+    format.put("style", getFormatStyle().get().name());
+    format.put("ratchetFrom", getFormatRatchetFrom().getOrNull());
     Map<String, Object> formatVersions = new LinkedHashMap<>();
     formatVersions.put("google-java-format", versions.get("google-java-format"));
     formatVersions.put("spotless", versions.get("spotless"));
@@ -393,7 +444,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> errorProne = new LinkedHashMap<>();
     errorProne.put("enabled", getErrorProneEnabled().get());
-    errorProne.put("version", versions.get("errorprone"));
+    putVersion(errorProne, "version", versions, "errorprone");
     errorProne.put("warningsAsErrors", getWarningsAsErrors().get());
     List<String> disabled = new ArrayList<>(getDisabledChecks().get());
     disabled.sort(null);
@@ -403,14 +454,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> nullAway = new LinkedHashMap<>();
     nullAway.put("enabled", getNullAwayEnabled().get());
     nullAway.put("active", getNullAwayEnabled().get() && getErrorProneEnabled().get());
-    nullAway.put("version", versions.get("nullaway"));
-    nullAway.put("jspecify", versions.get("jspecify"));
+    putVersion(nullAway, "version", versions, "nullaway");
+    putVersion(nullAway, "jspecify", versions, "jspecify");
     nullAway.put("jspecifyMode", getJspecifyMode().get());
     root.put("nullAway", nullAway);
 
     Map<String, Object> spotbugs = new LinkedHashMap<>();
     spotbugs.put("enabled", getSpotbugsEnabled().get());
-    spotbugs.put("version", versions.get("spotbugs"));
+    putVersion(spotbugs, "version", versions, "spotbugs");
     spotbugs.put("effort", getSpotbugsEffort().get().name());
     spotbugs.put("reportLevel", getSpotbugsReportLevel().get().name());
     spotbugs.put("excludeFilter", getExcludeFilter().getOrNull());
@@ -419,7 +470,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> coverage = new LinkedHashMap<>();
     coverage.put("enabled", getCoverageEnabled().get());
-    coverage.put("version", versions.get("jacoco"));
+    putVersion(coverage, "version", versions, "jacoco");
     coverage.put("instruction", getInstruction().get());
     coverage.put("branch", getBranch().get());
     coverage.put("excludes", getCoverageExcludes().get());
@@ -428,6 +479,21 @@ public abstract class SterlingInfoTask extends DefaultTask {
     putReports(coverage, getCoverageReports().get());
     root.put("coverage", coverage);
     return root;
+  }
+
+  // A version key and its source beside it: "versionSource" for "version", "jspecifySource" for
+  // "jspecify". A project's version declared without one, as from a platform, is null.
+  private void putVersion(
+      Map<String, Object> tool, String key, Map<String, String> versions, String name) {
+    String override = getVersionOverrides().get().get(name);
+    String source = key.equals("version") ? "versionSource" : key + "Source";
+    if (override == null) {
+      tool.put(key, versions.get(name));
+      tool.put(source, "sterling");
+    } else {
+      tool.put(key, override.equals(MANAGED) ? null : override);
+      tool.put(source, "project");
+    }
   }
 
   // The toolchain line holds the version, or "not active (<reason>)".

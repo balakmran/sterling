@@ -7,6 +7,7 @@ import dev.balakmran.sterling.internal.ToolchainCheckTask;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.gradle.api.GradleException;
@@ -125,6 +126,7 @@ public class SterlingPlugin implements Plugin<Project> {
         providers.gradleProperty(Profile.PROPERTY).map(Profile::parse).orElse(Profile.STANDARD));
     sterling.getAttachToCheck().convention(profile.map(p -> p.attachToCheck));
     sterling.getFormat().getEnabled().convention(true);
+    sterling.getFormat().getStyle().convention(FormatSettings.Style.GOOGLE);
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
     sterling.getNullAway().getEnabled().convention(true);
@@ -175,10 +177,16 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getProjectPath().set(projectPath);
               task.getProfileProperty().set(profileProperty);
               task.getToolVersions().set(ToolVersions.all());
+              task.getVersionOverrides().convention(Map.of());
               task.getProfile().set(sterling.getProfile());
               task.getAttachToCheck().set(sterling.getAttachToCheck());
               task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
               task.getFormatEnabled().set(sterling.getFormat().getEnabled());
+              task.getFormatStyle().set(sterling.getFormat().getStyle());
+              task.getFormatRatchetFrom()
+                  .set(
+                      Validation.notEmpty(
+                          sterling.getFormat().getRatchetFrom(), "format.ratchetFrom"));
               task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
               task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
               task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
@@ -286,5 +294,9 @@ public class SterlingPlugin implements Plugin<Project> {
     Coverage.configure(project, sterling, generated);
     Spotbugs.configure(project, sterling, generated);
     ErrorProne.configure(project, sterling);
+    project
+        .getTasks()
+        .named(INFO, SterlingInfoTask.class)
+        .configure(task -> task.getVersionOverrides().set(VersionOverrides.of(project)));
   }
 }

@@ -9,6 +9,7 @@ own in the `sterling { }` block.
 |---|---|---|---|
 | `attachToCheck` | false | true | true |
 | `format.enabled` | true | true | true |
+| `format.style` | `GOOGLE` | `GOOGLE` | `GOOGLE` |
 | `errorProne.enabled` | true | true | true |
 | `errorProne.warningsAsErrors` | false | false | true |
 | `nullAway.enabled` | true | true | true |
@@ -58,6 +59,7 @@ Set any setting to override that setting alone. The values below are
 `STANDARD`'s defaults:
 
 ```kotlin
+import dev.balakmran.sterling.FormatSettings
 import dev.balakmran.sterling.Profile
 import dev.balakmran.sterling.SpotbugsSettings
 
@@ -67,6 +69,8 @@ sterling {
 
     format {
         enabled = true
+        style = FormatSettings.Style.GOOGLE // GOOGLE | AOSP (4-space indentation)
+        // ratchetFrom = "origin/main"  // unset: formats every file, not just changed ones
     }
     errorProne {
         enabled = true
@@ -96,6 +100,14 @@ sterling {
 A threshold outside 0 to 100, a `coverage.testTasks` name that isn't a
 `Test` task, or an unknown `sterling.profile`, fails the build with a message
 naming the setting.
+
+An empty `format.ratchetFrom` fails too; leave it unset to format every file.
+
+`format.style` and `format.ratchetFrom` are read once, when Spotless
+configures `spotlessJava`, normally after every build script has run. A
+build that realises `spotlessJava` early and sets either later, in an `afterEvaluate` block for
+example, fails with Gradle's "final" error rather than having the value
+ignored.
 
 In a Groovy build script, the block is the same apart from quotes:
 
@@ -129,6 +141,8 @@ sterling {
 | `profile` | `Profile`: `LENIENT`, `STANDARD` or `STRICT` | The `sterling.profile` property, else `STANDARD` |
 | `attachToCheck` | Boolean | From the profile |
 | `format.enabled` | Boolean | true |
+| `format.style` | `FormatSettings.Style`: `GOOGLE` or `AOSP` | `GOOGLE` |
+| `format.ratchetFrom` | A git reference, such as `origin/main` | Unset: every file is formatted |
 | `errorProne.enabled` | Boolean | true |
 | `errorProne.warningsAsErrors` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |
@@ -152,10 +166,12 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","jspecify":"1.0.1","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","instruction":80,"branch":70,"excludes":[],"testTasks":["test"],"excludesMainClass":false,"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
-Keys are named after the settings above. Paths are relative to the project
+Keys are named after the settings above. A version the project overrides
+is the project's, or `null` when it declared the dependency without a
+version, as through a platform. Paths are relative to the project
 directory, with `/` separators; a file on another drive than the project is
 given as an absolute path.
 
@@ -173,20 +189,26 @@ given as an absolute path.
 | `javaToolchain.version` | The toolchain's Java version |
 | `javaToolchain.reason` | Why the Java tools aren't active |
 | `format.enabled` | Boolean |
+| `format.style` | `GOOGLE` or `AOSP` |
+| `format.ratchetFrom` | The git reference, or `null` |
 | `format.versions` | Object |
 | `format.versions.google-java-format` | Version |
 | `format.versions.spotless` | Version |
 | `errorProne.enabled` | Boolean |
 | `errorProne.version` | Version |
+| `errorProne.versionSource` | `"sterling"` for Sterling's pin, `"project"` for a [project override](tools.md#using-a-different-tool-version) |
 | `errorProne.warningsAsErrors` | Boolean |
 | `errorProne.disabledChecks` | Check names, sorted |
 | `nullAway.enabled` | Boolean |
 | `nullAway.active` | Whether NullAway runs: `enabled` and Error Prone on |
 | `nullAway.version` | Version |
+| `nullAway.versionSource` | `"sterling"` or `"project"` |
 | `nullAway.jspecify` | JSpecify's version |
+| `nullAway.jspecifySource` | `"sterling"` or `"project"` |
 | `nullAway.jspecifyMode` | Boolean |
 | `spotbugs.enabled` | Boolean |
 | `spotbugs.version` | Version |
+| `spotbugs.versionSource` | `"sterling"` or `"project"` |
 | `spotbugs.effort` | `MIN` to `MAX` |
 | `spotbugs.reportLevel` | `LOW`, `MEDIUM` or `HIGH` |
 | `spotbugs.excludeFilter` | The project's filter, or `null` |
@@ -195,6 +217,7 @@ given as an absolute path.
 | `spotbugs.reports.xml` | Path |
 | `coverage.enabled` | Boolean |
 | `coverage.version` | JaCoCo's version |
+| `coverage.versionSource` | `"sterling"` or `"project"` |
 | `coverage.instruction` | Percent |
 | `coverage.branch` | Percent |
 | `coverage.excludes` | Class-file patterns |
@@ -251,5 +274,5 @@ Sterling already adds Spotless's `googleJavaFormat()` and
 instead. [Already applying Spotless or SpotBugs](adopting.md#already-applying-spotless-or-spotbugs)
 covers a `build-logic` that sets these tools up itself.
 
-Pointing a tool at a newer version than Sterling pins (for example
-`spotbugs { toolVersion = "..." }`) works too, but isn't tested yet.
+To run a tool at another version than Sterling pins, see
+[Using a different tool version](tools.md#using-a-different-tool-version).

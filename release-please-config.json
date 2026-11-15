@@ -7,7 +7,23 @@
     ".": {
       "package-name": "sterling",
       "extra-files": [
-        "README.md"
+        "README.md",
+        {
+          "type": "json",
+          "path": "agent-plugins/sterling/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "agent-plugins/sterling/.claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "agent-plugins/sterling/.codex-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        "agent-plugins/sterling/skills/sterling-conventions/SKILL.md"
       ]
     }
   }

@@ -27,4 +27,22 @@ final class Validation {
       return v;
     });
   }
+
+  /**
+   * Wraps an optional string so reading it fails when it's set but empty.
+   *
+   * @param value the setting's value, possibly unset
+   * @param setting the setting's path under {@code sterling}, such as {@code format.ratchetFrom},
+   *     used in the error message
+   * @return the same value, checked when read
+   */
+  static Provider<String> notEmpty(Provider<String> value, String setting) {
+    return value.map(v -> {
+      if (v.isBlank()) {
+        throw new InvalidUserDataException(
+            "sterling." + setting + " must not be empty. Leave it unset to turn it off.");
+      }
+      return v;
+    });
+  }
 }

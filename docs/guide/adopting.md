@@ -8,7 +8,7 @@ Each step is one pull request, and `main` stays green throughout:
    `gradle.properties`. The tools run on demand, but `check` doesn't run the
    gate, so nothing new fails `build` except Error Prone's error-level
    findings, which fail compilation in every profile.
-2. **Reformat once.** See [below](#reformatting-and-first-findings).
+2. **Reformat, or choose not to.** See [below](#reformatting-and-first-findings).
 3. **Clear Error Prone's findings.** Fix them, or disable a check by name
    while you work through it.
 4. **Switch to `STANDARD`.** Remove the property. SpotBugs and coverage join
@@ -21,15 +21,54 @@ Each step is one pull request, and `main` stays green throughout:
 
 ## Reformatting and first findings
 
-google-java-format 2.0 formats some code differently from 1.x, and Sterling
-enforces it. Reformat in one commit, then tell `git blame` to skip it:
+Sterling enforces google-java-format 2.0, which formats some code
+differently from 1.x and indents by 2. There are three ways in:
 
-```bash
-./gradlew stlFmt
-git commit -am "style: reformat with google-java-format 2.0"
-git rev-parse HEAD >> .git-blame-ignore-revs
-git config blame.ignoreRevsFile .git-blame-ignore-revs
-```
+- **Reformat once** (the default). One commit touches every file, and
+  `git blame` is told to skip it:
+
+  ```bash
+  ./gradlew stlFmt
+  git commit -am "style: reformat with google-java-format 2.0"
+  git rev-parse HEAD >> .git-blame-ignore-revs
+  git config blame.ignoreRevsFile .git-blame-ignore-revs
+  ```
+
+- **AOSP style**, for a codebase that already indents by 4. The same
+  formatter with 4-space indentation, so the reformat is far smaller:
+
+  ```kotlin
+  import dev.balakmran.sterling.FormatSettings
+
+  sterling {
+      format { style = FormatSettings.Style.AOSP }
+  }
+  ```
+
+- **Ratchet**: format only what changes. `stlFmtCheck` and `stlFmt` then
+  cover only files that differ from a git reference, so untouched files keep
+  their layout until someone edits them:
+
+  ```kotlin
+  sterling {
+      format { ratchetFrom = "origin/main" }
+  }
+  ```
+
+  Spotless compares each file with the merge base of `HEAD` and the
+  reference, not with the reference's tip, so commits on `main` since the
+  branch started don't count. The reference must exist locally. A shallow CI
+  checkout fails with Spotless's "No such reference" error, or can't find
+  the merge base. Fetch the full history (`fetch-depth: 0` with
+  `actions/checkout`), or fetch the branch with its history before the
+  build:
+
+  ```bash
+  git fetch --unshallow origin main
+  ```
+
+AOSP and ratchet combine. Either can be dropped later: run `stlFmt` once
+without it, as in the first option.
 
 Error Prone will likely report a first batch of findings. Fix them, turn
 individual checks off with `errorProne { disable("CheckName") }` while you
@@ -123,6 +162,59 @@ tool. `enforceCheck = true` attaches `spotlessCheck` to `check` beside
 Sterling's gate, and a `lineEndings` other than `PRESERVE` can read git
 settings while configuring, which stops the configuration cache from being
 reused.
+
+## Multi-module builds
+
+Put Sterling in a convention plugin, so every module gets the same version
+and settings. In `build-logic`, an included build:
+
+```kotlin
+// settings.gradle.kts
+pluginManagement { includeBuild("build-logic") }
+include("orders", "billing")
+```
+
+```kotlin
+// build-logic/build.gradle.kts
+plugins { `kotlin-dsl` }
+
+repositories { gradlePluginPortal() }
+
+dependencies {
+    implementation("dev.balakmran.sterling:sterling-gradle-plugin:<version>")
+}
+```
+
+```kotlin
+// build-logic/src/main/kotlin/java-conventions.gradle.kts
+plugins {
+    java
+    id("dev.balakmran.sterling")
+}
+
+repositories { mavenCentral() }
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+
+sterling {
+    errorProne { disable("UnusedVariable") }
+}
+```
+
+Each module applies the convention plugin, and can override any setting for
+itself:
+
+```kotlin
+// billing/build.gradle.kts
+plugins { id("java-conventions") }
+
+sterling { coverage { instruction = 60 } }
+```
+
+`./gradlew stlCheck` at the root runs every module's gate, and
+`./gradlew stlInfo` prints each module's settings. Coverage is measured and
+checked per module; combining it across modules is planned for a later
+release.
 
 ## Running the gate before you push
 

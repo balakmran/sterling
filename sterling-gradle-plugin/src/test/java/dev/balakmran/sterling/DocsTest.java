@@ -165,7 +165,7 @@ class DocsTest {
 
   // Each setting as the settings reference writes it: "coverage.instruction",
   // "errorProne.disable(...)".
-  private static List<String> settings() {
+  static List<String> settings() {
     List<String> settings = new ArrayList<>();
     for (Method method : SterlingExtension.class.getMethods()) {
       String property = propertyName(method);
