@@ -1,0 +1,49 @@
+name: Dependabot auto-merge
+
+# GitHub's documented pattern for Dependabot: pull_request, with the actor checked below.
+on: pull_request
+
+permissions: {}
+
+jobs:
+  automerge:
+    name: Auto-merge bumps that change no findings
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'balakmran/sterling'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # A new Error Prone, NullAway, SpotBugs or google-java-format can fail builds that changed
+      # nothing, so it ships as a minor release with a note (ROADMAP.md rule 7): no auto-merge.
+      - id: findings
+        name: Check for bumps that can change findings
+        env:
+          NAMES: ${{ steps.metadata.outputs.dependency-names }}
+        run: |
+          pattern='com\.google\.errorprone:error_prone_core|com\.uber\.nullaway:nullaway|com\.github\.spotbugs:spotbugs(,|$)|com\.google\.googlejavaformat:google-java-format'
+          if grep -Eq "$pattern" <<<"$NAMES"; then
+            echo "changes=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "changes=false" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Label it for a feat(deps) rewrite
+        if: steps.findings.outputs.changes == 'true'
+        run: gh pr edit "$PR_URL" --add-label changes-findings
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge once CI passes
+        if: steps.findings.outputs.changes == 'false'
+        run: gh pr merge --auto --rebase "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -28,6 +28,12 @@ opening a pull request. To run one combination, CI's for example:
 passes. The commit messages drive the version and the changelog, through
 release-please.
 
+Dependabot bumps that can't change findings merge themselves once CI passes,
+and a release made only of them publishes without anyone's help. A bump of
+Error Prone, NullAway, SpotBugs or google-java-format is labelled
+`changes-findings` instead: reword its commit to `feat(deps):` and say what
+may newly fail, because it can fail builds that changed nothing.
+
 A change to the plugin's behaviour needs a functional test, and a new or
 changed setting needs its line in the
 [settings reference](docs/guide/configuration.md#settings-reference); the
