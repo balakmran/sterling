@@ -271,8 +271,8 @@ tasks.named<SpotBugsTask>("spotbugsMain") {
 
 Sterling already adds Spotless's `googleJavaFormat()` and
 `formatAnnotations()` steps, so adding either again fails; add other steps
-instead. [Already applying Spotless or SpotBugs](adopting.md#already-applying-spotless-or-spotbugs)
-covers a `build-logic` that sets these tools up itself.
+instead. [Migrating to Sterling](migrating.md) covers a `build-logic` that sets these
+tools up itself.
 
 To run a tool at another version than Sterling pins, see
 [Using a different tool version](tools.md#using-a-different-tool-version).

@@ -75,93 +75,12 @@ individual checks off with `errorProne { disable("CheckName") }` while you
 work through them, or
 [suppress a single finding](tools.md#suppressing-one-finding).
 
-## Already applying Spotless or SpotBugs
+## Already applying Spotless, SpotBugs or NullAway
 
-A hand-written `build-logic` often sets these tools up already. Sterling
-applies both itself, so:
-
-- **Spotless:** keeping `com.diffplug.spotless` is fine, at any version.
-  Gradle loads one Spotless for the whole build script, the higher of yours
-  and Sterling's (8.11.0). Remove `googleJavaFormat()` and
-  `formatAnnotations()` from your `spotless { java { } }` block: Sterling adds
-  both, google-java-format at its pinned version, and a second one fails.
-  Other steps, such as a license header, work alongside them.
-  `removeUnusedImports()`, `trimTrailingWhitespace()` and `endWithNewline()`
-  on Java are redundant: google-java-format already does all three.
-- **SpotBugs:** remove the `com.github.spotbugs` plugin. It registers
-  `spotbugsMain` and attaches SpotBugs to `check`, both of which Sterling
-  does. Your `spotbugs { }` settings keep working; a convention plugin that
-  sets them applies `com.github.spotbugs-base` instead. Effort and report
-  level set there win over Sterling's profile, so prefer
-  `sterling { spotbugs { } }` for those.
-
-A convention plugin like this, in `build-logic`:
-
-```kotlin
-import com.github.spotbugs.snom.Effort
-
-plugins {
-    java
-    id("com.diffplug.spotless")
-    id("com.github.spotbugs")
-}
-
-spotless {
-    java {
-        googleJavaFormat()
-        removeUnusedImports()
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
-}
-
-spotbugs {
-    effort.set(Effort.MAX)
-}
-```
-
-becomes this, with the tools' versions and wiring left to Sterling:
-
-```kotlin
-import dev.balakmran.sterling.SpotbugsSettings
-
-plugins {
-    java
-    id("dev.balakmran.sterling")
-}
-
-sterling {
-    spotbugs {
-        effort = SpotbugsSettings.Effort.MAX
-    }
-}
-```
-
-`build-logic` then depends on Sterling instead of the Spotless and SpotBugs
-plugins, and the projects that apply the convention plugin no longer apply
-Sterling themselves:
-
-```kotlin
-// build-logic/build.gradle.kts
-dependencies {
-    implementation("dev.balakmran.sterling:sterling-gradle-plugin:<version>")
-}
-```
-
-If the convention plugin keeps applying Spotless or SpotBugs, apply Sterling
-after it, last in `plugins { }`. Then both clashes fail with a message from
-Sterling that names the fix. Applied
-first, Sterling can't step in: the error comes from the other plugin, as
-"Cannot add task 'spotbugsMain'" under `com.github.spotbugs`, or
-"Multiple steps with name 'google-java-format'" from Spotless. The same
-Spotless error comes from a `spotless { }` block in the build script itself,
-which always runs after Sterling. The fix is the same either way.
-
-Spotless settings you set explicitly win over Sterling's, as with every
-tool. `enforceCheck = true` attaches `spotlessCheck` to `check` beside
-Sterling's gate, and a `lineEndings` other than `PRESERVE` can read git
-settings while configuring, which stops the configuration cache from being
-reused.
+A build that sets these tools up itself needs a few lines removed first, or
+Sterling fails with a message naming each one. [Migrating to
+Sterling](migrating.md) lists them, from Spring's NullAway snippet and from a
+hand-written `build-logic`.
 
 ## Multi-module builds
 

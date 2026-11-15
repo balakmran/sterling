@@ -55,7 +55,8 @@ changed nothing:
   findings, such as JSpecify or JaCoCo.
 
 Pin Sterling's version, and take minor releases on purpose: in their own
-pull request, with `stlFmt` run and any new findings fixed or disabled.
+pull request, with `stlFmt` run and any new findings fixed or disabled. Each
+release's changes are in [Upgrading Sterling](upgrading.md).
 
 ## Formatting
 

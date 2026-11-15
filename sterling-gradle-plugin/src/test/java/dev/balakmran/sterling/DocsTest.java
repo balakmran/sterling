@@ -163,6 +163,93 @@ class DocsTest {
                 .containsPattern("\\| `" + Pattern.quote(key) + "` \\|"));
   }
 
+  @Test
+  void migratingCoversSpringsSnippetAndAHandWrittenBuildLogic() {
+    String migrating = guide("migrating.md");
+
+    assertThat(migrating)
+        .contains("## What to remove")
+        .contains("## From Spring's NullAway snippet")
+        .contains("## From a hand-written build-logic")
+        .contains("io.spring.nullability")
+        .contains("disableAllChecks")
+        .contains("RequireExplicitNullMarking")
+        .contains("JSpecify mode");
+    // The checklist moved out of adopting.md, which points to it.
+    assertThat(guide("adopting.md"))
+        .contains("(migrating.md)")
+        .doesNotContain("`removeUnusedImports()`");
+  }
+
+  @Test
+  void upgradingHasASectionForTheCurrentMinorRelease() {
+    String upgrading = guide("upgrading.md");
+    Matcher heading =
+        Pattern.compile("(?m)^## (\\d+)\\.(\\d+)\\.\\d+ to (\\d+)\\.(\\d+)\\.0$")
+            .matcher(upgrading);
+    assertThat(heading.find()).describedAs("a '## X to Y' section").isTrue();
+    // Newest first: the first section's target is the newest release with notes.
+    int[] newest = {Integer.parseInt(heading.group(3)), Integer.parseInt(heading.group(4))};
+    String[] current =
+        read(Path.of(System.getProperty("sterling.versionFile"))).trim().split("\\.");
+    int[] released = {Integer.parseInt(current[0]), Integer.parseInt(current[1])};
+
+    assertThat(newest[0] * 1000 + newest[1])
+        .describedAs(
+            "newest section %d.%d vs version %s", newest[0], newest[1], String.join(".", current))
+        .isGreaterThanOrEqualTo(released[0] * 1000 + released[1]);
+    assertThat(section(upgrading, heading.group(0).substring(0, heading.group(0).length())))
+        .contains("CheckContracts")
+        .contains("HandleTestAssertionLibraries")
+        .contains("Application*")
+        .contains("google-java-format is unchanged");
+  }
+
+  @Test
+  void guideLinksPointToPagesAndHeadingsThatExist() throws IOException {
+    Path guide = Path.of(System.getProperty("sterling.guide"));
+    Path readmeFile = Path.of(System.getProperty("sterling.readme"));
+    List<Path> pages = new ArrayList<>(List.of(readmeFile));
+    try (Stream<Path> files = Files.list(guide)) {
+      files.sorted().forEach(pages::add);
+    }
+    Pattern link = Pattern.compile("\\]\\(([^)#:\\s]*\\.md)?(?:#([^)\\s]+))?\\)");
+    for (Path page : pages) {
+      Matcher matcher = link.matcher(withoutCodeBlocks(read(page)));
+      while (matcher.find()) {
+        Path target =
+            matcher.group(1) == null
+                ? page
+                : page.getParent().resolve(matcher.group(1)).normalize();
+        if (matcher.group(1) == null && matcher.group(2) == null) {
+          continue;
+        }
+        assertThat(target)
+            .describedAs(page.getFileName() + " -> " + matcher.group())
+            .isRegularFile();
+        if (matcher.group(2) != null) {
+          assertThat(anchors(read(target)))
+              .describedAs(page.getFileName() + " -> " + matcher.group())
+              .contains(matcher.group(2));
+        }
+      }
+    }
+  }
+
+  // GitHub's heading anchors: lower case, punctuation dropped, spaces as hyphens.
+  private static List<String> anchors(String markdown) {
+    return withoutCodeBlocks(markdown)
+        .lines()
+        .filter(line -> line.startsWith("#"))
+        .map(line -> line.replaceFirst("^#+\\s*", "").toLowerCase(java.util.Locale.ROOT))
+        .map(text -> text.replaceAll("[^a-z0-9 _-]", "").replace(' ', '-'))
+        .toList();
+  }
+
+  private static String withoutCodeBlocks(String markdown) {
+    return markdown.replaceAll("(?s)```.*?```", "");
+  }
+
   // Each setting as the settings reference writes it: "coverage.instruction",
   // "errorProne.disable(...)".
   static List<String> settings() {
