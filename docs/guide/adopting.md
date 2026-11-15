@@ -124,6 +124,59 @@ Sterling's gate, and a `lineEndings` other than `PRESERVE` can read git
 settings while configuring, which stops the configuration cache from being
 reused.
 
+## Multi-module builds
+
+Put Sterling in a convention plugin, so every module gets the same version
+and settings. In `build-logic`, an included build:
+
+```kotlin
+// settings.gradle.kts
+pluginManagement { includeBuild("build-logic") }
+include("orders", "billing")
+```
+
+```kotlin
+// build-logic/build.gradle.kts
+plugins { `kotlin-dsl` }
+
+repositories { gradlePluginPortal() }
+
+dependencies {
+    implementation("dev.balakmran.sterling:sterling-gradle-plugin:<version>")
+}
+```
+
+```kotlin
+// build-logic/src/main/kotlin/java-conventions.gradle.kts
+plugins {
+    java
+    id("dev.balakmran.sterling")
+}
+
+repositories { mavenCentral() }
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+
+sterling {
+    errorProne { disable("UnusedVariable") }
+}
+```
+
+Each module applies the convention plugin, and can override any setting for
+itself:
+
+```kotlin
+// billing/build.gradle.kts
+plugins { id("java-conventions") }
+
+sterling { coverage { instruction = 60 } }
+```
+
+`./gradlew stlCheck` at the root runs every module's gate, and
+`./gradlew stlInfo` prints each module's settings. Coverage is measured and
+checked per module; combining it across modules is planned for a later
+release.
+
 ## Running the gate before you push
 
 To check formatting before every commit and run the whole gate before every
