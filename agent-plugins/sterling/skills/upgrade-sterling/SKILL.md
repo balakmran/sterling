@@ -98,8 +98,9 @@ what may add findings. Wait for confirmation (guardrail 6).
    applies),
    re-measure: `scripts/outcomes.sh test jacocoTestReport`, then for each
    module run `scripts/coverage.sh <coverage.reports.xml from stlInfo --json>`.
-   Report the new numbers against the thresholds. Never lower a threshold,
-   even when the measurement is below it.
+   Report the new numbers against the thresholds, and say when they are now
+   well above them: raising a threshold is the user's call, so leave it. Never
+   lower one, even when the measurement is below it.
 
 ## 4. Run the gate and report
 
