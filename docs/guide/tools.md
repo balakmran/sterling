@@ -112,14 +112,20 @@ your own. It's Java's equivalent of `# pragma: no cover`. Annotations kept
 only in source, like MapStruct's or `jakarta.annotation.Generated`, aren't
 seen; use `coverage.excludes` for those.
 
-**Lombok** marks the code it writes with `@lombok.Generated` only when told
-to. Without this `lombok.config` at the project root, every getter, `equals`
-and builder counts against coverage:
+**Lombok** 1.18.34 and later mark the code they write with
+`@lombok.Generated`, so getters, `equals`, builders and the rest don't count
+against coverage. Error Prone skips its warnings in that code, and NullAway
+relies on the annotation to leave Lombok's code unchecked, so don't turn it
+off with `lombok.addLombokGeneratedAnnotation = false`. On an older Lombok,
+turn it on in a `lombok.config` at the project root:
 
 ```properties
 config.stopBubbling = true
 lombok.addLombokGeneratedAnnotation = true
 ```
+
+NullAway's Lombok support is best effort: `@Builder`, `@Data`, `@Value` and
+`@Builder.Default` on a `@Nullable` field work in `@NullMarked` code.
 
 `coverage.excludes` patterns match class files under the classes directory,
 such as `com/example/Application*`. End them with `*`: nested and anonymous
