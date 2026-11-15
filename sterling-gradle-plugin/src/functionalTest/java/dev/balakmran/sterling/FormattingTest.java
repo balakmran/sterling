@@ -1,9 +1,14 @@
 package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Fixture.outcome;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -157,6 +162,108 @@ class FormattingTest {
             .buildAndFail("stlFmtCheck");
 
     assertThat(result.getOutput()).contains("style").contains("is final");
+    assertThat(outcome(result, ":spotlessJavaCheck")).isNull();
+  }
+
+  private static final String RATCHET = "sterling { format { ratchetFrom = \"main\" } }\n";
+
+  // Runs git in the fixture, with an identity and no signing so the user's config doesn't matter.
+  private void git(String... args) {
+    List<String> command =
+        new ArrayList<>(
+            List.of(
+                "git",
+                "-c",
+                "user.name=Sterling Test",
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                "commit.gpgsign=false"));
+    command.addAll(List.of(args));
+    try {
+      Process process =
+          new ProcessBuilder(command).directory(dir.toFile()).redirectErrorStream(true).start();
+      String output = new String(process.getInputStream().readAllBytes(), UTF_8);
+      if (process.waitFor() != 0) {
+        throw new IllegalStateException(String.join(" ", command) + " failed:\n" + output);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+  }
+
+  // A repository on main with an unformatted Old.java committed and a formatted New.java.
+  private Fixture ratchetFixture(String script) {
+    Fixture fixture =
+        fixture(script)
+            .file(".gitignore", ".gradle/\nbuild/\n")
+            .file("src/main/java/Old.java", UNFORMATTED.replace("App", "Old"))
+            .file("src/main/java/New.java", FORMATTED.replace("App", "New"));
+    git("init", "-q", "-b", "main");
+    git("add", ".");
+    git("commit", "-q", "-m", "initial");
+    return fixture;
+  }
+
+  @Test
+  void ratchetChecksAndFormatsOnlyFilesChangedSinceTheReference() {
+    String newUnformatted = UNFORMATTED.replace("App", "New");
+    Fixture fixture = ratchetFixture(RATCHET).file("src/main/java/New.java", newUnformatted);
+
+    BuildResult check = fixture.buildAndFail("stlFmtCheck");
+    assertThat(outcome(check, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.FAILED);
+    assertThat(check.getOutput()).contains("New.java").doesNotContain("Old.java");
+
+    BuildResult apply = fixture.build("stlFmt");
+    assertThat(outcome(apply, ":spotlessJavaApply")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("src/main/java/New.java")).isEqualTo(FORMATTED.replace("App", "New"));
+    assertThat(fixture.read("src/main/java/Old.java")).isEqualTo(UNFORMATTED.replace("App", "Old"));
+
+    BuildResult passing = fixture.build("stlFmtCheck");
+    assertThat(outcome(passing, ":spotlessJavaCheck"))
+        .isIn(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE);
+  }
+
+  @Test
+  void ratchetReusesTheConfigurationCacheAndHonoursAMovedReference() {
+    Fixture fixture = ratchetFixture(RATCHET);
+    git("checkout", "-q", "-b", "feature");
+    fixture.file("src/main/java/Old.java", UNFORMATTED.replace("App", "Older"));
+    git("commit", "-q", "-am", "change Old.java");
+
+    BuildResult first = fixture.buildAndFail("stlFmtCheck");
+    assertThat(outcome(first, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.FAILED);
+
+    BuildResult second = fixture.buildAndFail("stlFmtCheck");
+    assertThat(second.getOutput()).contains("Reusing configuration cache.");
+    assertThat(outcome(second, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.FAILED);
+
+    // main now includes the change, so nothing differs from it. Whether Gradle reuses the cache
+    // entry or not, the moved ref must be honoured.
+    git("branch", "-f", "main", "feature");
+    BuildResult third = fixture.build("stlFmtCheck");
+    assertThat(outcome(third, ":spotlessJavaCheck"))
+        .isIn(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE);
+  }
+
+  @Test
+  void ratchetFromAMissingReferenceFailsWithSpotlesssMessage() {
+    BuildResult result =
+        ratchetFixture("sterling { format { ratchetFrom = \"nope\" } }\n")
+            .buildAndFail("stlFmtCheck");
+
+    assertThat(result.getOutput()).contains("No such reference 'nope'");
+  }
+
+  @Test
+  void anEmptyRatchetFromIsRejected() {
+    BuildResult result =
+        ratchetFixture("sterling { format { ratchetFrom = \"\" } }\n").buildAndFail("stlFmtCheck");
+
+    assertThat(result.getOutput()).contains("sterling.format.ratchetFrom must not be empty");
     assertThat(outcome(result, ":spotlessJavaCheck")).isNull();
   }
 }

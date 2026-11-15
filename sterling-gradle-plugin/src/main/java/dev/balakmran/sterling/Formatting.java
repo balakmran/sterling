@@ -14,9 +14,9 @@ import org.gradle.api.provider.Provider;
  *
  * <p>Spotless is applied and configured whatever {@code format.enabled} says; the flag only decides
  * whether the Sterling tasks depend on Spotless's. Spotless has no lazy API for its steps, so
- * {@code format.style} is read in the {@code spotless { java { } }} action, which Spotless runs in
- * its {@code afterEvaluate} or when {@code spotlessJava} is realised, whichever is later, and is
- * final from then on.
+ * {@code format.style} and {@code format.ratchetFrom} are read in the {@code spotless { java { } }}
+ * action, which Spotless runs in its {@code afterEvaluate} or when {@code spotlessJava} is
+ * realised, whichever is later, and are final from then on.
  */
 final class Formatting {
   /** Generated sources, wherever a generator puts them under a build directory. */
@@ -45,6 +45,9 @@ final class Formatting {
     // later; a set after that must fail rather than be ignored.
     Property<FormatSettings.Style> style = sterling.getFormat().getStyle();
     style.finalizeValueOnRead();
+    Property<String> ratchet = sterling.getFormat().getRatchetFrom();
+    ratchet.finalizeValueOnRead();
+    Provider<String> ratchetFrom = Validation.notEmpty(ratchet, "format.ratchetFrom");
     spotless.java(java -> {
       try {
         // The google-java-format step also removes unused imports.
@@ -61,6 +64,10 @@ final class Formatting {
         throw e;
       }
       java.targetExclude(GENERATED_SOURCES);
+      // On this format only, so the project's other Spotless formats keep their own ratchet.
+      if (ratchetFrom.isPresent()) {
+        java.ratchetFrom(ratchetFrom.get());
+      }
     });
 
     Provider<Boolean> enabled = sterling.getFormat().getEnabled();
