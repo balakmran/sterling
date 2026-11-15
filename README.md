@@ -83,8 +83,9 @@ Groovy build script, use `id 'dev.balakmran.sterling' version '...'`; the
 ./gradlew build      # compile, test, and run the gate
 ```
 
-Adding it to a project that already has code, or that sets up Spotless or
-SpotBugs itself? See [Adopting Sterling](docs/guide/adopting.md).
+Adding it to a project that already has code? See
+[Adopting Sterling](docs/guide/adopting.md). One that sets up Spotless,
+SpotBugs or NullAway itself? See [Migrating](docs/guide/migrating.md).
 
 ### Spring Boot
 
@@ -159,8 +160,11 @@ Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; te
 
 ## Documentation
 
-- [Adopting Sterling](docs/guide/adopting.md): a first reformat, projects
-  that already apply Spotless or SpotBugs, git hooks, unreleased builds.
+- [Adopting Sterling](docs/guide/adopting.md): a first reformat, multi-module
+  builds, git hooks, unreleased builds.
+- [Migrating to Sterling](docs/guide/migrating.md): from Spring's NullAway
+  snippet or a hand-written `build-logic`.
+- [Upgrading Sterling](docs/guide/upgrading.md): what each release changes.
 - [Configuring Sterling](docs/guide/configuration.md): profiles, the
   `sterling { }` block, every setting, and the tools' own DSLs.
 - [The tools](docs/guide/tools.md): pinned versions, what an upgrade can
