@@ -260,5 +260,5 @@ Sterling already adds Spotless's `googleJavaFormat()` and
 instead. [Already applying Spotless or SpotBugs](adopting.md#already-applying-spotless-or-spotbugs)
 covers a `build-logic` that sets these tools up itself.
 
-Pointing a tool at a newer version than Sterling pins (for example
-`spotbugs { toolVersion = "..." }`) works too, but isn't tested yet.
+To run a tool at another version than Sterling pins, see
+[Using a different tool version](tools.md#using-a-different-tool-version).

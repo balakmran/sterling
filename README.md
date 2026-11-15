@@ -146,7 +146,8 @@ but none of them attaches itself to `check`: only `stlCheck` does.
 Anything set through a tool's own DSL (see
 [Configuring the tools directly](docs/guide/configuration.md#configuring-the-tools-directly)), such as
 `spotbugs { effort = ... }` or `options.errorprone { }`, still applies but
-isn't shown:
+isn't shown, except a tool version the project chose, which is marked
+`(project override)`:
 
 ```
 Sterling 0.1.0

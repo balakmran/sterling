@@ -6,6 +6,7 @@ import dev.balakmran.sterling.internal.SterlingInfoTask;
 import dev.balakmran.sterling.internal.ToolchainCheckTask;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.gradle.api.GradleException;
@@ -175,6 +176,7 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getProjectPath().set(projectPath);
               task.getProfileProperty().set(profileProperty);
               task.getToolVersions().set(ToolVersions.all());
+              task.getVersionOverrides().convention(Map.of());
               task.getProfile().set(sterling.getProfile());
               task.getAttachToCheck().set(sterling.getAttachToCheck());
               task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
@@ -282,5 +284,9 @@ public class SterlingPlugin implements Plugin<Project> {
     Coverage.configure(project, sterling);
     Spotbugs.configure(project, sterling);
     ErrorProne.configure(project, sterling);
+    project
+        .getTasks()
+        .named(INFO, SterlingInfoTask.class)
+        .configure(task -> task.getVersionOverrides().set(VersionOverrides.of(project)));
   }
 }

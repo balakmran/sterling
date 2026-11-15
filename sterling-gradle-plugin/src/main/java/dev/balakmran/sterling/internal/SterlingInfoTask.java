@@ -29,7 +29,9 @@ import org.gradle.api.tasks.options.Option;
  * script have all been applied. It never stays up to date, since printing is its only effect.
  *
  * <p>It shows Sterling's settings only. A value set through a tool's own DSL, such as {@code
- * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown.
+ * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown. The
+ * exception is a tool version: one the project chose instead of Sterling's pin is shown with
+ * "(project override)".
  *
  * <p>With {@code --json}, it prints the same configuration as one line of JSON per project, for
  * scripts and coding agents. The JSON's {@code schemaVersion} is {@value #SCHEMA_VERSION}: adding a
@@ -79,6 +81,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @Input
   public abstract MapProperty<String, String> getToolVersions();
+
+  /**
+   * The tool versions the project chose instead of Sterling's pins, keyed like {@link
+   * #getToolVersions()}. Each is shown with "(project override)".
+   *
+   * @return the overridden versions
+   */
+  @Input
+  public abstract MapProperty<String, String> getVersionOverrides();
 
   /**
    * The resolved profile.
@@ -290,6 +301,12 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return report.toString();
   }
 
+  // A tool's version as the project gets it: Sterling's pin, or the project's own choice.
+  private String version(Map<String, String> versions, String tool) {
+    String override = getVersionOverrides().get().get(tool);
+    return override == null ? versions.get(tool) : override + " (project override)";
+  }
+
   private static String onOff(boolean on, String detail) {
     return on ? "on   (" + detail + ")" : "off";
   }
@@ -312,7 +329,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
   private String errorProneDetail(Map<String, String> versions) {
     String warnings =
         getWarningsAsErrors().get() ? "warnings are errors" : "warnings are not errors";
-    return versions.get("errorprone")
+    return version(versions, "errorprone")
         + "; "
         + warnings
         + count(getDisabledChecks().get().size(), "check", "disabled");
@@ -326,9 +343,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
       return "off (Error Prone off)";
     }
     return "on   ("
-        + versions.get("nullaway")
+        + version(versions, "nullaway")
         + "; JSpecify "
-        + versions.get("jspecify")
+        + version(versions, "jspecify")
         + "; @NullMarked code only"
         + (getJspecifyMode().get() ? "; JSpecify mode" : "")
         + ")";
@@ -336,7 +353,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String spotbugsDetail(Map<String, String> versions) {
     String filter = getExcludeFilter().isPresent() ? "; consumer filter merged" : "";
-    return versions.get("spotbugs")
+    return version(versions, "spotbugs")
         + "; effort "
         + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
         + "; "
@@ -347,7 +364,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String coverageDetail(Map<String, String> versions) {
     return "JaCoCo "
-        + versions.get("jacoco")
+        + version(versions, "jacoco")
         + "; instruction >= "
         + getInstruction().get()
         + "%, branch >= "
