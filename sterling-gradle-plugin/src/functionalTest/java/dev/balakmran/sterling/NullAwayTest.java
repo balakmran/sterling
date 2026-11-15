@@ -203,4 +203,134 @@ class NullAwayTest {
 
     assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
   }
+
+  private static final String SPRING_BOOT = "4.1.2";
+
+  // Spring's Assert.notNull carries @Contract("null, _ -> fail"), so x is non-null after it.
+  private static final String SPRING_ASSERT =
+      """
+      package app;
+
+      import org.jspecify.annotations.Nullable;
+      import org.springframework.util.Assert;
+
+      public class Checked {
+        public int length(@Nullable String x) {
+          Assert.notNull(x, "x");
+          return x.length();
+        }
+      }
+      """;
+
+  // Promises a non-null result for a non-null argument, but can return null. NullAway checks
+  // only contracts that end in "!null"; it doesn't verify "-> fail".
+  private static final String BROKEN_CONTRACT =
+      """
+      package app;
+
+      import org.jspecify.annotations.Nullable;
+      import org.springframework.lang.Contract;
+
+      public class Broken {
+        @Contract("!null -> !null")
+        public static @Nullable String trim(@Nullable String value) {
+          return value == null || value.isBlank() ? null : value.trim();
+        }
+      }
+      """;
+
+  private static final String ASSERTJ_TEST =
+      """
+      package app;
+
+      import static org.assertj.core.api.Assertions.assertThat;
+
+      import org.jspecify.annotations.Nullable;
+
+      class LengthTest {
+        static @Nullable String find() {
+          return "x";
+        }
+
+        int length() {
+          String x = find();
+          assertThat(x).isNotNull();
+          return x.length();
+        }
+      }
+      """;
+
+  // A project with Spring's spring-core and AssertJ, through Spring Boot's BOM, and no App.java.
+  private Fixture springFixture(String script) {
+    return new Fixture(dir)
+        .file(
+            "build.gradle.kts",
+            """
+            plugins {
+                java
+                id("dev.balakmran.sterling")
+            }
+
+            repositories { mavenCentral() }
+
+            dependencies {
+                implementation(platform("org.springframework.boot:spring-boot-dependencies:%s"))
+                implementation("org.springframework:spring-core")
+                testImplementation("org.assertj:assertj-core")
+            }
+
+            """
+                    .formatted(SPRING_BOOT)
+                + script)
+        .file("src/main/java/app/package-info.java", NULL_MARKED)
+        .file("src/test/java/app/package-info.java", NULL_MARKED);
+  }
+
+  @Test
+  void springsAssertContractIsHonouredWithoutCustomContractAnnotations() {
+    BuildResult result =
+        springFixture("")
+            .file("src/main/java/app/Checked.java", SPRING_ASSERT)
+            .build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void aMethodBodyThatBreaksItsContractFailsCompilation() {
+    BuildResult result =
+        springFixture("")
+            .file("src/main/java/app/Broken.java", BROKEN_CONTRACT)
+            .buildAndFail("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput()).contains("[NullAway]").contains("@Contract");
+  }
+
+  @Test
+  void anAssertjNotNullAssertionCountsAsANullCheckInTests() {
+    BuildResult result =
+        springFixture("")
+            .file("src/test/java/app/LengthTest.java", ASSERTJ_TEST)
+            .build("compileTestJava");
+
+    assertThat(outcome(result, ":compileTestJava")).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void aProjectsOwnErrorProneOptionWinsOverSterlings() {
+    BuildResult result =
+        springFixture(
+                """
+                tasks.withType<JavaCompile>().configureEach {
+                    (options as ExtensionAware).extensions
+                        .getByType<net.ltgt.gradle.errorprone.ErrorProneOptions>()
+                        .option("NullAway:CheckContracts", "false")
+                }
+                """)
+            .file("src/main/java/app/Broken.java", BROKEN_CONTRACT)
+            .build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+  }
 }
