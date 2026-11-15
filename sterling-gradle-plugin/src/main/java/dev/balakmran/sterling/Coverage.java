@@ -2,6 +2,7 @@ package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Flags.whenOn;
 
+import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.math.BigDecimal;
 import java.util.List;
 import org.gradle.api.Project;
@@ -80,6 +81,14 @@ final class Coverage {
           report.getReports().getXml().getRequired().set(true);
           report.getReports().getHtml().getRequired().set(true);
         });
+
+    SterlingPlugin.reportToInfo(
+        project,
+        SterlingInfoTask::getCoverageReports,
+        "xml",
+        tasks
+            .named(REPORT, JacocoReport.class)
+            .flatMap(report -> report.getReports().getXml().getOutputLocation()));
 
     tasks
         .named(VERIFICATION, JacocoCoverageVerification.class)

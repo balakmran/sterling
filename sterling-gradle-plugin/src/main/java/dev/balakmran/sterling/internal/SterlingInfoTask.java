@@ -2,9 +2,12 @@ package dev.balakmran.sterling.internal;
 
 import dev.balakmran.sterling.Profile;
 import dev.balakmran.sterling.SpotbugsSettings;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.provider.ListProperty;
@@ -12,8 +15,10 @@ import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
+import org.gradle.api.tasks.options.Option;
 
 /**
  * The {@code stlInfo} task: prints Sterling's resolved configuration.
@@ -24,11 +29,47 @@ import org.gradle.api.tasks.UntrackedTask;
  *
  * <p>It shows Sterling's settings only. A value set through a tool's own DSL, such as {@code
  * spotbugs { effort = ... }} or {@code options.errorprone { }}, still applies but isn't shown.
+ *
+ * <p>With {@code --json}, it prints the same configuration as one line of JSON per project, for
+ * scripts and coding agents. The JSON's {@code schemaVersion} is {@value #SCHEMA_VERSION}: adding a
+ * key keeps it, while removing or renaming one, or changing a value's type, raises it.
  */
 @UntrackedTask(because = "It only prints the resolved configuration.")
 public abstract class SterlingInfoTask extends DefaultTask {
+  /** The version of the JSON format {@code --json} prints. */
+  public static final int SCHEMA_VERSION = 1;
+
+  // The toolchain line's prefix when the Java tools aren't active.
+  private static final String NOT_ACTIVE = "not active (";
+
   /** Creates the task. Sterling registers it as {@code stlInfo}; Gradle instantiates it. */
   public SterlingInfoTask() {}
+
+  /**
+   * Whether to print JSON instead of text. Off by default; {@code --json} turns it on.
+   *
+   * @return the JSON switch
+   */
+  @Input
+  @Option(option = "json", description = "Prints the configuration as one line of JSON.")
+  public abstract Property<Boolean> getJson();
+
+  /**
+   * The project's path, such as {@code :api}.
+   *
+   * @return the project path
+   */
+  @Input
+  public abstract Property<String> getProjectPath();
+
+  /**
+   * The {@code sterling.profile} Gradle property as given, if set.
+   *
+   * @return the raw property value
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getProfileProperty();
 
   /**
    * The tool versions Sterling pins, keyed by tool name, plus {@code sterling} itself.
@@ -135,12 +176,31 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<SpotbugsSettings.Confidence> getSpotbugsReportLevel();
 
   /**
-   * Whether the build set a SpotBugs exclude filter of its own.
+   * The project's own SpotBugs exclude filter, relative to the project directory, if it set one.
    *
-   * @return whether a consumer filter is set
+   * @return the filter's path, with {@code /} separators
    */
   @Input
-  public abstract Property<Boolean> getConsumerExcludeFilter();
+  @Optional
+  public abstract Property<String> getExcludeFilter();
+
+  /**
+   * SpotBugs' report files by format ({@code xml}, {@code sarif}), relative to the project
+   * directory. Empty without the {@code java} plugin.
+   *
+   * @return the report paths
+   */
+  @Input
+  public abstract MapProperty<String, String> getSpotbugsReports();
+
+  /**
+   * JaCoCo's report files by format ({@code xml}), relative to the project directory. Empty without
+   * the {@code java} plugin.
+   *
+   * @return the report paths
+   */
+  @Input
+  public abstract MapProperty<String, String> getCoverageReports();
 
   /**
    * Whether coverage is on.
@@ -181,7 +241,8 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @TaskAction
   public void print() {
-    getLogger().quiet(render(JavaVersion.current().getMajorVersion()));
+    String daemonJvm = JavaVersion.current().getMajorVersion();
+    getLogger().quiet(getJson().get() ? renderJson(daemonJvm) : render(daemonJvm));
   }
 
   /**
@@ -248,7 +309,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
   }
 
   private String spotbugsDetail(Map<String, String> versions) {
-    String filter = getConsumerExcludeFilter().get() ? "; consumer filter merged" : "";
+    String filter = getExcludeFilter().isPresent() ? "; consumer filter merged" : "";
     return versions.get("spotbugs")
         + "; effort "
         + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
@@ -267,6 +328,103 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + getBranch().get()
         + "%"
         + count(getCoverageExcludes().get().size(), "exclude", "");
+  }
+
+  /**
+   * Builds the JSON report: the same configuration as {@link #render(String)}, as one line.
+   *
+   * @param daemonJvm the Java version the Gradle daemon runs on, such as {@code 25}
+   * @return the JSON object, without a trailing newline
+   */
+  public String renderJson(String daemonJvm) {
+    return Json.write(jsonModel(daemonJvm));
+  }
+
+  /**
+   * The values {@link #renderJson(String)} writes, as nested maps in output order.
+   *
+   * <p>Keys follow the names of the {@code sterling { }} settings, so a reader can map a key to the
+   * setting that controls it.
+   *
+   * @param daemonJvm the Java version the Gradle daemon runs on, such as {@code 25}
+   * @return the report's root object
+   */
+  public Map<String, Object> jsonModel(String daemonJvm) {
+    Map<String, String> versions = getToolVersions().get();
+    Map<String, Object> root = new LinkedHashMap<>();
+    root.put("schemaVersion", SCHEMA_VERSION);
+    root.put("sterling", versions.get("sterling"));
+    root.put("project", getProjectPath().get());
+    root.put("profile", getProfile().get().name());
+    root.put("profileProperty", getProfileProperty().getOrNull());
+    root.put("attachToCheck", getAttachToCheck().get());
+    root.put("daemonJvm", Integer.parseInt(daemonJvm));
+    root.put("javaToolchain", toolchainJson());
+
+    Map<String, Object> format = new LinkedHashMap<>();
+    format.put("enabled", getFormatEnabled().get());
+    Map<String, Object> formatVersions = new LinkedHashMap<>();
+    formatVersions.put("google-java-format", versions.get("google-java-format"));
+    formatVersions.put("spotless", versions.get("spotless"));
+    format.put("versions", formatVersions);
+    root.put("format", format);
+
+    Map<String, Object> errorProne = new LinkedHashMap<>();
+    errorProne.put("enabled", getErrorProneEnabled().get());
+    errorProne.put("version", versions.get("errorprone"));
+    errorProne.put("warningsAsErrors", getWarningsAsErrors().get());
+    List<String> disabled = new ArrayList<>(getDisabledChecks().get());
+    disabled.sort(null);
+    errorProne.put("disabledChecks", disabled);
+    root.put("errorProne", errorProne);
+
+    Map<String, Object> nullAway = new LinkedHashMap<>();
+    nullAway.put("enabled", getNullAwayEnabled().get());
+    nullAway.put("active", getNullAwayEnabled().get() && getErrorProneEnabled().get());
+    nullAway.put("version", versions.get("nullaway"));
+    nullAway.put("jspecify", versions.get("jspecify"));
+    nullAway.put("jspecifyMode", getJspecifyMode().get());
+    root.put("nullAway", nullAway);
+
+    Map<String, Object> spotbugs = new LinkedHashMap<>();
+    spotbugs.put("enabled", getSpotbugsEnabled().get());
+    spotbugs.put("version", versions.get("spotbugs"));
+    spotbugs.put("effort", getSpotbugsEffort().get().name());
+    spotbugs.put("reportLevel", getSpotbugsReportLevel().get().name());
+    spotbugs.put("excludeFilter", getExcludeFilter().getOrNull());
+    putReports(spotbugs, getSpotbugsReports().get());
+    root.put("spotbugs", spotbugs);
+
+    Map<String, Object> coverage = new LinkedHashMap<>();
+    coverage.put("enabled", getCoverageEnabled().get());
+    coverage.put("version", versions.get("jacoco"));
+    coverage.put("instruction", getInstruction().get());
+    coverage.put("branch", getBranch().get());
+    coverage.put("excludes", getCoverageExcludes().get());
+    putReports(coverage, getCoverageReports().get());
+    root.put("coverage", coverage);
+    return root;
+  }
+
+  // The toolchain line holds the version, or "not active (<reason>)".
+  private Map<String, Object> toolchainJson() {
+    String line = getJavaToolchain().get();
+    Map<String, Object> toolchain = new LinkedHashMap<>();
+    if (line.startsWith(NOT_ACTIVE) && line.endsWith(")")) {
+      toolchain.put("active", false);
+      toolchain.put("reason", line.substring(NOT_ACTIVE.length(), line.length() - 1));
+    } else {
+      toolchain.put("active", true);
+      toolchain.put("version", Integer.parseInt(line));
+    }
+    return toolchain;
+  }
+
+  // Reports exist only once java is applied; the key is left out rather than empty.
+  private static void putReports(Map<String, Object> tool, Map<String, String> reports) {
+    if (!reports.isEmpty()) {
+      tool.put("reports", new TreeMap<>(reports));
+    }
   }
 
   private static String count(int n, String noun, String suffix) {
