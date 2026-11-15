@@ -250,6 +250,20 @@ class FormattingTest {
   }
 
   @Test
+  void stlInfoJsonReportsTheStyleAndRatchet() {
+    String json =
+        fixture(
+                "sterling { format { style = dev.balakmran.sterling.FormatSettings.Style.AOSP;"
+                    + " ratchetFrom = \"origin/main\" } }\n")
+            .build("-q", "stlInfo", "--json")
+            .getOutput();
+
+    assertThat(json)
+        .contains(
+            "\"format\":{\"enabled\":true,\"style\":\"AOSP\",\"ratchetFrom\":\"origin/main\",");
+  }
+
+  @Test
   void ratchetFromAMissingReferenceFailsWithSpotlesssMessage() {
     BuildResult result =
         ratchetFixture("sterling { format { ratchetFrom = \"nope\" } }\n")

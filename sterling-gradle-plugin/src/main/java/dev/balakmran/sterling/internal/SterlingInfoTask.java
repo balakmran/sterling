@@ -45,6 +45,12 @@ public abstract class SterlingInfoTask extends DefaultTask {
   // The toolchain line's prefix when the Java tools aren't active.
   private static final String NOT_ACTIVE = "not active (";
 
+  /**
+   * The version {@link #getVersionOverrides()} holds for a tool the project declared without a
+   * version, such as one a platform manages. The text form shows it as is; JSON gives {@code null}.
+   */
+  public static final String MANAGED = "managed";
+
   /** Creates the task. Sterling registers it as {@code stlInfo}; Gradle instantiates it. */
   public SterlingInfoTask() {}
 
@@ -406,6 +412,8 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> format = new LinkedHashMap<>();
     format.put("enabled", getFormatEnabled().get());
+    format.put("style", getFormatStyle().get().name());
+    format.put("ratchetFrom", getFormatRatchetFrom().getOrNull());
     Map<String, Object> formatVersions = new LinkedHashMap<>();
     formatVersions.put("google-java-format", versions.get("google-java-format"));
     formatVersions.put("spotless", versions.get("spotless"));
@@ -414,7 +422,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> errorProne = new LinkedHashMap<>();
     errorProne.put("enabled", getErrorProneEnabled().get());
-    errorProne.put("version", versions.get("errorprone"));
+    putVersion(errorProne, "version", versions, "errorprone");
     errorProne.put("warningsAsErrors", getWarningsAsErrors().get());
     List<String> disabled = new ArrayList<>(getDisabledChecks().get());
     disabled.sort(null);
@@ -424,14 +432,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> nullAway = new LinkedHashMap<>();
     nullAway.put("enabled", getNullAwayEnabled().get());
     nullAway.put("active", getNullAwayEnabled().get() && getErrorProneEnabled().get());
-    nullAway.put("version", versions.get("nullaway"));
-    nullAway.put("jspecify", versions.get("jspecify"));
+    putVersion(nullAway, "version", versions, "nullaway");
+    putVersion(nullAway, "jspecify", versions, "jspecify");
     nullAway.put("jspecifyMode", getJspecifyMode().get());
     root.put("nullAway", nullAway);
 
     Map<String, Object> spotbugs = new LinkedHashMap<>();
     spotbugs.put("enabled", getSpotbugsEnabled().get());
-    spotbugs.put("version", versions.get("spotbugs"));
+    putVersion(spotbugs, "version", versions, "spotbugs");
     spotbugs.put("effort", getSpotbugsEffort().get().name());
     spotbugs.put("reportLevel", getSpotbugsReportLevel().get().name());
     spotbugs.put("excludeFilter", getExcludeFilter().getOrNull());
@@ -440,13 +448,28 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
     Map<String, Object> coverage = new LinkedHashMap<>();
     coverage.put("enabled", getCoverageEnabled().get());
-    coverage.put("version", versions.get("jacoco"));
+    putVersion(coverage, "version", versions, "jacoco");
     coverage.put("instruction", getInstruction().get());
     coverage.put("branch", getBranch().get());
     coverage.put("excludes", getCoverageExcludes().get());
     putReports(coverage, getCoverageReports().get());
     root.put("coverage", coverage);
     return root;
+  }
+
+  // A version key and its source beside it: "versionSource" for "version", "jspecifySource" for
+  // "jspecify". A project's version declared without one, as from a platform, is null.
+  private void putVersion(
+      Map<String, Object> tool, String key, Map<String, String> versions, String name) {
+    String override = getVersionOverrides().get().get(name);
+    String source = key.equals("version") ? "versionSource" : key + "Source";
+    if (override == null) {
+      tool.put(key, versions.get(name));
+      tool.put(source, "sterling");
+    } else {
+      tool.put(key, override.equals(MANAGED) ? null : override);
+      tool.put(source, "project");
+    }
   }
 
   // The toolchain line holds the version, or "not active (<reason>)".

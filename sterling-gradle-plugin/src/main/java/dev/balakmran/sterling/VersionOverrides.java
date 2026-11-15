@@ -1,6 +1,7 @@
 package dev.balakmran.sterling;
 
 import com.github.spotbugs.snom.SpotBugsExtension;
+import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +22,7 @@ import org.gradle.testing.jacoco.plugins.JacocoPluginExtension;
  */
 final class VersionOverrides {
   /** Shown for a dependency declared without a version, such as one a platform manages. */
-  static final String MANAGED = "managed";
+  static final String MANAGED = SterlingInfoTask.MANAGED;
 
   private VersionOverrides() {}
 
