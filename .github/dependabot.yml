@@ -1,12 +1,30 @@
 version: 2
 updates:
-  # Covers gradle/libs.versions.toml and the wrapper.
+  # Covers gradle/libs.versions.toml and the wrapper. Commits read "fix(deps): ...", so a bump
+  # becomes a patch release; bumps that can change findings are reworded to feat(deps) by hand
+  # (dependabot-automerge.yml labels them).
   - package-ecosystem: gradle
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: fix
+      include: scope
+    groups:
+      # Only Sterling's own build uses these; one PR for all of them.
+      build-tools:
+        patterns:
+          - "org.junit*"
+          - "org.assertj:*"
+          - "com.autonomousapps*"
+          - "com.gradle.plugin-publish*"
+          - "com.gradle.publish:*"
+          - "com.facebook:ktfmt"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
