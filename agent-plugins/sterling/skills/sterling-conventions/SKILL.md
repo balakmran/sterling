@@ -22,8 +22,9 @@ Look for `id("dev.balakmran.sterling")` in the build scripts, a `build-logic`
 convention plugin, or `settings.gradle.kts`. If it isn't there, this skill
 doesn't apply; stop following it.
 
-Find the active profile: `./gradlew -q stlInfo` prints it. `STRICT` adds the
-rules marked "(STRICT)" below.
+Find the active profile and formatter style: `./gradlew -q stlInfo --json`
+prints them as `profile` and `format.style`. `STRICT` adds the rules marked
+"(STRICT)" below.
 
 ## After every change to Java code
 
@@ -36,7 +37,9 @@ Run, from the project root:
 `stlFmt` rewrites files with google-java-format, so never format by hand and
 never argue with its output. `stlLint` compiles with Error Prone and NullAway;
 fix what it reports before moving on. Never edit files under `build/generated`:
-they are regenerated, and Sterling skips them.
+they are regenerated, and Sterling skips them. `stlFmt` formats every source
+file, so on a project that was never formatted it also touches files you didn't
+edit; tell the user, and don't mix that diff into your own change.
 
 Before you finish, run the whole gate and read the task outcomes, not the log:
 
@@ -47,7 +50,9 @@ Before you finish, run the whole gate and read the task outcomes, not the log:
 ## Null safety (NullAway with JSpecify)
 
 NullAway checks only code in packages marked `@NullMarked` in
-`package-info.java`. Inside them:
+`package-info.java`. If no package in the project is marked, NullAway checks
+nothing yet; don't add `@NullMarked` unasked, but still annotate with `@Nullable`
+where null is meant. Inside marked packages:
 
 - Annotate anything that may be null with `org.jspecify.annotations.Nullable`,
   never `javax.annotation`, `jakarta.annotation`, `org.springframework.lang` or
@@ -73,16 +78,87 @@ they create.
 
 ## Error Prone
 
-Error-level findings fail compilation in every profile. (STRICT) Warnings fail
-it too, including javac's own `[removal]` and similar warnings. Fix the code
-rather than the build: Error Prone's message names the check and links its
-explanation.
+Compilation runs every default Error Prone check. Error-level findings fail
+the build in every profile; (STRICT) warnings fail it too, javac's own
+(`[removal]`, `[deprecation]`) included. Each message names the check and the
+fix, and `https://errorprone.info/bugpattern/<CheckName>` explains it. The ones
+that code written by an agent trips most, checked against Error Prone 2.52.0:
+
+Errors (fail in every profile):
+
+- `ArrayEquals`, `ArrayToString`: `Arrays.equals(a, b)`, `Arrays.toString(a)`,
+  never `a.equals(b)` or `"" + a` on arrays
+- `EqualsHashCode`: override `hashCode` whenever you override `equals`
+- `ReturnValueIgnored`, `CheckReturnValue`: use the result of `String`,
+  `Optional`, stream and `@CheckReturnValue` methods
+- `FormatString`: format placeholders match their arguments
+- `SelfAssignment`, `SelfEquals`, `ModifyingCollectionWithItself`: no
+  `this.x = x` with the same variable on both sides, and no `list.addAll(list)`
+- `DoubleBraceInitialization`: no `new ArrayList<>() {{ add(...); }}`; use
+  `List.of(...)`
+- `LongLiteralLowerCaseSuffix`: `1L`, never `1l`
+- `JUnit4TestNotRun`, `UseCorrectAssertInTests`: JUnit tests are runnable
+  and assert with the test framework, not `assert`
+
+Warnings ((STRICT) fails on these):
+
+- `UnusedVariable`, `UnusedMethod`, `UnusedNestedClass`: delete what is unused,
+  including private fields, parameters of private methods and locals
+- `MissingOverride`: `@Override` on every override
+- `ReferenceEquality`: `.equals` for objects, `==` only for primitives, enums
+  and deliberate identity
+- `DefaultCharset`, `StringCaseLocaleUsage`: pass a charset
+  (`StandardCharsets.UTF_8`) and a locale (`Locale.ROOT`) explicitly
+- `JavaTimeDefaultTimeZone`: `Instant.now(clock)`, `LocalDate.now(zone)`, never
+  the no-argument `now()`; inject a `Clock`
+- `StringSplitter`: `Splitter` or `split(regex, -1)` with a limit, not `split(regex)`
+- `JdkObsolete`: `ArrayDeque` over `Stack`, `StringBuilder` over `StringBuffer`,
+  `HashMap` over `Hashtable`, no `LinkedList` as a queue
+- `OperatorPrecedence`: parenthesise `a && b || c` and mixed shifts
+- `EmptyCatch`, `CatchAndPrintStackTrace`, `SystemOut`: handle or rethrow an
+  exception, log through the project's logger, never `printStackTrace()` or
+  `System.out`
+- `MissingCasesInEnumSwitch`, `FallThrough`: a `switch` covers every constant
+  or has a `default`; `break` or comment a deliberate fall-through
+- `ClassCanBeStatic`, `MutablePublicArray`, `MixedMutabilityReturnType`,
+  `FutureReturnValueIgnored`, `JavaUtilDate`, `InlineMeSuggester`: make a
+  nested class that doesn't use its outer instance `static`; keep arrays
+  private; return one kind of list (always immutable or always mutable);
+  use a returned `Future`; `java.time`, not `Date`
+- `ObjectToString`, `UnnecessaryParentheses`, `InconsistentCapitalization`
 
 ## SpotBugs and coverage
 
-Outside `LENIENT`, `stlSec` runs SpotBugs on the main classes and `stlCov`
-fails when tests cover less than the thresholds `stlInfo` shows. New code
-ships with tests that keep the module above them.
+From `STANDARD`, `stlSec` runs SpotBugs on the main classes (not tests) and
+`stlCov` fails when tests cover less than the thresholds `stlInfo` shows. The
+SpotBugs patterns code written by an agent trips most, checked against
+SpotBugs 4.10.5:
+
+- `DM_DEFAULT_ENCODING`: explicit charsets, as above
+- `RV_RETURN_VALUE_IGNORED_BAD_PRACTICE`, `RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT`,
+  `RV_RETURN_VALUE_IGNORED`: use the result of `File.delete()`,
+  `Lock.tryLock()` and methods of immutable types such as `String` and
+  `BigDecimal`; `Files.delete(path)` throws instead
+- `MS_MUTABLE_ARRAY`, `MS_MUTABLE_COLLECTION`, `MS_SHOULD_BE_FINAL`,
+  `MS_PKGPROTECT`: no public or package-visible mutable `static` fields; keep
+  them `private`, or `static final` with `List.of(...)` / `Map.of(...)`
+- `NP_NULL_ON_SOME_PATH`, `NP_NONNULL_RETURN_VIOLATION`: check for null before
+  you dereference, and don't return null from a method documented not to
+- `DLS_DEAD_LOCAL_STORE`, `UUF_UNUSED_FIELD`, `URF_UNREAD_FIELD`: no unused
+  locals or fields
+- `DM_EXIT`: throw an exception, never `System.exit` outside `main`
+- `ES_COMPARING_STRINGS_WITH_EQ`: `.equals` for strings
+- `SE_BAD_FIELD`, `SE_NO_SERIALVERSIONID`: `Serializable` classes have a
+  `serialVersionUID` and only serializable or `transient` fields
+- `OBL_UNSATISFIED_OBLIGATION`: close streams and connections with
+  try-with-resources
+- `PZLA_PREFER_ZERO_LENGTH_ARRAYS`: return an empty array, not `null`
+
+Sterling's filter already skips `EI_EXPOSE_REP`, `EI_EXPOSE_REP2` and
+`CT_CONSTRUCTOR_THROW`, so Spring constructor injection and records need
+nothing here. New code ships with tests that keep the module above its
+coverage thresholds; read them from `stlInfo --json`. A new class with no
+test is the usual way to fall below.
 
 ## Suppressing a finding
 
