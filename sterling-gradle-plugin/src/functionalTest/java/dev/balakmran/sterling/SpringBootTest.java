@@ -45,8 +45,6 @@ class SpringBootTest {
                 }
 
                 testing { suites { named<JvmTestSuite>("test") { useJUnitJupiter() } } }
-
-                sterling { coverage { excludes.add("app/Application*") } }
                 """
                     .formatted(SPRING_BOOT, SPRING_BOOT))
             .file(
@@ -129,5 +127,120 @@ class SpringBootTest {
                 .describedAs(task)
                 .isIn(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE));
     assertThat(result.getOutput()).doesNotContain("aotSources");
+    // The untested Application class is left out without any exclude.
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("app/Greeter")
+        .doesNotContain("app/Application");
+  }
+
+  // A Boot application without AOT, with an untested second class that has a main method.
+  private Fixture plainService(String plugins, String extra) {
+    return new Fixture(dir)
+        .file(
+            "build.gradle.kts",
+            """
+            plugins {
+                java
+            %s
+                id("dev.balakmran.sterling")
+            }
+
+            repositories { mavenCentral() }
+
+            dependencies {
+                implementation(platform("org.springframework.boot:spring-boot-dependencies:%s"))
+                implementation("org.springframework.boot:spring-boot-starter")
+                testImplementation("org.springframework.boot:spring-boot-starter-test")
+            }
+
+            testing { suites { named<JvmTestSuite>("test") { useJUnitJupiter() } } }
+
+            """
+                    .formatted(plugins, SPRING_BOOT)
+                + extra)
+        .file(
+            "src/main/java/app/Application.java",
+            """
+            package app;
+
+            import org.springframework.boot.SpringApplication;
+            import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+            @SpringBootApplication
+            public class Application {
+              public static void main(String[] args) {
+                SpringApplication.run(Application.class, args);
+              }
+            }
+            """)
+        .file(
+            "src/main/java/app/Tool.java",
+            """
+            package app;
+
+            public class Tool {
+              public static void main(String[] args) {
+                System.out.println(args.length);
+              }
+            }
+            """)
+        .file(
+            "src/test/java/app/ToolNameTest.java",
+            """
+            package app;
+
+            import static org.junit.jupiter.api.Assertions.assertEquals;
+
+            import org.junit.jupiter.api.Test;
+
+            class ToolNameTest {
+              @Test
+              void name() {
+                assertEquals("Tool", Tool.class.getSimpleName());
+              }
+            }
+            """);
+  }
+
+  private static final String BOOT_PLUGIN =
+      "    id(\"org.springframework.boot\") version \"" + SPRING_BOOT + "\"";
+
+  @Test
+  void theMainClassSpringBootResolvesIsLeftOut() {
+    Fixture fixture = plainService(BOOT_PLUGIN, "");
+
+    BuildResult result = fixture.build("test", "stlInfo");
+
+    assertThat(outcome(result, ":resolveMainClassName")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("app/Tool")
+        .doesNotContain("app/Application");
+    assertThat(result.getOutput()).contains("; Spring Boot main class excluded)");
+    assertThat(fixture.build("-q", "stlInfo", "--json").getOutput())
+        .contains("\"excludesMainClass\":true");
+  }
+
+  @Test
+  void theConfiguredMainClassIsLeftOutInstead() {
+    Fixture fixture = plainService(BOOT_PLUGIN, "springBoot { mainClass = \"app.Tool\" }\n");
+
+    fixture.build("test");
+
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("app/Application")
+        .doesNotContain("app/Tool");
+  }
+
+  @Test
+  void withoutTheBootPluginTheApplicationClassCounts() {
+    Fixture fixture = plainService("", "");
+
+    BuildResult result = fixture.build("test", "stlInfo");
+
+    assertThat(outcome(result, ":resolveMainClassName")).isNull();
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("app/Application")
+        .contains("app/Tool");
+    assertThat(result.getOutput()).doesNotContain("Spring Boot main class excluded");
   }
 }

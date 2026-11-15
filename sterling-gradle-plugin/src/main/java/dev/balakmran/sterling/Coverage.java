@@ -4,6 +4,7 @@ import static dev.balakmran.sterling.Flags.whenOn;
 
 import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -47,10 +48,15 @@ import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
  *
  * <p>Classes compiled from generated sources are always left out of the report and the
  * verification, through a {@link CoverageExclusion} that reads {@code stlGeneratedClasses}' list.
+ * With the {@code org.springframework.boot} plugin applied, so is the application's main class,
+ * read from the file Spring Boot's {@code resolveMainClassName} writes.
  */
 final class Coverage {
   private static final String REPORT = "jacocoTestReport";
   private static final String VERIFICATION = "jacocoTestCoverageVerification";
+  private static final String SPRING_BOOT = "org.springframework.boot";
+  // Spring Boot's task, which writes the main class's name to its one output file.
+  private static final String RESOLVE_MAIN_CLASS = "resolveMainClassName";
 
   private Coverage() {}
 
@@ -119,6 +125,26 @@ final class Coverage {
           verification.dependsOn(counted);
           declareExclusionInputs(verification, generatedList);
         });
+
+    // Only with Spring Boot: without it, nothing about the main class is registered.
+    project
+        .getPluginManager()
+        .withPlugin(
+            SPRING_BOOT,
+            boot -> {
+              for (String name : List.of(REPORT, VERIFICATION)) {
+                tasks
+                    .named(name)
+                    .configure(task ->
+                        task.getInputs()
+                            .files(tasks.named(RESOLVE_MAIN_CLASS))
+                            .withPropertyName("sterlingMainClassName")
+                            .withPathSensitivity(PathSensitivity.NONE));
+              }
+              tasks
+                  .named(SterlingPlugin.INFO, SterlingInfoTask.class)
+                  .configure(info -> info.getExcludesMainClass().set(true));
+            });
 
     tasks
         .named(SterlingPlugin.COV)
@@ -231,7 +257,17 @@ final class Coverage {
       CoverageSettings coverage,
       Provider<RegularFile> generatedList) {
     List<String> excludes = coverage.getExcludes().get();
-    var exclusion = new CoverageExclusion(generatedList.get().getAsFile());
+    File mainClassName =
+        project.getPluginManager().hasPlugin(SPRING_BOOT)
+            ? project
+                .getTasks()
+                .named(RESOLVE_MAIN_CLASS)
+                .get()
+                .getOutputs()
+                .getFiles()
+                .getSingleFile()
+            : null;
+    var exclusion = new CoverageExclusion(generatedList.get().getAsFile(), mainClassName);
     FileCollection classes =
         project
             .getExtensions()

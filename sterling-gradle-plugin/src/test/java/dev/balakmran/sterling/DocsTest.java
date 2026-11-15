@@ -122,14 +122,15 @@ class DocsTest {
     Project project = ProjectBuilder.builder().build();
     project.getPluginManager().apply(SterlingPlugin.class);
     SterlingExtension sterling = project.getExtensions().getByType(SterlingExtension.class);
-    // The sample shows one disabled check, one exclude, an integration test suite and a Java 25
-    // toolchain.
+    // The sample is a Spring Boot service with an integration test suite, one disabled check, one
+    // exclude and a Java 25 toolchain.
     sterling.getErrorProne().disable("UnusedVariable");
-    sterling.getCoverage().getExcludes().add("com/example/Application*");
+    sterling.getCoverage().getExcludes().add("com/example/Legacy*");
     SterlingInfoTask task =
         project.getTasks().named(SterlingPlugin.INFO, SterlingInfoTask.class).get();
     task.getJavaToolchain().set("25");
     task.getCoverageTestTasks().set(List.of("test", "integrationTest"));
+    task.getExcludesMainClass().set(true);
 
     Matcher block = Pattern.compile("(?s)```\\nSterling [^\\n]*\\n(.*?)\\n```").matcher(readme);
     assertThat(block.find()).describedAs("stlInfo sample in README").isTrue();

@@ -236,6 +236,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract ListProperty<String> getCoverageTestTasks();
 
   /**
+   * Whether the Spring Boot main class is left out of coverage: true when the {@code
+   * org.springframework.boot} plugin is applied.
+   *
+   * @return whether the main class is excluded
+   */
+  @Input
+  public abstract Property<Boolean> getExcludesMainClass();
+
+  /**
    * The class-file patterns left out of coverage.
    *
    * @return the exclude patterns
@@ -339,6 +348,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + (getCoverageTestTasks().get().isEmpty()
             ? ""
             : "; " + String.join(", ", getCoverageTestTasks().get()))
+        + (getExcludesMainClass().get() ? "; Spring Boot main class excluded" : "")
         + count(getCoverageExcludes().get().size(), "exclude", "");
   }
 
@@ -414,6 +424,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     coverage.put("branch", getBranch().get());
     coverage.put("excludes", getCoverageExcludes().get());
     coverage.put("testTasks", getCoverageTestTasks().get());
+    coverage.put("excludesMainClass", getExcludesMainClass().get());
     putReports(coverage, getCoverageReports().get());
     root.put("coverage", coverage);
     return root;

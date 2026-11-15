@@ -88,16 +88,11 @@ SpotBugs itself? See [Adopting Sterling](docs/guide/adopting.md).
 
 ### Spring Boot
 
-Apply Sterling next to the Spring Boot plugin. Tests rarely run the
-application class's `main` method, so leave it out of coverage:
-
-```kotlin
-sterling {
-    coverage {
-        excludes.add("com/example/Application*")
-    }
-}
-```
+Apply Sterling next to the Spring Boot plugin; nothing else is needed. Tests
+rarely run the application class's `main` method, so Sterling leaves the main
+class Spring Boot finds (or `springBoot { mainClass }` names) out of coverage,
+along with classes compiled from generated sources. Integration test suites
+count towards coverage too.
 
 ### Multi-module builds
 
@@ -156,7 +151,7 @@ Formatting:           on   (google-java-format 2.0.0 via Spotless 8.11.0)
 Error Prone:          on   (2.52.0; warnings are not errors; 1 check disabled)
 NullAway:             on   (0.14.3; JSpecify 1.0.1; @NullMarked code only)
 SpotBugs:             on   (4.10.5; effort default; medium confidence and up)
-Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; test, integrationTest; 1 exclude)
+Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; test, integrationTest; Spring Boot main class excluded; 1 exclude)
 ```
 
 ## Documentation

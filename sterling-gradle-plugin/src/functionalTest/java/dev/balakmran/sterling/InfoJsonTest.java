@@ -57,7 +57,7 @@ class InfoJsonTest {
             "\"reports\":{\"sarif\":\"build/reports/spotbugs/main.sarif\","
                 + "\"xml\":\"build/reports/spotbugs/main.xml\"}")
         .contains("\"reports\":{\"xml\":\"build/reports/jacoco/test/jacocoTestReport.xml\"}")
-        .contains("\"excludes\":[],\"testTasks\":[\"test\"]");
+        .contains("\"excludes\":[],\"testTasks\":[\"test\"],\"excludesMainClass\":false");
     assertThat(result.getOutput()).doesNotContain("Profile:");
   }
 

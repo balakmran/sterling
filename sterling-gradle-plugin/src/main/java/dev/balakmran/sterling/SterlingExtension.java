@@ -23,7 +23,7 @@ import org.gradle.api.tasks.Nested;
  *     errorProne { disable("UnusedVariable") }
  *     coverage {
  *         instruction = 90
- *         excludes.add("com/example/Application*")
+ *         excludes.add("com/example/Legacy*")
  *     }
  * }
  * }</pre>

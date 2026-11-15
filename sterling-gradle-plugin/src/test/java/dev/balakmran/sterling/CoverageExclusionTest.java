@@ -19,6 +19,9 @@ import org.junit.jupiter.api.io.TempDir;
 class CoverageExclusionTest {
   private static final List<String> CLASSES =
       List.of(
+          "app/Application.class",
+          "app/Application$Config.class",
+          "app/ApplicationTests.class",
           "app/Calc.class",
           "app/Calc$1.class",
           "app/OrderMapperImpl.class",
@@ -56,8 +59,11 @@ class CoverageExclusionTest {
     File list = dir.resolve("generated-classes.txt").toFile();
     Files.writeString(list.toPath(), "app.OrderMapperImpl\ngen.api.OrderDto\n");
 
-    assertThat(remaining(new CoverageExclusion(list)))
+    assertThat(remaining(new CoverageExclusion(list, null)))
         .containsExactly(
+            "app/Application$Config.class",
+            "app/Application.class",
+            "app/ApplicationTests.class",
             "app/Calc$1.class",
             "app/Calc.class",
             "app/OrderMapperImplTest.class",
@@ -66,8 +72,30 @@ class CoverageExclusionTest {
   }
 
   @Test
+  void leavesOutTheMainClassAndItsNestedClasses() throws IOException {
+    File main = dir.resolve("resolvedMainClassName").toFile();
+    Files.writeString(main.toPath(), "app.Application");
+    File list = dir.resolve("generated-classes.txt").toFile();
+    Files.writeString(list.toPath(), "gen.api.OrderDto\n");
+
+    assertThat(remaining(new CoverageExclusion(list, main)))
+        .doesNotContain("app/Application.class", "app/Application$Config.class")
+        .doesNotContain("gen/api/OrderDto.class")
+        .contains("app/ApplicationTests.class", "app/Calc.class");
+  }
+
+  @Test
+  void aBlankMainClassNameLeavesOutNothing() throws IOException {
+    File main = dir.resolve("resolvedMainClassName").toFile();
+    Files.writeString(main.toPath(), "");
+
+    assertThat(remaining(new CoverageExclusion(dir.resolve("missing.txt").toFile(), main)))
+        .hasSize(CLASSES.size());
+  }
+
+  @Test
   void withoutAListLeavesEverything() throws IOException {
-    assertThat(remaining(new CoverageExclusion(dir.resolve("missing.txt").toFile())))
+    assertThat(remaining(new CoverageExclusion(dir.resolve("missing.txt").toFile(), null)))
         .hasSize(CLASSES.size());
   }
 }

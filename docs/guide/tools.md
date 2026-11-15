@@ -118,6 +118,12 @@ classes. `stlGeneratedClasses` lists them in
 can't filter by source path, and the `@Generated` those generators add
 (`javax` or `jakarta`) is kept only in source, where JaCoCo can't see it.
 
+With the `org.springframework.boot` plugin applied, the application's main
+class is left out too, with its nested classes: the class Spring Boot's
+`resolveMainClassName` finds, or the one `springBoot { mainClass }` names.
+Tests rarely run its `main` method, and every Boot service used to need an
+exclude for it.
+
 JaCoCo itself ignores classes and methods annotated with any annotation whose
 name contains `Generated` and that's kept in the class file, such as one of
 your own. It's Java's equivalent of `# pragma: no cover`. For generated code
@@ -133,9 +139,9 @@ lombok.addLombokGeneratedAnnotation = true
 ```
 
 `coverage.excludes` patterns match class files under the classes directory,
-such as `com/example/Application*`. End them with `*`: nested and anonymous
-classes compile to their own files, like `Application$1.class`, which
-`com/example/Application.class` alone would miss.
+such as `com/example/Legacy*`. End them with `*`: nested and anonymous
+classes compile to their own files, like `Legacy$1.class`, which
+`com/example/Legacy.class` alone would miss.
 
 ## Where the reports are
 

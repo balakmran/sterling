@@ -200,6 +200,7 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
               task.getCoverageExcludes().set(coverage.getExcludes());
               task.getCoverageTestTasks().convention(List.of());
+              task.getExcludesMainClass().convention(false);
             });
   }
 

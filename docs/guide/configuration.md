@@ -88,7 +88,7 @@ sterling {
         instruction = 80                // minimum percent, 0 to 100
         branch = 70                     // minimum percent, 0 to 100
         testTasks = setOf("test", "integrationTest") // default: every Test task
-        excludes.add("com/example/Application*") // class files to leave out
+        excludes.add("com/example/Legacy*") // class files to leave out
     }
 }
 ```
@@ -117,7 +117,7 @@ sterling {
         effort = SpotbugsSettings.Effort.MAX
     }
     coverage {
-        excludes.add('com/example/Application*')
+        excludes.add('com/example/Legacy*')
     }
 }
 ```
@@ -152,7 +152,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","jspecify":"1.0.1","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","instruction":80,"branch":70,"excludes":[],"testTasks":["test"],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","jspecify":"1.0.1","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","instruction":80,"branch":70,"excludes":[],"testTasks":["test"],"excludesMainClass":false,"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. Paths are relative to the project
@@ -199,6 +199,7 @@ given as an absolute path.
 | `coverage.branch` | Percent |
 | `coverage.excludes` | Class-file patterns |
 | `coverage.testTasks` | The test tasks that count: the setting, or every `Test` task when it's empty; `[]` without the `java` plugin |
+| `coverage.excludesMainClass` | Whether the Spring Boot main class is left out: true with the `org.springframework.boot` plugin |
 | `coverage.reports` | Object; absent without the `java` plugin |
 | `coverage.reports.xml` | Path |
 
