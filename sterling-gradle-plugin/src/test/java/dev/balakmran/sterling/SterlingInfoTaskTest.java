@@ -184,6 +184,46 @@ class SterlingInfoTaskTest {
     assertThat(nullAway.get("active")).isEqualTo(false);
   }
 
+  @Test
+  void jsonReportsTheFormatStyleAndRatchet() {
+    Map<?, ?> defaults = (Map<?, ?>) task().jsonModel("25").get("format");
+    assertThat(defaults.get("style")).isEqualTo("GOOGLE");
+    assertThat(defaults.containsKey("ratchetFrom")).isTrue();
+    assertThat(defaults.get("ratchetFrom")).isNull();
+  }
+
+  @Test
+  void jsonReportsASetStyleAndRatchet() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+    sterling.getFormat().getRatchetFrom().set("origin/main");
+
+    Map<?, ?> format = (Map<?, ?>) task().jsonModel("25").get("format");
+
+    assertThat(format.get("style")).isEqualTo("AOSP");
+    assertThat(format.get("ratchetFrom")).isEqualTo("origin/main");
+  }
+
+  @Test
+  void jsonGivesEachVersionItsSource() {
+    SterlingInfoTask task = task();
+    task.getVersionOverrides()
+        .set(Map.of("errorprone", "9.9.9", "jspecify", SterlingInfoTask.MANAGED));
+
+    Map<String, Object> model = task.jsonModel("25");
+    Map<?, ?> errorProne = (Map<?, ?>) model.get("errorProne");
+    Map<?, ?> nullAway = (Map<?, ?>) model.get("nullAway");
+    Map<?, ?> coverage = (Map<?, ?>) model.get("coverage");
+
+    assertThat(errorProne.get("version")).isEqualTo("9.9.9");
+    assertThat(errorProne.get("versionSource")).isEqualTo("project");
+    assertThat(nullAway.get("version")).isEqualTo(ToolVersions.get("nullaway"));
+    assertThat(nullAway.get("versionSource")).isEqualTo("sterling");
+    assertThat(nullAway.containsKey("jspecify")).isTrue();
+    assertThat(nullAway.get("jspecify")).isNull();
+    assertThat(nullAway.get("jspecifySource")).isEqualTo("project");
+    assertThat(coverage.get("versionSource")).isEqualTo("sterling");
+  }
+
   // Dotted key paths in output order: "format.versions.spotless".
   private static void collectKeys(String prefix, Map<?, ?> map, List<String> keys) {
     map.forEach((key, value) -> {

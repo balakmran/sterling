@@ -90,6 +90,23 @@ class VersionOverridesTest {
   }
 
   @Test
+  void stlInfoJsonGivesTheProjectAsEachVersionsSource() {
+    String json = fixture().build("-q", "stlInfo", "--json").getOutput();
+
+    assertThat(json)
+        .contains("\"version\":\"" + ERROR_PRONE + "\",\"versionSource\":\"project\"")
+        .contains(
+            "\"version\":\""
+                + NULLAWAY
+                + "\",\"versionSource\":\"project\",\"jspecify\":\""
+                + JSPECIFY
+                + "\",\"jspecifySource\":\"project\"")
+        .contains("\"version\":\"" + SPOTBUGS + "\",\"versionSource\":\"project\"")
+        .contains("\"version\":\"" + JACOCO + "\",\"versionSource\":\"project\"")
+        .doesNotContain("\"versionSource\":\"sterling\"");
+  }
+
+  @Test
   void stlInfoShowsNoOverrideForSterlingsOwnVersions() {
     BuildResult result =
         new Fixture(dir)
