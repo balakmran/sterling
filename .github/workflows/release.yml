@@ -111,3 +111,64 @@ jobs:
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
           GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+
+  # Opens a PR on the marketplace repository that pins the new tag. After `publish`, so the Sterling
+  # version the skills apply resolves from the Plugin Portal before anyone installs them.
+  pin-marketplace:
+    name: Pin the agent plugin in the marketplace
+    needs: [release-please, publish]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    # Holds the GitHub App's client ID and key; no protection rules, so it never waits.
+    environment: release
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+
+      - id: sha
+        name: Resolve the tag's commit
+        run: echo "sha=$(git rev-parse "$TAG^{commit}")" >>"$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+
+      # An App installed on the marketplace repository only: GITHUB_TOKEN can't write to another
+      # repository, a PAT expires, and a PR opened with either wouldn't start that repository's CI.
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.AGENT_PLUGINS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.AGENT_PLUGINS_APP_KEY }}
+          owner: balakmran
+          repositories: agent-plugins
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: balakmran/agent-plugins
+          path: marketplace
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Pin the tag and open the PR
+        working-directory: marketplace
+        run: |
+          branch="pin/sterling-$TAG"
+          git switch -c "$branch"
+          scripts/pin.sh sterling "$TAG" "$SHA"
+          git config user.name "sterling-release[bot]"
+          git config user.email "sterling-release[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: pin sterling $TAG"
+          git push origin "$branch"
+          gh pr create --title "feat: pin sterling $TAG" \
+            --body "Pins sterling to [$TAG](https://github.com/balakmran/sterling/releases/tag/$TAG) at $SHA. Merge once CI passes, then update the plugin in each agent."
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+          SHA: ${{ steps.sha.outputs.sha }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
