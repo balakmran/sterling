@@ -138,6 +138,9 @@ final class Fixture {
             "--configuration-cache",
             "--configuration-cache-problems=fail",
             "--warning-mode=all",
+            // Tests rewrite build scripts between runs; a late file-watching event let Gradle 9.0
+            // reuse a stale configuration cache entry.
+            "--no-watch-fs",
             "--init-script=" + INIT_SCRIPT,
             "-Dorg.gradle.java.installations.paths=" + String.join(",", jdk(17), jdk(21), jdk(25)),
             "-Dorg.gradle.java.installations.auto-detect=false",
