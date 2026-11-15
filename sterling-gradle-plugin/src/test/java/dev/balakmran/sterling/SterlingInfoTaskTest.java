@@ -78,6 +78,17 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void formattingReportsAStyleOtherThanGoogle() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+
+    assertThat(render())
+        .contains(
+            "(google-java-format "
+                + ToolVersions.get("google-java-format")
+                + ", AOSP style via Spotless ");
+  }
+
+  @Test
   void nullAwayReportsJspecifyModeWhenOn() {
     sterling.getProfile().set(Profile.STRICT);
 

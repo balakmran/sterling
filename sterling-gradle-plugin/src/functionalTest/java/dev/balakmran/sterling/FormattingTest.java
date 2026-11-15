@@ -106,4 +106,57 @@ class FormattingTest {
 
     assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
   }
+
+  private static final String FOUR_SPACE =
+      """
+      public class App {
+          void f() {}
+      }
+      """;
+
+  private static final String AOSP =
+      "sterling { format { style = dev.balakmran.sterling.FormatSettings.Style.AOSP } }\n";
+
+  @Test
+  void aospStyleAcceptsFourSpaceSources() {
+    BuildResult result =
+        fixture(AOSP).file("src/main/java/App.java", FOUR_SPACE).build("stlFmtCheck");
+
+    assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void aospStyleRejectsTwoSpaceSourcesAndStlFmtReindentsThem() {
+    Fixture fixture = fixture(AOSP).file("src/main/java/App.java", FORMATTED);
+
+    BuildResult check = fixture.buildAndFail("stlFmtCheck");
+    assertThat(outcome(check, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.FAILED);
+
+    BuildResult apply = fixture.build("stlFmt");
+    assertThat(outcome(apply, ":spotlessJavaApply")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("src/main/java/App.java")).isEqualTo(FOUR_SPACE);
+  }
+
+  @Test
+  void styleIsHonouredWhenSpotlessJavaIsRealisedBeforeTheSterlingBlock() {
+    BuildResult result =
+        fixture("tasks.named(\"spotlessJava\").get()\n\n" + AOSP)
+            .file("src/main/java/App.java", FOUR_SPACE)
+            .build("stlFmtCheck");
+
+    assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void settingStyleAfterSpotlessReadItFailsInsteadOfBeingIgnored() {
+    BuildResult result =
+        // Realised early, spotlessJava reads the style in Spotless's afterEvaluate, before this
+        // one.
+        fixture("tasks.named(\"spotlessJava\").get()\nafterEvaluate { " + AOSP.strip() + " }\n")
+            .file("src/main/java/App.java", FOUR_SPACE)
+            .buildAndFail("stlFmtCheck");
+
+    assertThat(result.getOutput()).contains("style").contains("is final");
+    assertThat(outcome(result, ":spotlessJavaCheck")).isNull();
+  }
 }

@@ -6,13 +6,17 @@ import com.diffplug.gradle.spotless.SpotlessExtension;
 import com.diffplug.spotless.LineEnding;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 
 /**
  * Configures Spotless with google-java-format for {@code stlFmt} and {@code stlFmtCheck}.
  *
  * <p>Spotless is applied and configured whatever {@code format.enabled} says; the flag only decides
- * whether the Sterling tasks depend on Spotless's.
+ * whether the Sterling tasks depend on Spotless's. Spotless has no lazy API for its steps, so
+ * {@code format.style} is read in the {@code spotless { java { } }} action, which Spotless runs in
+ * its {@code afterEvaluate} or when {@code spotlessJava} is realised, whichever is later, and is
+ * final from then on.
  */
 final class Formatting {
   /** Generated sources, wherever a generator puts them under a build directory. */
@@ -37,10 +41,17 @@ final class Formatting {
     // Spotless's default reads git settings while configuring, which defeats the configuration
     // cache. Formatting is about layout; keep each file's line endings as they are.
     spotless.setLineEndings(LineEnding.PRESERVE);
+    // Spotless runs this action in its afterEvaluate, or when spotlessJava is realised if that's
+    // later; a set after that must fail rather than be ignored.
+    Property<FormatSettings.Style> style = sterling.getFormat().getStyle();
+    style.finalizeValueOnRead();
     spotless.java(java -> {
       try {
         // The google-java-format step also removes unused imports.
-        java.googleJavaFormat(ToolVersions.get("google-java-format"));
+        var googleJavaFormat = java.googleJavaFormat(ToolVersions.get("google-java-format"));
+        if (style.get() == FormatSettings.Style.AOSP) {
+          googleJavaFormat.aosp();
+        }
         java.formatAnnotations();
       } catch (GradleException e) {
         // Fails here only when the project's step came first, as from a convention plugin.

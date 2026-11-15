@@ -55,6 +55,7 @@ class SterlingExtensionTest {
               sterling.getCoverage().getBranch().get());
       assertThat(actual).describedAs(profile.name()).isEqualTo(values);
       assertThat(sterling.getFormat().getEnabled().get()).isTrue();
+      assertThat(sterling.getFormat().getStyle().get()).isEqualTo(FormatSettings.Style.GOOGLE);
       assertThat(sterling.getErrorProne().getEnabled().get()).isTrue();
       assertThat(sterling.getNullAway().getEnabled().get()).isTrue();
     });

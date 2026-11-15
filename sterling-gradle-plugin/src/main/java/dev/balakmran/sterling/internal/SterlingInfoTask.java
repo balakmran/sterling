@@ -1,5 +1,6 @@
 package dev.balakmran.sterling.internal;
 
+import dev.balakmran.sterling.FormatSettings;
 import dev.balakmran.sterling.Profile;
 import dev.balakmran.sterling.SpotbugsSettings;
 import java.util.ArrayList;
@@ -110,6 +111,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @Input
   public abstract Property<Boolean> getFormatEnabled();
+
+  /**
+   * The google-java-format style.
+   *
+   * @return the style
+   */
+  @Input
+  public abstract Property<FormatSettings.Style> getFormatStyle();
 
   /**
    * Whether Error Prone is on.
@@ -259,14 +268,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
             List.of("Gate wired to check", getAttachToCheck().get() ? "yes" : "no"),
             List.of("Daemon JVM", daemonJvm),
             List.of("Java toolchain", getJavaToolchain().get()),
-            List.of(
-                "Formatting",
-                onOff(
-                    getFormatEnabled().get(),
-                    "google-java-format "
-                        + versions.get("google-java-format")
-                        + " via Spotless "
-                        + versions.get("spotless"))),
+            List.of("Formatting", onOff(getFormatEnabled().get(), formatDetail(versions))),
             List.of("Error Prone", onOff(getErrorProneEnabled().get(), errorProneDetail(versions))),
             List.of("NullAway", nullAwayStatus(versions)),
             List.of("SpotBugs", onOff(getSpotbugsEnabled().get(), spotbugsDetail(versions))),
@@ -281,6 +283,18 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private static String onOff(boolean on, String detail) {
     return on ? "on   (" + detail + ")" : "off";
+  }
+
+  private String formatDetail(Map<String, String> versions) {
+    String style =
+        getFormatStyle().get() == FormatSettings.Style.GOOGLE
+            ? ""
+            : ", " + getFormatStyle().get().name() + " style";
+    return "google-java-format "
+        + versions.get("google-java-format")
+        + style
+        + " via Spotless "
+        + versions.get("spotless");
   }
 
   private String errorProneDetail(Map<String, String> versions) {
