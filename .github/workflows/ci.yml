@@ -93,4 +93,4 @@ jobs:
           agent-plugins/sterling/plugin.json
 
       - name: Check the scripts
-        run: shellcheck agent-plugins/sterling/skills/*/scripts/*.sh
+        run: shellcheck -x agent-plugins/sterling/skills/*/scripts/*.sh agent-plugins/evals/run.sh agent-plugins/evals/verify/*.sh

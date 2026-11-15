@@ -1,0 +1,6 @@
+<FindBugsFilter>
+  <!-- Spring beans hold references to their collaborators on purpose. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>
