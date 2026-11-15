@@ -121,6 +121,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<FormatSettings.Style> getFormatStyle();
 
   /**
+   * The git reference formatting ratchets from, if any.
+   *
+   * @return the ratchet reference
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getFormatRatchetFrom();
+
+  /**
    * Whether Error Prone is on.
    *
    * @return whether Error Prone is on
@@ -293,6 +302,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return "google-java-format "
         + versions.get("google-java-format")
         + style
+        + (getFormatRatchetFrom().isPresent()
+            ? ", ratchet from " + getFormatRatchetFrom().get()
+            : "")
         + " via Spotless "
         + versions.get("spotless");
   }

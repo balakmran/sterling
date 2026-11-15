@@ -39,6 +39,23 @@ public abstract class FormatSettings {
    */
   public abstract Property<Style> getStyle();
 
+  /**
+   * A git reference to format against, such as {@code origin/main}: only files that differ from it
+   * are checked and formatted.
+   *
+   * <p>Unset by default, which formats every file. Spotless compares each file with the merge base
+   * of {@code HEAD} and this reference, so the reference must exist locally: a shallow CI checkout
+   * needs the full history, or a {@code git fetch} of that branch, first. An empty string is
+   * rejected; leave the setting unset to turn ratchet off.
+   *
+   * <p>It applies to Sterling's Java format only; any other Spotless format keeps its own setting.
+   * Like {@link #getStyle()}, it's read when Spotless configures {@code spotlessJava} and is final
+   * from then on.
+   *
+   * @return the ratchet reference property
+   */
+  public abstract Property<String> getRatchetFrom();
+
   /** A google-java-format style. */
   public enum Style {
     /** Google Java Style: 2-space indentation, 4 for continuation lines. */

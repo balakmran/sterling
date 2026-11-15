@@ -1,6 +1,7 @@
 package dev.balakmran.sterling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
@@ -86,6 +88,26 @@ class SterlingInfoTaskTest {
             "(google-java-format "
                 + ToolVersions.get("google-java-format")
                 + ", AOSP style via Spotless ");
+  }
+
+  @Test
+  void formattingReportsTheStyleAndRatchet() {
+    sterling.getFormat().getStyle().set(FormatSettings.Style.AOSP);
+    sterling.getFormat().getRatchetFrom().set("origin/main");
+
+    assertThat(render())
+        .contains(
+            ", AOSP style, ratchet from origin/main via Spotless " + ToolVersions.get("spotless"));
+  }
+
+  @Test
+  void anEmptyRatchetFromFailsWithTheSettingNamed() {
+    sterling.getFormat().getRatchetFrom().set("");
+
+    assertThatThrownBy(this::render)
+        .rootCause()
+        .isInstanceOf(InvalidUserDataException.class)
+        .hasMessageContaining("sterling.format.ratchetFrom must not be empty");
   }
 
   @Test

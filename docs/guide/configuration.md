@@ -70,6 +70,7 @@ sterling {
     format {
         enabled = true
         style = FormatSettings.Style.GOOGLE // GOOGLE | AOSP (4-space indentation)
+        // ratchetFrom = "origin/main"  // unset: formats every file, not just changed ones
     }
     errorProne {
         enabled = true
@@ -98,9 +99,11 @@ sterling {
 A threshold outside 0 to 100, or an unknown `sterling.profile`, fails the
 build with a message naming the setting.
 
-`format.style` is read once, when Spotless configures `spotlessJava`,
-normally after every build script has run. A build that realises
-`spotlessJava` early and sets it later, in an `afterEvaluate` block for
+An empty `format.ratchetFrom` fails too; leave it unset to format every file.
+
+`format.style` and `format.ratchetFrom` are read once, when Spotless
+configures `spotlessJava`, normally after every build script has run. A
+build that realises `spotlessJava` early and sets either later, in an `afterEvaluate` block for
 example, fails with Gradle's "final" error rather than having the value
 ignored.
 
@@ -137,6 +140,7 @@ sterling {
 | `attachToCheck` | Boolean | From the profile |
 | `format.enabled` | Boolean | true |
 | `format.style` | `FormatSettings.Style`: `GOOGLE` or `AOSP` | `GOOGLE` |
+| `format.ratchetFrom` | A git reference, such as `origin/main` | Unset: every file is formatted |
 | `errorProne.enabled` | Boolean | true |
 | `errorProne.warningsAsErrors` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |

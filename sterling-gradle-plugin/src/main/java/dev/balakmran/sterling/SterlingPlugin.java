@@ -180,6 +180,10 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
               task.getFormatEnabled().set(sterling.getFormat().getEnabled());
               task.getFormatStyle().set(sterling.getFormat().getStyle());
+              task.getFormatRatchetFrom()
+                  .set(
+                      Validation.notEmpty(
+                          sterling.getFormat().getRatchetFrom(), "format.ratchetFrom"));
               task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
               task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
               task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
