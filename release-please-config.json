@@ -23,7 +23,10 @@
           "path": "agent-plugins/sterling/.codex-plugin/plugin.json",
           "jsonpath": "$.version"
         },
-        "agent-plugins/sterling/skills/sterling-conventions/SKILL.md"
+        "agent-plugins/sterling/skills/adopt-sterling/SKILL.md",
+        "agent-plugins/sterling/skills/fix-sterling-findings/SKILL.md",
+        "agent-plugins/sterling/skills/sterling-conventions/SKILL.md",
+        "agent-plugins/sterling/skills/upgrade-sterling/SKILL.md"
       ]
     }
   }
