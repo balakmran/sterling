@@ -273,8 +273,9 @@ public class SterlingPlugin implements Plugin<Project> {
         .configure(task -> task.getJavaToolchain().set(toolchainVersion.map(String::valueOf)));
 
     Formatting.configure(project, sterling);
+    var generated = GeneratedClasses.register(project);
     Coverage.configure(project, sterling);
-    Spotbugs.configure(project, sterling);
+    Spotbugs.configure(project, sterling, generated);
     ErrorProne.configure(project, sterling);
   }
 }

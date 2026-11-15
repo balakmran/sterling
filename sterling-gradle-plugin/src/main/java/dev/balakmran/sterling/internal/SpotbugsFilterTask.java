@@ -1,16 +1,11 @@
 package dev.balakmran.sterling.internal;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -23,14 +18,11 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
-import org.gradle.api.tasks.IgnoreEmptyDirectories;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
@@ -51,8 +43,8 @@ import org.xml.sax.SAXException;
  * generated sources. A project's filter therefore adds exclusions; it can't remove Sterling's.
  *
  * <p>Class files don't record which directory their source came from, so a filter can't match
- * {@code build/generated} by path. Instead the task reads the generated source directories when it
- * runs and turns each {@code .java} file's path into a class name, covering its nested classes too.
+ * {@code build/generated} by path. The generated classes come from the list {@code
+ * stlGeneratedClasses} writes; each one's {@code <Match>} covers its nested classes too.
  */
 @CacheableTask
 public abstract class SpotbugsFilterTask extends DefaultTask {
@@ -83,14 +75,14 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
   public abstract RegularFileProperty getConsumerFilter();
 
   /**
-   * Directories of generated Java sources, whose classes SpotBugs skips. Missing ones are ignored.
+   * The classes compiled from generated sources, which SpotBugs skips: the list {@code
+   * stlGeneratedClasses} writes, one class name per line.
    *
-   * @return the generated source directories
+   * @return the generated-class list
    */
-  @InputFiles
-  @IgnoreEmptyDirectories
-  @PathSensitive(PathSensitivity.RELATIVE)
-  public abstract ConfigurableFileCollection getGeneratedSources();
+  @InputFile
+  @PathSensitive(PathSensitivity.NONE)
+  public abstract RegularFileProperty getGeneratedClasses();
 
   /**
    * Where the merged filter is written.
@@ -112,7 +104,7 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
       if (getConsumerFilter().isPresent()) {
         consumer = Files.readString(getConsumerFilter().get().getAsFile().toPath());
       }
-      List<String> generated = generatedClasses(getGeneratedSources().getFiles());
+      List<String> generated = GeneratedClassesTask.read(getGeneratedClasses().get().getAsFile());
       Files.writeString(
           getMergedFilter().get().getAsFile().toPath(),
           merge(getSterlingFilter().get(), consumer, generated));
@@ -154,38 +146,6 @@ public abstract class SpotbugsFilterTask extends DefaultTask {
       root.appendChild(match);
     }
     return serialize(merged);
-  }
-
-  /**
-   * The classes declared by the {@code .java} files under some source directories, named from each
-   * file's path relative to its directory. {@code package-info.java} and {@code module-info.java}
-   * are skipped.
-   *
-   * @param sourceDirectories source directories; ones that don't exist are skipped
-   * @return the fully qualified class names, sorted
-   */
-  public static List<String> generatedClasses(Set<File> sourceDirectories) {
-    List<String> names = new ArrayList<>();
-    for (File directory : sourceDirectories) {
-      Path root = directory.toPath();
-      if (!Files.isDirectory(root)) {
-        continue;
-      }
-      try (Stream<Path> files = Files.walk(root)) {
-        files
-            .filter(file -> file.getFileName().toString().endsWith(".java"))
-            .map(file -> root.relativize(file).toString())
-            .filter(path -> !path.endsWith("package-info.java"))
-            .filter(path -> !path.endsWith("module-info.java"))
-            .map(path -> path.substring(0, path.length() - ".java".length()))
-            .map(path -> path.replace(File.separatorChar, '.'))
-            .forEach(names::add);
-      } catch (IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-    names.sort(null);
-    return names;
   }
 
   private static void copyMatches(
