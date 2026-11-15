@@ -133,7 +133,7 @@ All in the `sterling` group:
 | `stlSec` | Runs SpotBugs on the main classes. |
 | `stlCov` | Runs the tests and fails if coverage is below the thresholds. |
 | `stlCheck` | Runs `stlFmtCheck`, `stlLint`, `stlSec` and `stlCov`. `check` depends on it unless `attachToCheck` is off. |
-| `stlInfo` | Prints Sterling's resolved settings. |
+| `stlInfo` | Prints Sterling's resolved settings; `--json` prints them as one line of JSON per project. |
 
 A tool that's off makes its task do nothing. The tools' own tasks
 (`spotlessApply`, `spotbugsMain`, `jacocoTestReport` and so on) keep working,

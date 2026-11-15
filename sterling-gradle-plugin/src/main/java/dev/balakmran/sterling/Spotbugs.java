@@ -7,6 +7,7 @@ import com.github.spotbugs.snom.Effort;
 import com.github.spotbugs.snom.SpotBugsExtension;
 import com.github.spotbugs.snom.SpotBugsTask;
 import dev.balakmran.sterling.internal.SpotbugsFilterTask;
+import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -110,6 +111,14 @@ final class Spotbugs {
                 task.getReports().create(format, report -> report.getRequired().set(true));
               }
             });
+
+    for (String format : List.of("xml", "sarif")) {
+      SterlingPlugin.reportToInfo(
+          project,
+          SterlingInfoTask::getSpotbugsReports,
+          format,
+          spotbugsMain.flatMap(task -> task.getReports().getByName(format).getOutputLocation()));
+    }
 
     tasks
         .named(SterlingPlugin.SEC)

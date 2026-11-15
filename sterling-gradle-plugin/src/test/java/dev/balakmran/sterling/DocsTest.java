@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.beans.Introspector;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,6 +35,9 @@ class DocsTest {
           "jspecify", "JSpecify",
           "spotbugs", "SpotBugs",
           "jacoco", "JaCoCo");
+
+  private static final List<String> TOOLS_IN_JSON =
+      List.of("format", "errorProne", "nullAway", "spotbugs", "coverage");
 
   private final String readme = read(Path.of(System.getProperty("sterling.readme")));
   private final String configuration = guide("configuration.md");
@@ -130,6 +135,29 @@ class DocsTest {
 
     // The first line is Sterling's own release version.
     assertThat(block.group(1)).isEqualTo(rendered.substring(rendered.indexOf('\n') + 1));
+  }
+
+  @Test
+  void everyJsonKeyIsDocumented() throws IOException {
+    String section = section(configuration, "## Reading the configuration as JSON");
+    List<String> keys;
+    try (InputStream in = DocsTest.class.getResourceAsStream("stl-info-v1-keys.txt")) {
+      assertThat(in).describedAs("stl-info-v1-keys.txt").isNotNull();
+      keys =
+          new String(in.readAllBytes(), StandardCharsets.UTF_8)
+              .lines()
+              .filter(line -> !line.isBlank() && !line.startsWith("#"))
+              // Each tool's object is documented through its keys.
+              .filter(key -> !TOOLS_IN_JSON.contains(key))
+              .toList();
+    }
+
+    assertThat(keys)
+        .isNotEmpty()
+        .allSatisfy(key ->
+            assertThat(section)
+                .describedAs(key)
+                .containsPattern("\\| `" + Pattern.quote(key) + "` \\|"));
   }
 
   // Each setting as the settings reference writes it: "coverage.instruction",

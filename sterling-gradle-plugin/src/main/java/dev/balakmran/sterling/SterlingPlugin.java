@@ -4,12 +4,18 @@ import static dev.balakmran.sterling.internal.ToolchainCheckTask.MIN_JAVA;
 
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import dev.balakmran.sterling.internal.ToolchainCheckTask;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.function.Function;
 import org.gradle.api.GradleException;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.TaskContainer;
@@ -77,7 +83,7 @@ public class SterlingPlugin implements Plugin<Project> {
     SterlingExtension sterling = project.getExtensions().create(EXTENSION, SterlingExtension.class);
     applyConventions(sterling, project.getProviders());
     var stlCheck = registerLifecycleTasks(project.getTasks());
-    registerInfoTask(project.getTasks(), sterling);
+    registerInfoTask(project, sterling);
     // Sterling owns check: only the gate attaches to it, and only while attachToCheck is on.
     project
         .getTasks()
@@ -152,35 +158,87 @@ public class SterlingPlugin implements Plugin<Project> {
         });
   }
 
-  private static void registerInfoTask(TaskContainer tasks, SterlingExtension sterling) {
-    tasks.register(
-        INFO,
-        SterlingInfoTask.class,
-        task -> {
-          task.setGroup(GROUP);
-          task.setDescription("Prints Sterling's resolved configuration.");
-          task.getToolVersions().set(ToolVersions.all());
-          task.getProfile().set(sterling.getProfile());
-          task.getAttachToCheck().set(sterling.getAttachToCheck());
-          task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
-          task.getFormatEnabled().set(sterling.getFormat().getEnabled());
-          task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
-          task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
-          task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
-          task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
-          task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
-          task.getSpotbugsEnabled().set(sterling.getSpotbugs().getEnabled());
-          task.getSpotbugsEffort().set(sterling.getSpotbugs().getEffort());
-          task.getSpotbugsReportLevel().set(sterling.getSpotbugs().getReportLevel());
-          task.getConsumerExcludeFilter()
-              .set(sterling.getSpotbugs().getExcludeFilter().map(file -> true).orElse(false));
-          task.getCoverageEnabled().set(sterling.getCoverage().getEnabled());
-          var coverage = sterling.getCoverage();
-          task.getInstruction()
-              .set(Validation.percent(coverage.getInstruction(), "coverage.instruction"));
-          task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
-          task.getCoverageExcludes().set(coverage.getExcludes());
-        });
+  private static void registerInfoTask(Project project, SterlingExtension sterling) {
+    File projectDir = project.getProjectDir();
+    String projectPath = project.getPath();
+    Provider<String> profileProperty = project.getProviders().gradleProperty(Profile.PROPERTY);
+    project
+        .getTasks()
+        .register(
+            INFO,
+            SterlingInfoTask.class,
+            task -> {
+              task.setGroup(GROUP);
+              task.setDescription("Prints Sterling's resolved configuration.");
+              task.getJson().convention(false);
+              task.getProjectPath().set(projectPath);
+              task.getProfileProperty().set(profileProperty);
+              task.getToolVersions().set(ToolVersions.all());
+              task.getProfile().set(sterling.getProfile());
+              task.getAttachToCheck().set(sterling.getAttachToCheck());
+              task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
+              task.getFormatEnabled().set(sterling.getFormat().getEnabled());
+              task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
+              task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
+              task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
+              task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
+              task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
+              task.getSpotbugsEnabled().set(sterling.getSpotbugs().getEnabled());
+              task.getSpotbugsEffort().set(sterling.getSpotbugs().getEffort());
+              task.getSpotbugsReportLevel().set(sterling.getSpotbugs().getReportLevel());
+              task.getExcludeFilter()
+                  .set(
+                      sterling
+                          .getSpotbugs()
+                          .getExcludeFilter()
+                          .map(file -> relativePath(projectDir, file.getAsFile())));
+              task.getCoverageEnabled().set(sterling.getCoverage().getEnabled());
+              var coverage = sterling.getCoverage();
+              task.getInstruction()
+                  .set(Validation.percent(coverage.getInstruction(), "coverage.instruction"));
+              task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
+              task.getCoverageExcludes().set(coverage.getExcludes());
+            });
+  }
+
+  /**
+   * A file's path relative to a directory, with {@code /} separators, as {@code stlInfo} reports
+   * it. A file outside the directory keeps a {@code ../} path; one on another drive, which no
+   * relative path reaches, is given as an absolute path.
+   *
+   * @param dir the directory, usually the project directory
+   * @param file the file
+   * @return the relative path, or the absolute one across drives
+   */
+  static String relativePath(File dir, File file) {
+    Path base = dir.toPath().toAbsolutePath();
+    Path target = file.toPath().toAbsolutePath();
+    Path path = Objects.equals(base.getRoot(), target.getRoot()) ? base.relativize(target) : target;
+    return path.toString().replace(File.separatorChar, '/');
+  }
+
+  /**
+   * Adds a report file to one of {@code stlInfo}'s report maps.
+   *
+   * @param project the project
+   * @param reports which map, such as {@link SterlingInfoTask#getSpotbugsReports()}
+   * @param format the report format, such as {@code xml}
+   * @param location the report file
+   */
+  static void reportToInfo(
+      Project project,
+      Function<SterlingInfoTask, MapProperty<String, String>> reports,
+      String format,
+      Provider<RegularFile> location) {
+    File projectDir = project.getProjectDir();
+    // A plain provider: the location's own carries a dependency on the report task, which
+    // stlInfo must not run.
+    Provider<String> path =
+        project.getProviders().provider(() -> relativePath(projectDir, location.get().getAsFile()));
+    project
+        .getTasks()
+        .named(INFO, SterlingInfoTask.class)
+        .configure(task -> reports.apply(task).put(format, path));
   }
 
   private static void configureJava(Project project, SterlingExtension sterling) {

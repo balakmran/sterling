@@ -142,6 +142,67 @@ sterling {
 | `coverage.branch` | Percent, 0 to 100 | From the profile |
 | `coverage.excludes` | List of class-file patterns | Empty |
 
+## Reading the configuration as JSON
+
+`./gradlew -q stlInfo --json` prints the same configuration as one line of
+JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
+lines on standard output:
+
+```json
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","jspecify":"1.0.1","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+```
+
+Keys are named after the settings above. Paths are relative to the project
+directory, with `/` separators; a file on another drive than the project is
+given as an absolute path.
+
+| Key | Value |
+|---|---|
+| `schemaVersion` | The format's version, 1 |
+| `sterling` | Sterling's version |
+| `project` | The project's path, such as `:` or `:api` |
+| `profile` | The resolved profile |
+| `profileProperty` | The `sterling.profile` property as given, or `null` |
+| `attachToCheck` | Boolean |
+| `daemonJvm` | The Java version the Gradle daemon runs on |
+| `javaToolchain` | `{"active": true, "version": 25}`, or `{"active": false, "reason": "..."}` without the `java` plugin |
+| `javaToolchain.active` | Boolean |
+| `javaToolchain.version` | The toolchain's Java version |
+| `javaToolchain.reason` | Why the Java tools aren't active |
+| `format.enabled` | Boolean |
+| `format.versions` | Object |
+| `format.versions.google-java-format` | Version |
+| `format.versions.spotless` | Version |
+| `errorProne.enabled` | Boolean |
+| `errorProne.version` | Version |
+| `errorProne.warningsAsErrors` | Boolean |
+| `errorProne.disabledChecks` | Check names, sorted |
+| `nullAway.enabled` | Boolean |
+| `nullAway.active` | Whether NullAway runs: `enabled` and Error Prone on |
+| `nullAway.version` | Version |
+| `nullAway.jspecify` | JSpecify's version |
+| `nullAway.jspecifyMode` | Boolean |
+| `spotbugs.enabled` | Boolean |
+| `spotbugs.version` | Version |
+| `spotbugs.effort` | `MIN` to `MAX` |
+| `spotbugs.reportLevel` | `LOW`, `MEDIUM` or `HIGH` |
+| `spotbugs.excludeFilter` | The project's filter, or `null` |
+| `spotbugs.reports` | Object; absent without the `java` plugin |
+| `spotbugs.reports.sarif` | Path |
+| `spotbugs.reports.xml` | Path |
+| `coverage.enabled` | Boolean |
+| `coverage.version` | JaCoCo's version |
+| `coverage.instruction` | Percent |
+| `coverage.branch` | Percent |
+| `coverage.excludes` | Class-file patterns |
+| `coverage.reports` | Object; absent without the `java` plugin |
+| `coverage.reports.xml` | Path |
+
+The schema only grows within a version: a new key keeps `schemaVersion` at 1.
+Removing or renaming a key, or changing a value's type, raises it, and the
+release notes call it a breaking change. A reader should check
+`schemaVersion` before anything else.
+
 ## Configuring the tools directly
 
 Sterling covers the common settings. For anything else, configure the tool
