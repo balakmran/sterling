@@ -942,8 +942,8 @@ rules), and the manual installs below.
   before any skill applies it):
   1. `actions/create-github-app-token` (pinned by SHA) for a GitHub App
      installed on `balakmran/agent-plugins` only, with `contents: write` and
-     `pull-requests: write`. Its ID is the `AGENT_PLUGINS_APP_ID` variable and
-     its key the `AGENT_PLUGINS_APP_KEY` secret, both in a `release`
+     `pull-requests: write`. Its client ID is the `AGENT_PLUGINS_APP_CLIENT_ID` variable
+     and its key the `AGENT_PLUGINS_APP_KEY` secret, both in a `release`
      environment.
   2. Check out `balakmran/agent-plugins` with that token; run
      `scripts/pin.sh sterling <tag> <sha>`, where the SHA is
