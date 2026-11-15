@@ -10,14 +10,26 @@ Install it once, for your user, from the `balakmran` marketplace; nothing is
 added to the projects you work on. See Sterling's README for the install
 command for each agent.
 
+## Install
+
+```bash
+claude plugin marketplace add balakmran/agent-plugins --scope user
+claude plugin install sterling@balakmran --scope user
+```
+
+Other agents are in Sterling's README, under "Using Sterling with a coding
+agent".
+
 ## Skills
 
 | Skill | Use it to |
 |---|---|
+| `adopt-sterling` | Add Sterling to a new or existing Gradle project as a short series of reviewable commits: the plugin, one reformat commit hidden from `git blame`, the old tool config removed, coverage thresholds set from the measured value, and a pre-commit hook. Stops when Gradle is below 9.0 or the JDK is below 21. |
+| `fix-sterling-findings` | Fix what `stlCheck` reports, in rounds: Error Prone and NullAway errors, SpotBugs findings, coverage below the threshold, then formatting. Suppresses only as a last resort, with a reason. |
+| `upgrade-sterling` | Move a project to the Sterling version this plugin was released with, following the upgrade notes, with a separate reformat commit only when google-java-format changed. |
 | `sterling-conventions` | Write Java that passes the gate the first time. The agent uses it whenever it edits Java in a project that applies Sterling. |
-
-More skills arrive with Sterling 0.2.0: adopting Sterling in a new or existing
-project, fixing what the gate finds, and upgrading Sterling.
 
 Each skill carries the Sterling version it was released with, in
 `metadata.sterling-version`, and the plugin's version is always Sterling's.
+The skills never push, never open pull requests and never lower a threshold;
+each ends with a report of what it ran and committed.

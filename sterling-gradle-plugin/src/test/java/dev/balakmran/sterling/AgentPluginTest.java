@@ -170,6 +170,52 @@ class AgentPluginTest {
     }
   }
 
+  @Test
+  void duplicateConfigListsTheSameItemsAsTheMigrationGuide() {
+    Path guide = Path.of(System.getProperty("sterling.guide"));
+    List<String> guideItems = firstColumn(read(guide.resolve("migrating.md")), "## What to remove");
+    List<String> skillItems =
+        firstColumn(
+            read(plugin.resolve("skills/adopt-sterling/reference/duplicate-config.md")),
+            "| In your build | What to do |");
+
+    assertThat(guideItems).isNotEmpty();
+    assertThat(skillItems).containsExactlyElementsOf(guideItems);
+  }
+
+  @Test
+  void everyShellScriptIsExecutable() throws IOException {
+    for (Path skill : skills()) {
+      Path scripts = skill.resolve("scripts");
+      if (!Files.isDirectory(scripts)) {
+        continue;
+      }
+      try (Stream<Path> files = Files.list(scripts)) {
+        for (Path script : files.filter(file -> file.toString().endsWith(".sh")).toList()) {
+          assertThat(Files.isExecutable(script)).describedAs(script.toString()).isTrue();
+        }
+      }
+    }
+  }
+
+  // The first cell of each table row after the marker line, until the table ends.
+  private static List<String> firstColumn(String markdown, String marker) {
+    int start = markdown.indexOf(marker);
+    assertThat(start).describedAs(marker).isNotNegative();
+    List<String> cells = new ArrayList<>();
+    boolean inTable = false;
+    for (String line : markdown.substring(start).lines().toList()) {
+      if (line.startsWith("|---")) {
+        inTable = true;
+      } else if (inTable && line.startsWith("| ")) {
+        cells.add(line.substring(2, line.indexOf(" | ")));
+      } else if (inTable) {
+        break;
+      }
+    }
+    return cells;
+  }
+
   private List<Path> skills() {
     try (Stream<Path> dirs = Files.list(plugin.resolve("skills"))) {
       // Agents load a folder as a skill only once it has a SKILL.md.

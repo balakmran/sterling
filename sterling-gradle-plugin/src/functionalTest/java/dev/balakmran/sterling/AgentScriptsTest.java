@@ -16,9 +16,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** The agent plugin's Bash scripts, run against throwaway projects with a real Gradle wrapper. */
 class AgentScriptsTest {
-  private static final Path SCRIPTS =
-      Path.of(
-          System.getProperty("sterling.agentPlugins"), "sterling/skills/adopt-sterling/scripts");
+  private static final Path SKILLS =
+      Path.of(System.getProperty("sterling.agentPlugins"), "sterling/skills");
+  private static final Path SCRIPTS = SKILLS.resolve("adopt-sterling/scripts");
+  private static final Path FINDINGS = SKILLS.resolve("fix-sterling-findings/scripts");
   private static final Path WRAPPER = Path.of(System.getProperty("sterling.wrapper"));
 
   @TempDir Path dir;
@@ -83,6 +84,108 @@ class AgentScriptsTest {
     assertThat(read("build/sterling-agent/outcomes.json"))
         .startsWith("{\"exitCode\":1,")
         .contains("{\"path\":\":compileJava\",\"outcome\":\"FAILED\"}");
+  }
+
+  @Test
+  void outcomesKeepsGradlesOutputForFindings() {
+    javaProject();
+    write("src/main/java/app/App.java", "package app;\n\npublic class App {}\n");
+
+    run("outcomes.sh", "compileJava");
+
+    assertThat(read("build/sterling-agent/gradle.log")).contains("compileJava");
+  }
+
+  @Test
+  void findingsListsCompilerDiagnosticsWithRelativePaths() throws IOException {
+    String file = dir.toRealPath().resolve("src/main/java/app/App.java").toString();
+    write(
+        "build/sterling-agent/gradle.log",
+        String.join(
+            "\n",
+            "> Task :compileJava FAILED",
+            "  " + file + ":12: error: [ArrayEquals] Reference equality used to compare arrays",
+            "      return a.equals(b);",
+            "                      ^",
+            "    (see https://errorprone.info/bugpattern/ArrayEquals)",
+            "  " + file + ":30: error: [NullAway] dereferenced expression 'name' is @Nullable",
+            "  " + file + ":31: warning: [removal] foo() in Bar has been deprecated",
+            "  " + file + ":12: error: [ArrayEquals] Reference equality used to compare arrays",
+            "  /somewhere/else.java:3: error: ';' expected"));
+
+    Run run = run(FINDINGS, "findings.sh");
+
+    assertThat(run.exitCode()).isZero();
+    assertThat(run.output().trim().lines().toList())
+        .containsExactly(
+            "{\"tool\":\"ErrorProne\",\"check\":\"ArrayEquals\",\"severity\":\"error\","
+                + "\"file\":\"src/main/java/app/App.java\",\"line\":12,"
+                + "\"message\":\"Reference equality used to compare arrays\"}",
+            "{\"tool\":\"NullAway\",\"check\":\"NullAway\",\"severity\":\"error\","
+                + "\"file\":\"src/main/java/app/App.java\",\"line\":30,"
+                + "\"message\":\"dereferenced expression 'name' is @Nullable\"}",
+            "{\"tool\":\"javac\",\"check\":\"removal\",\"severity\":\"warning\","
+                + "\"file\":\"src/main/java/app/App.java\",\"line\":31,"
+                + "\"message\":\"foo() in Bar has been deprecated\"}");
+  }
+
+  @Test
+  void findingsListsSpotbugsAtTheBugsOwnLine() {
+    write(
+        "build/reports/spotbugs/main.xml",
+        """
+        <BugCollection version="4.10.5"><BugInstance type="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE" \
+        priority="2" rank="18" category="BAD_PRACTICE">\
+        <ShortMessage>Method ignores exceptional return value</ShortMessage>\
+        <LongMessage>Ignores return value of java.io.File.delete() in app.Cleaner.remove(File)</LongMessage>\
+        <Class classname="app.Cleaner" primary="true"><SourceLine classname="app.Cleaner" \
+        sourcefile="Cleaner.java" sourcepath="app/Cleaner.java"/></Class>\
+        <Method classname="app.Cleaner" name="remove" primary="true">\
+        <SourceLine classname="app.Cleaner" start="8" end="11" sourcefile="Cleaner.java" \
+        sourcepath="app/Cleaner.java"/></Method>\
+        <SourceLine classname="app.Cleaner" start="9" end="9" sourcefile="Cleaner.java" \
+        sourcepath="app/Cleaner.java" primary="true"/></BugInstance></BugCollection>\
+        """);
+
+    Run run = run(FINDINGS, "findings.sh");
+
+    assertThat(run.output().trim())
+        .isEqualTo(
+            "{\"tool\":\"SpotBugs\",\"check\":\"RV_RETURN_VALUE_IGNORED_BAD_PRACTICE\","
+                + "\"severity\":\"medium\",\"file\":\"src/main/java/app/Cleaner.java\",\"line\":9,"
+                + "\"message\":\"Ignores return value of java.io.File.delete() in "
+                + "app.Cleaner.remove(File)\"}");
+  }
+
+  @Test
+  void findingsListsCoverageTotalsAndTheLeastCoveredClasses() {
+    write(
+        "build/reports/jacoco/test/jacocoTestReport.xml",
+        """
+        <report name="x"><package name="app">\
+        <class name="app/Big" sourcefilename="Big.java">\
+        <method name="a" desc="()V"><counter type="INSTRUCTION" missed="40" covered="0"/></method>\
+        <counter type="INSTRUCTION" missed="40" covered="10"/></class>\
+        <class name="app/Small" sourcefilename="Small.java">\
+        <method name="b" desc="()V"><counter type="INSTRUCTION" missed="5" covered="5"/></method>\
+        <counter type="INSTRUCTION" missed="5" covered="5"/></class>\
+        <class name="app/Done" sourcefilename="Done.java">\
+        <counter type="INSTRUCTION" missed="0" covered="9"/></class>\
+        <counter type="INSTRUCTION" missed="45" covered="24"/></package>\
+        <counter type="INSTRUCTION" missed="45" covered="24"/>\
+        <counter type="BRANCH" missed="3" covered="1"/></report>\
+        """);
+
+    Run run = run(FINDINGS, "findings.sh");
+
+    assertThat(run.output().trim().lines().toList())
+        .containsExactly(
+            "{\"tool\":\"JaCoCo\",\"kind\":\"total\",\"module\":\":\",\"instruction\":34,"
+                + "\"branch\":25,\"branches\":4}",
+            "{\"tool\":\"JaCoCo\",\"kind\":\"class\",\"module\":\":\",\"class\":\"app/Big\","
+                + "\"missed\":40,\"total\":50}",
+            "{\"tool\":\"JaCoCo\",\"kind\":\"class\",\"module\":\":\",\"class\":\"app/Small\","
+                + "\"missed\":5,\"total\":10}");
   }
 
   @Test
@@ -194,7 +297,11 @@ class AgentScriptsTest {
   }
 
   private Run run(String script, String... args) {
-    List<String> command = new ArrayList<>(List.of("bash", SCRIPTS.resolve(script).toString()));
+    return run(SCRIPTS, script, args);
+  }
+
+  private Run run(Path scripts, String script, String... args) {
+    List<String> command = new ArrayList<>(List.of("bash", scripts.resolve(script).toString()));
     command.addAll(List.of(args));
     ProcessBuilder builder = new ProcessBuilder(command).directory(dir.toFile());
     builder.redirectErrorStream(true);

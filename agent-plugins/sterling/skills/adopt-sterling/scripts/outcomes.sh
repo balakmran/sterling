@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs ./gradlew with a fixed set of tasks and flags, and records every task's outcome in
 # build/sterling-agent/outcomes.json: {"exitCode": N, "tasks": [{"path": ..., "outcome": ...}]}.
+# Gradle's output is also saved to build/sterling-agent/gradle.log.
 # Outcomes: SUCCESS, UP_TO_DATE, FROM_CACHE, SKIPPED, NO_SOURCE, FAILED.
 #
 # Usage: outcomes.sh <task or flag>... (run from the project root)
@@ -38,10 +39,13 @@ if [[ ! -x ./gradlew ]]; then
 fi
 
 out="build/sterling-agent/outcomes.json"
+log="build/sterling-agent/gradle.log"
+mkdir -p build/sterling-agent
 rm -f "$out"
 set +e
-./gradlew --init-script "$script_dir/outcomes.init.gradle.kts" "$@"
-code=$?
+# The log is for findings.sh, which reads javac's diagnostics from it.
+./gradlew --init-script "$script_dir/outcomes.init.gradle.kts" "$@" 2>&1 | tee "$log"
+code=${PIPESTATUS[0]}
 set -e
 
 tasks="[]"

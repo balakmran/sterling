@@ -22,6 +22,7 @@ and [a hand-written `build-logic`](#from-a-hand-written-build-logic).
 | `disableAllChecks`, and `disable("CheckName")` on `JavaCompile` | Sterling runs all of Error Prone by design | Remove `disableAllChecks`; `errorProne { disable("CheckName") }` for individual checks |
 | JaCoCo `violationRules` | A second set of thresholds, checked by `jacocoTestCoverageVerification` | `coverage.instruction` and `coverage.branch` |
 | JaCoCo class excludes | Still apply | `coverage.excludes`; classes from generated sources and the Spring Boot main class are left out without them |
+| `check { dependsOn(...) }` on a JaCoCo or SpotBugs task | Runs the tool a second time beside `stlCheck`, which `check` already depends on | Remove it |
 | Test tasks wired to `jacocoTestReport` | `stlCov` runs every `Test` task and reports them together | Remove the wiring, or narrow `coverage.testTasks` |
 | Checkstyle and PMD | Not managed by Sterling | Keep them |
 
