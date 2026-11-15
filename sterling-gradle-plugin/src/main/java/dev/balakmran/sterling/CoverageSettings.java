@@ -2,12 +2,14 @@ package dev.balakmran.sterling;
 
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.SetProperty;
 
 /**
  * Settings for test coverage with JaCoCo.
  *
- * <p>Coverage is measured on the {@code test} task. After it runs, {@code jacocoTestReport} writes
- * HTML and XML reports, and {@code stlCov} fails when coverage is below either threshold.
+ * <p>Coverage is measured on every {@code Test} task, or those named in {@link #getTestTasks()}.
+ * After they run, {@code jacocoTestReport} writes HTML and XML reports, and {@code stlCov} fails
+ * when coverage is below either threshold.
  *
  * <p>Classes compiled from generated sources (source directories under {@code build/generated}, and
  * annotation processors' output) are always left out, with their nested classes. JaCoCo also
@@ -62,4 +64,25 @@ public abstract class CoverageSettings {
    * @return the exclude patterns
    */
   public abstract ListProperty<String> getExcludes();
+
+  /**
+   * The names of the test tasks whose runs count towards coverage. Empty by default, meaning every
+   * {@code Test} task in the project, including JVM test suites such as {@code integrationTest}.
+   *
+   * <p>The counted tasks get the JaCoCo agent, and {@code stlCov} runs them all and reads each
+   * one's execution data. Other test tasks run without the agent. Naming a task that doesn't exist,
+   * or isn't a {@code Test} task, fails the coverage tasks with the names of the {@code Test} tasks
+   * that do.
+   *
+   * <pre>{@code
+   * sterling {
+   *     coverage {
+   *         testTasks = setOf("test", "integrationTest")
+   *     }
+   * }
+   * }</pre>
+   *
+   * @return the test task names
+   */
+  public abstract SetProperty<String> getTestTasks();
 }

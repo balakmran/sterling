@@ -6,11 +6,15 @@ import dev.balakmran.sterling.internal.GeneratedClassesTask;
 import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
@@ -25,23 +29,26 @@ import org.gradle.testing.jacoco.tasks.JacocoReportBase;
 import org.gradle.testing.jacoco.tasks.rules.JacocoLimit;
 
 /**
- * Configures JaCoCo coverage on the {@code test} task and its verification for {@code stlCov}.
+ * Configures JaCoCo coverage on the test tasks and its verification for {@code stlCov}.
  *
- * <p>JaCoCo is applied whatever {@code coverage.enabled} says. The flag decides whether test tasks
- * get the agent, whether the report follows {@code test}, and whether {@code stlCov} runs the
- * verification.
+ * <p>The test tasks that count are {@code coverage.testTasks}, or every {@link Test} task when
+ * that's empty. The report and the verification depend on each of them and read each one's
+ * execution data.
  *
- * <p>The agent switch, the thresholds and the excludes are plain values on JaCoCo's side, not lazy
- * properties, so they're set once the task graph is ready. A configuration action would be too
- * early when a build script creates the tasks before its {@code sterling { }} block, as Spring
- * Initializr's {@code tasks.withType<Test> { }} does; it would see the profile's defaults instead
- * of the project's settings.
+ * <p>JaCoCo is applied whatever {@code coverage.enabled} says. The flag decides whether the counted
+ * test tasks get the agent (other test tasks never do), whether the report follows them, and
+ * whether {@code stlCov} runs the verification.
+ *
+ * <p>The agent switch, the thresholds, the execution data and the excludes are plain values on
+ * JaCoCo's side, not lazy properties, so they're set once the task graph is ready. A configuration
+ * action would be too early when a build script creates the tasks before its {@code sterling { }}
+ * block, as Spring Initializr's {@code tasks.withType<Test> { }} does; it would see the profile's
+ * defaults instead of the project's settings.
  *
  * <p>Classes compiled from generated sources are always left out of the report and the
  * verification, through a {@link CoverageExclusion} that reads {@code stlGeneratedClasses}' list.
  */
 final class Coverage {
-  private static final String TEST = "test";
   private static final String REPORT = "jacocoTestReport";
   private static final String VERIFICATION = "jacocoTestCoverageVerification";
 
@@ -76,42 +83,95 @@ final class Coverage {
             graph.getAllTasks().stream()
                 .filter(task -> task.getProject() == project)
                 .forEach(task -> applySettings(project, task, coverage, generatedList)));
+    ProviderFactory providers = project.getProviders();
+    TaskProvider<JacocoReport> report = tasks.named(REPORT, JacocoReport.class);
+    // Each counted test task is followed by the report, including suites registered later.
     tasks
-        .named(TEST)
-        .configure(
-            test -> test.finalizedBy(whenOn(project.getProviders(), enabled, tasks.named(REPORT))));
-
-    // JaCoCo's tasks don't depend on the test run that produces their data.
-    tasks
-        .named(REPORT, JacocoReport.class)
-        .configure(report -> {
-          report.dependsOn(TEST);
-          // Also covers running jacocoTestReport directly with coverage off.
-          report.onlyIf("coverage is enabled", Flags.onlyIf(enabled));
-          report.getReports().getXml().getRequired().set(true);
-          report.getReports().getHtml().getRequired().set(true);
-          declareExclusionInputs(report, generatedList);
+        .withType(Test.class)
+        .configureEach(test -> {
+          String name = test.getName();
+          Provider<Boolean> reported =
+              providers.provider(() -> enabled.get() && counts(coverage, name));
+          test.finalizedBy(whenOn(providers, reported, report));
         });
+
+    // The verification runs the counted tests; the report only follows them. A report depending
+    // on them all would make ./gradlew test run every suite, since it finalizes each one.
+    Provider<List<String>> counted = providers.provider(() -> countedTests(tasks, coverage));
+    report.configure(task -> {
+      task.mustRunAfter(counted);
+      // Also covers running jacocoTestReport directly with coverage off.
+      task.onlyIf("coverage is enabled", Flags.onlyIf(enabled));
+      task.getReports().getXml().getRequired().set(true);
+      task.getReports().getHtml().getRequired().set(true);
+      declareExclusionInputs(task, generatedList);
+    });
 
     SterlingPlugin.reportToInfo(
         project,
         SterlingInfoTask::getCoverageReports,
         "xml",
-        tasks
-            .named(REPORT, JacocoReport.class)
-            .flatMap(report -> report.getReports().getXml().getOutputLocation()));
+        report.flatMap(task -> task.getReports().getXml().getOutputLocation()));
 
     tasks
         .named(VERIFICATION, JacocoCoverageVerification.class)
         .configure(verification -> {
-          verification.dependsOn(TEST);
+          verification.dependsOn(counted);
           declareExclusionInputs(verification, generatedList);
         });
 
     tasks
         .named(SterlingPlugin.COV)
-        .configure(task ->
-            task.dependsOn(whenOn(project.getProviders(), enabled, tasks.named(VERIFICATION))));
+        .configure(task -> task.dependsOn(whenOn(providers, enabled, tasks.named(VERIFICATION))));
+  }
+
+  /**
+   * The test tasks whose runs count towards coverage: {@code coverage.testTasks}, or every {@link
+   * Test} task when it's empty.
+   *
+   * @param tasks the project's tasks
+   * @param coverage the coverage settings
+   * @return the task names, in the setting's order or else sorted
+   * @throws InvalidUserDataException if the setting names a task that isn't a {@code Test} task
+   */
+  static List<String> countedTests(TaskContainer tasks, CoverageSettings coverage) {
+    SortedSet<String> all = tasks.withType(Test.class).getNames();
+    Set<String> chosen = coverage.getTestTasks().get();
+    if (chosen.isEmpty()) {
+      return List.copyOf(all);
+    }
+    List<String> unknown = chosen.stream().filter(name -> !all.contains(name)).toList();
+    if (!unknown.isEmpty()) {
+      throw new InvalidUserDataException(
+          "sterling.coverage.testTasks names "
+              + String.join(", ", unknown)
+              + (unknown.size() == 1 ? ", which isn't a Test task" : ", which aren't Test tasks")
+              + ". The Test tasks are: "
+              + String.join(", ", all)
+              + ".");
+    }
+    return List.copyOf(chosen);
+  }
+
+  /**
+   * The test tasks {@code stlInfo} shows: {@code coverage.testTasks} as set, or every {@link Test}
+   * task. Unlike {@link #countedTests}, a wrong name doesn't fail, so the diagnostic still prints.
+   *
+   * @param tasks the project's tasks
+   * @param coverage the coverage settings
+   * @return the task names
+   */
+  static List<String> shownTests(TaskContainer tasks, CoverageSettings coverage) {
+    Set<String> chosen = coverage.getTestTasks().get();
+    return chosen.isEmpty()
+        ? List.copyOf(tasks.withType(Test.class).getNames())
+        : List.copyOf(chosen);
+  }
+
+  // Unvalidated: countedTests fails the build for a wrong name before this matters.
+  private static boolean counts(CoverageSettings coverage, String test) {
+    Set<String> chosen = coverage.getTestTasks().get();
+    return chosen.isEmpty() || chosen.contains(test);
   }
 
   // The exclusion reads these files, so a change to one must rerun the task.
@@ -129,7 +189,7 @@ final class Coverage {
       // Coverage off means no agent, so a JDK that JaCoCo doesn't support yet can't break tests.
       test.getExtensions()
           .getByType(JacocoTaskExtension.class)
-          .setEnabled(coverage.getEnabled().get());
+          .setEnabled(coverage.getEnabled().get() && counts(coverage, test.getName()));
     } else if (task instanceof JacocoCoverageVerification verification
         && VERIFICATION.equals(task.getName())) {
       int instruction = Validation.percent(coverage.getInstruction(), "coverage.instruction").get();
@@ -141,8 +201,10 @@ final class Coverage {
             rule.limit(limit -> minimum(limit, "BRANCH", branch));
           });
       applyExcludes(project, verification, coverage, generatedList);
+      applyExecutionData(project.getTasks(), verification, coverage);
     } else if (task instanceof JacocoReport report && REPORT.equals(task.getName())) {
       applyExcludes(project, report, coverage, generatedList);
+      applyExecutionData(project.getTasks(), report, coverage);
     }
   }
 
@@ -150,6 +212,16 @@ final class Coverage {
     limit.setCounter(counter);
     limit.setValue("COVEREDRATIO");
     limit.setMinimum(BigDecimal.valueOf(percent).movePointLeft(2));
+  }
+
+  // Replaces JaCoCo's default, test's data only, with every counted task's.
+  private static void applyExecutionData(
+      TaskContainer tasks, JacocoReportBase task, CoverageSettings coverage) {
+    task.getExecutionData().setFrom();
+    task.executionData(
+        countedTests(tasks, coverage).stream()
+            .map(name -> tasks.named(name).get())
+            .toArray(Task[]::new));
   }
 
   // The same class files for the report and the verification, so their numbers agree.

@@ -10,7 +10,7 @@ import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** JaCoCo on the test task, verified by stlCov against the coverage thresholds. */
+/** JaCoCo on the test tasks, verified by stlCov against the coverage thresholds. */
 class CoverageTest {
   private static final String VERIFY = ":jacocoTestCoverageVerification";
 
@@ -198,6 +198,130 @@ class CoverageTest {
     assertThat(outcome(result, ":jacocoTestReport")).isNull();
     assertThat(outcome(result, VERIFY)).isNull();
     assertThat(Files.exists(dir.resolve("build/jacoco/test.exec"))).isFalse();
+  }
+
+  // An integration suite covering the half of Calc that CalcTest misses.
+  private Fixture withIntegrationTests(String sterling) {
+    return fixture(
+            """
+            testing {
+                suites {
+                    register<JvmTestSuite>("integrationTest") {
+                        useJUnitJupiter()
+                        dependencies { implementation(project()) }
+                    }
+                }
+            }
+
+            """
+                + sterling)
+        .file(
+            "src/integrationTest/java/app/CalcIT.java",
+            """
+            package app;
+
+            import static org.junit.jupiter.api.Assertions.assertEquals;
+
+            import org.junit.jupiter.api.Test;
+
+            class CalcIT {
+              @Test
+              void rest() {
+                assertEquals(1, new Calc().abs(-1));
+                assertEquals(2, new Calc().twice(1));
+              }
+            }
+            """);
+  }
+
+  @Test
+  void everyTestTaskCountsByDefault() {
+    Fixture fixture = withIntegrationTests("");
+
+    BuildResult result = fixture.build("stlCov");
+
+    assertThat(outcome(result, VERIFY))
+        .describedAs(result.getOutput())
+        .isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":test")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":integrationTest")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":jacocoTestReport")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(dir.resolve("build/jacoco/test.exec")).exists();
+    assertThat(dir.resolve("build/jacoco/integrationTest.exec")).exists();
+    // Calc is fully covered only when both runs count.
+    assertThat(fixture.read("build/reports/jacoco/test/jacocoTestReport.xml"))
+        .contains("<counter type=\"INSTRUCTION\" missed=\"0\"")
+        .contains("<counter type=\"BRANCH\" missed=\"0\" covered=\"2\"/>");
+  }
+
+  @Test
+  void testTasksNarrowsWhichRunsCount() {
+    BuildResult result =
+        withIntegrationTests("sterling { coverage { testTasks = setOf(\"test\") } }")
+            .buildAndFail("stlCov");
+
+    assertThat(outcome(result, VERIFY)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(outcome(result, ":test")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":integrationTest")).isNull();
+  }
+
+  @Test
+  void runningOneTestTaskDoesntRunTheOthers() {
+    BuildResult result = withIntegrationTests("").build("test");
+
+    assertThat(outcome(result, ":test")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":jacocoTestReport")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":integrationTest")).isNull();
+  }
+
+  @Test
+  void stlInfoStillPrintsWithAnUnknownTestTask() {
+    BuildResult result =
+        withIntegrationTests("sterling { coverage { testTasks = setOf(\"nope\") } }")
+            .build("stlInfo");
+
+    assertThat(result.getOutput()).contains("branch >= 70%; nope)");
+  }
+
+  @Test
+  void anUncountedTestTaskRunsWithoutTheAgent() {
+    BuildResult result =
+        withIntegrationTests("sterling { coverage { testTasks = setOf(\"test\") } }")
+            .build("integrationTest");
+
+    assertThat(outcome(result, ":integrationTest")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":jacocoTestReport")).isNull();
+    assertThat(Files.exists(dir.resolve("build/jacoco/integrationTest.exec"))).isFalse();
+  }
+
+  @Test
+  void anUnknownTestTaskFailsListingTheTestTasks() {
+    BuildResult result =
+        withIntegrationTests("sterling { coverage { testTasks = setOf(\"test\", \"nope\") } }")
+            .buildAndFail("stlCov");
+
+    assertThat(result.getOutput())
+        .contains(
+            "sterling.coverage.testTasks names nope, which isn't a Test task. The Test tasks are:"
+                + " integrationTest, test.");
+  }
+
+  @Test
+  void coverageOffRecordsNothingFromAnyTestTask() {
+    BuildResult result =
+        withIntegrationTests("sterling { coverage { enabled = false } }")
+            .build("test", "integrationTest", "stlCov");
+
+    assertThat(outcome(result, ":integrationTest")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":jacocoTestReport")).isNull();
+    assertThat(Files.exists(dir.resolve("build/jacoco/test.exec"))).isFalse();
+    assertThat(Files.exists(dir.resolve("build/jacoco/integrationTest.exec"))).isFalse();
+  }
+
+  @Test
+  void stlInfoListsTheCountedTestTasks() {
+    assertThat(withIntegrationTests("").build("stlInfo").getOutput())
+        .contains("branch >= 70%; integrationTest, test)");
   }
 
   @Test

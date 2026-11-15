@@ -102,9 +102,12 @@ for generated code that lives somewhere else:
 
 ## Coverage
 
-Coverage is measured on the `test` task. After it runs, `jacocoTestReport`
-writes HTML and XML reports, and `stlCov` checks them against the
-thresholds. With coverage off, tests run without the JaCoCo agent at all.
+Coverage is measured on every `Test` task in the project: `test`, and any
+JVM test suite such as `integrationTest`. `stlCov` runs them all, then
+`jacocoTestReport` writes HTML and XML reports from their combined execution
+data and `stlCov` checks them against the thresholds. To count only some of
+them, name them in `coverage.testTasks`; the others run without the JaCoCo
+agent. With coverage off, no test task gets the agent at all.
 
 Classes compiled from generated sources are always left out of the report
 and the verification: the same classes SpotBugs skips, from source

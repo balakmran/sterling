@@ -6,6 +6,7 @@ import dev.balakmran.sterling.internal.SterlingInfoTask;
 import dev.balakmran.sterling.internal.ToolchainCheckTask;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import org.gradle.api.GradleException;
@@ -198,6 +199,7 @@ public class SterlingPlugin implements Plugin<Project> {
                   .set(Validation.percent(coverage.getInstruction(), "coverage.instruction"));
               task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
               task.getCoverageExcludes().set(coverage.getExcludes());
+              task.getCoverageTestTasks().convention(List.of());
             });
   }
 
@@ -270,7 +272,13 @@ public class SterlingPlugin implements Plugin<Project> {
     project
         .getTasks()
         .named(INFO, SterlingInfoTask.class)
-        .configure(task -> task.getJavaToolchain().set(toolchainVersion.map(String::valueOf)));
+        .configure(task -> {
+          task.getJavaToolchain().set(toolchainVersion.map(String::valueOf));
+          task.getCoverageTestTasks()
+              .set(
+                  project.provider(
+                      () -> Coverage.shownTests(project.getTasks(), sterling.getCoverage())));
+        });
 
     Formatting.configure(project, sterling);
     var generated = GeneratedClasses.register(project);
