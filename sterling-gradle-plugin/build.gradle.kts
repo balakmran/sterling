@@ -165,6 +165,7 @@ fun Test.functionalTestCell(gradle: String, java: String) {
     )
     systemProperty("sterling.nullawayVersion", libs.versions.nullaway.get())
     systemProperty("sterling.jspecifyVersion", libs.versions.jspecify.get())
+    systemProperty("sterling.jacocoVersion", libs.versions.jacoco.get())
     systemProperty(
         "sterling.googleJavaFormatVersion",
         libs.versions.google.java.format.get(),

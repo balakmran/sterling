@@ -18,6 +18,29 @@ Spotless is the Gradle plugin that runs google-java-format. It's on the
 build script classpath rather than downloaded, so a build that also asks
 for a newer Spotless gets that one: Gradle picks the higher version.
 
+## Using a different tool version
+
+Every tool except google-java-format can be moved to another version than
+Sterling pins, newer or older. This is supported: Sterling then leaves its
+own version out, and `stlInfo` marks the tool's version
+`(project override)`.
+
+| Tool | How |
+|---|---|
+| Error Prone | `errorprone("com.google.errorprone:error_prone_core:<version>")` in `dependencies { }` |
+| NullAway | `errorprone("com.uber.nullaway:nullaway:<version>")` |
+| JSpecify | `compileOnly("org.jspecify:jspecify:<version>")` |
+| SpotBugs | `spotbugs { toolVersion = "<version>" }` |
+| JaCoCo | `jacoco { toolVersion = "<version>" }` |
+
+A dependency declared without a version, as from a platform, shows as
+`managed (project override)`. google-java-format can't be overridden: it's
+the one tool whose upgrade rewrites code, and its pin is what makes
+`stlFmtCheck` agree on every machine.
+
+Remove an override once Sterling pins that version or a later one; the
+release notes of a Sterling release that raises a tool say so.
+
 ## What an upgrade can change
 
 Sterling's version number says whether upgrading it can fail a build that
