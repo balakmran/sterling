@@ -1,7 +1,6 @@
 # Sterling agent plugin — adopt and maintain Sterling with a coding agent
 
-**Status: draft, not started (2026-11-14).** Proposed for **v0.2.0**; see
-"Release" under Decisions.
+**Status: shipped in v0.2.0 (2026-11-15), with the Copilot CLI and Codex evals and installs still to check.** See "Release" under Decisions.
 
 ## Goal
 
@@ -1022,21 +1021,21 @@ green.
 
 ## Done when
 
-- [ ] `stlInfo --json` ships, with tests on the full matrix and the schema
+- [x] `stlInfo --json` ships, with tests on the full matrix and the schema
       documented
-- [ ] `./gradlew build functionalTestLocal` is green, and CI's
+- [x] `./gradlew build functionalTestLocal` is green, and CI's
       `agent-plugin` job passes `claude plugin validate --strict`, the schema
       check and `shellcheck`
 - [ ] All four skills pass their evals as defined in Testing, in Claude Code,
       Copilot CLI and Codex CLI, and use every v0.2.0 setting as tabled
-- [ ] `adopt-sterling` and `upgrade-sterling` pass on `blade-svc-java-webmvc`
-- [ ] release-please bumped all three manifests and every
+- [x] `adopt-sterling` and `upgrade-sterling` pass on `blade-svc-java-webmvc`
+- [x] release-please bumped all three manifests and every
       `sterling-version` in the release PR
-- [ ] The release opened a marketplace PR that pins the tag and SHA, merged
+- [x] The release opened a marketplace PR that pins the tag and SHA, merged
       after its CI passed
 - [ ] `sterling@balakmran` installs at user scope from the marketplace in
       Claude Code, Copilot CLI, VS Code and Codex, at the released version
-- [ ] The README documents installing and updating for each agent
+- [x] The README documents installing and updating for each agent
 
 ## Open questions
 
