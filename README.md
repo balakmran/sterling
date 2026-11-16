@@ -188,7 +188,7 @@ isn't shown, except a tool version the project chose, which is marked
 `(project override)`:
 
 ```
-Sterling 0.1.0
+Sterling 0.2.0
 Profile:              STANDARD
 Gate wired to check:  yes
 Daemon JVM:           25

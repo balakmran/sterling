@@ -3,6 +3,11 @@
 ## [0.2.0](https://github.com/balakmran/sterling/compare/v0.1.0...v0.2.0) (2026-11-15)
 
 
+### ⚠ Can change findings
+
+* NullAway now checks `@Contract` bodies (`CheckContracts`) and treats AssertJ and JUnit assertions as null checks (`HandleTestAssertionLibraries`), so compilation can report new NullAway errors.
+* Coverage now counts every `Test` task and leaves out generated classes and, with Spring Boot, the main class, so measured coverage changes. See [Upgrading Sterling](docs/guide/upgrading.md#010-to-020).
+
 ### Features
 
 * add format and version sources to stlInfo --json ([de4ee48](https://github.com/balakmran/sterling/commit/de4ee48b7eb9cc62cbf453fba4bfa95cc92ff5ec))
