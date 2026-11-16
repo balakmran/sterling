@@ -1,8 +1,11 @@
 {
   "name": "sterling",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adopt, fix and upgrade Sterling, the Java 21+ Gradle quality gate, with your coding agent.",
-  "author": { "name": "Balakumaran Manoharan", "url": "https://github.com/balakmran" },
+  "author": {
+    "name": "Balakumaran Manoharan",
+    "url": "https://github.com/balakmran"
+  },
   "skills": "./skills/",
   "interface": {
     "displayName": "Sterling",

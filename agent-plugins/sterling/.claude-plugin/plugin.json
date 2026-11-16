@@ -1,10 +1,20 @@
 {
   "name": "sterling",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adopt, fix and upgrade Sterling, the Java 21+ Gradle quality gate, with your coding agent.",
-  "author": { "name": "Balakumaran Manoharan", "url": "https://github.com/balakmran" },
+  "author": {
+    "name": "Balakumaran Manoharan",
+    "url": "https://github.com/balakmran"
+  },
   "homepage": "https://github.com/balakmran/sterling",
   "repository": "https://github.com/balakmran/sterling",
   "license": "Apache-2.0",
-  "keywords": ["java", "gradle", "error-prone", "nullaway", "spotbugs", "jacoco"]
+  "keywords": [
+    "java",
+    "gradle",
+    "error-prone",
+    "nullaway",
+    "spotbugs",
+    "jacoco"
+  ]
 }
