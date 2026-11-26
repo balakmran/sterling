@@ -3,11 +3,12 @@
 One code-quality gate for Java 21+ Gradle builds: google-java-format, Error Prone, NullAway with JSpecify, SpotBugs and JaCoCo, at versions tested together, run by stlCheck and tuned by one profile.
 Published as a Gradle plugin under `dev.balakmran.sterling`.
 
-Current milestone: **v0.2.0**. The plan, scope, configuration model and
-acceptance criteria are in `docs/plans/v0.2.0.md`, and the agent plugin that
-ships with it has its own, `docs/plans/agent-plugin.md`. Read them before
-starting work and do not build anything listed under "Out" there. Later
-milestones are in `ROADMAP.md`; v0.1.0's plan is `docs/plans/v0.1.0.md`.
+Current milestone: **v0.3.0**. The plan, scope, configuration model and
+acceptance criteria are in `docs/plans/v0.3.0.md`, and the agent plugin has
+its own plan, `docs/plans/agent-plugin.md`. Read them before starting work
+and do not build anything listed under "Out" there. Later milestones are in
+`ROADMAP.md`; earlier plans are `docs/plans/v0.1.0.md` and
+`docs/plans/v0.2.0.md`.
 
 ## Identifiers
 
@@ -76,7 +77,7 @@ differ. Settings and pinned versions are documented in `docs/guide/`, which
 `DocsTest` checks against the code.
 
 `sterling-rules` (Checkstyle config) arrives with Checkstyle, planned for
-v0.5.0 in `ROADMAP.md`. Do not create it yet.
+after v1.0.0 in `ROADMAP.md`. Do not create it yet.
 
 ## Commands
 
