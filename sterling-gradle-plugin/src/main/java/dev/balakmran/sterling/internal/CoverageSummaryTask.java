@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
@@ -17,6 +18,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
@@ -110,7 +112,18 @@ public abstract class CoverageSummaryTask extends DefaultTask {
   @Input
   public abstract Property<Integer> getBranch();
 
-  /** Prints the summary if the verification failed, and removes its marker. */
+  /**
+   * Gradle's object factory, which instantiates the Problems API reporter.
+   *
+   * @return the object factory
+   */
+  @Inject
+  protected abstract ObjectFactory getObjects();
+
+  /**
+   * Prints the summary if the verification failed, reports it through Gradle's Problems API, and
+   * removes its marker.
+   */
   @TaskAction
   public void print() {
     File marker = getFailedMarker().get().getAsFile();
@@ -129,6 +142,15 @@ public abstract class CoverageSummaryTask extends DefaultTask {
         SourcePaths.resolver(
             getRootDirectory().get().getAsFile(), List.copyOf(getSourceDirectories().getFiles()));
     render(report, getInstruction().get(), getBranch().get(), path).forEach(getLogger()::error);
+    ProblemReports.report(
+        getObjects(),
+        getLogger(),
+        findings(
+            report,
+            getInstruction().get(),
+            getBranch().get(),
+            path,
+            getRootDirectory().get().getAsFile()));
   }
 
   /**
@@ -155,7 +177,23 @@ public abstract class CoverageSummaryTask extends DefaultTask {
     lines.add(instructionLine);
     lines.add(branchLine);
 
-    record Missed(String file, long missed, long total) {}
+    for (Missed file : topMissed(report)) {
+      lines.add(
+          path.apply(file.file())
+              + " [JaCoCo:INSTRUCTION] "
+              + file.missed()
+              + " of "
+              + file.total()
+              + " missed");
+    }
+    return lines;
+  }
+
+  // A source file with instructions JaCoCo saw missed, by its package-relative path.
+  private record Missed(String file, long missed, long total) {}
+
+  // The source files with the most missed instructions: at most TOP, most missed first.
+  private static List<Missed> topMissed(Element report) {
     List<Missed> files = new ArrayList<>();
     for (Element pkg : Xml.children(report, "package")) {
       String prefix = pkg.getAttribute("name").isEmpty() ? "" : pkg.getAttribute("name") + "/";
@@ -168,18 +206,66 @@ public abstract class CoverageSummaryTask extends DefaultTask {
         }
       }
     }
-    files.stream()
+    return files.stream()
         .sorted(Comparator.comparingLong(Missed::missed).reversed().thenComparing(Missed::file))
         .limit(TOP)
-        .forEach(file ->
-            lines.add(
-                path.apply(file.file())
-                    + " [JaCoCo:INSTRUCTION] "
-                    + file.missed()
-                    + " of "
-                    + file.total()
-                    + " missed"));
-    return lines;
+        .toList();
+  }
+
+  /**
+   * The shortfalls of a report, for the Problems API.
+   *
+   * @param report the report's {@code <report>} element
+   * @param instruction the instruction threshold, in percent
+   * @param branch the branch threshold, in percent
+   * @param path turns a source path relative to a source directory into the path to print
+   * @param root the root project's directory, which printed paths are relative to
+   * @return one finding per measurement below its threshold, then one per file {@link #render}
+   *     lists; nothing when neither measurement is below its threshold
+   */
+  static List<Finding> findings(
+      Element report, int instruction, int branch, Function<String, String> path, File root) {
+    String instructionLine = measurement(report, "INSTRUCTION", "instruction", instruction);
+    String branchLine = measurement(report, "BRANCH", "branch", branch);
+    List<Finding> findings = new ArrayList<>();
+    if (instructionLine.contains("(below ")) {
+      findings.add(
+          new Finding(
+              "coverage-instruction",
+              "JaCoCo instruction coverage",
+              instructionLine.strip(),
+              null,
+              0,
+              null,
+              true));
+    }
+    if (branchLine.contains("(below ")) {
+      findings.add(
+          new Finding(
+              "coverage-branch",
+              "JaCoCo branch coverage",
+              branchLine.strip(),
+              null,
+              0,
+              null,
+              true));
+    }
+    if (findings.isEmpty()) {
+      return findings;
+    }
+    for (Missed file : topMissed(report)) {
+      File source = new File(root, path.apply(file.file()));
+      findings.add(
+          new Finding(
+              "coverage-missed-instructions",
+              "JaCoCo missed instructions",
+              file.missed() + " of " + file.total() + " instructions missed",
+              source.isFile() ? source.getAbsolutePath() : null,
+              0,
+              null,
+              false));
+    }
+    return findings;
   }
 
   private static String measurement(Element report, String type, String name, int minimum) {

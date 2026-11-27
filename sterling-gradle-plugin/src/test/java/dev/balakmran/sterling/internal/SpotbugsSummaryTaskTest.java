@@ -53,6 +53,42 @@ class SpotbugsSummaryTaskTest {
   }
 
   @Test
+  void findingsCarryTheKindMessageAbsoluteSourceFileAndLine() throws IOException {
+    Path source = dir.resolve("src/main/java/com/example/Foo.java");
+    Files.createDirectories(source.getParent());
+    Files.writeString(source, "class Foo {}\n");
+
+    List<Finding> findings =
+        SpotbugsSummaryTask.findings(
+            report(
+                bug("NP_ALWAYS_NULL", 42).replace("priority=\"1\"", "priority=\"1\" rank=\"5\"")),
+            UNDER_SRC,
+            dir.toFile());
+
+    assertThat(findings)
+        .containsExactly(
+            new Finding(
+                "np-always-null",
+                "NP_ALWAYS_NULL",
+                "Null pointer dereference of text in com.example.Foo.length()",
+                source.toFile().getAbsolutePath(),
+                42,
+                "SpotBugs rank 5, priority 1",
+                true));
+  }
+
+  @Test
+  void aFindingWhoseSourceIsntFoundHasNoLocationAndAMildRankIsAWarning() throws IOException {
+    String bug = bug("SE_BAD_FIELD", 7).replace("priority=\"1\"", "priority=\"2\" rank=\"12\"");
+
+    Finding finding = SpotbugsSummaryTask.findings(report(bug), UNDER_SRC, dir.toFile()).get(0);
+
+    assertThat(finding.file()).isNull();
+    assertThat(finding.line()).isZero();
+    assertThat(finding.error()).isFalse();
+  }
+
+  @Test
   void fallsBackToTheClassLocationAndTheShortMessage() throws IOException {
     String bug =
         """

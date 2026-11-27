@@ -343,6 +343,16 @@ finding has none, as with coverage. `stlInfo --json` reports the version as
 [upgrade notes](upgrading.md) say so. Pull request annotations from these
 lines: [Sterling in CI](ci.md).
 
+SpotBugs findings and coverage shortfalls are also reported through Gradle's
+Problems API, as problems in a `Sterling` group, so they appear in
+`build/reports/problems/problems-report.html` with the javac diagnostics Gradle
+already lists there. Each SpotBugs finding has its file and line and its rank
+and priority, and the report lists all of them, not only the 50 the console
+prints. The API is incubating: if a Gradle release changes it, Sterling logs
+that at info level and the console lines, which this doesn't replace, are
+unaffected. From Gradle 9.7 on, every problem a plugin reports shows as a
+warning in that report, whatever its severity.
+
 When `stlSec` or `stlCov` fails, the console says why, so neither report has
 to be opened first:
 

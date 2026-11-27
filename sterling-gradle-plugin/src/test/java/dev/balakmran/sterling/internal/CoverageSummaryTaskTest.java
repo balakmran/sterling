@@ -81,6 +81,49 @@ class CoverageSummaryTaskTest {
   }
 
   @Test
+  void findingsNameEachShortfallAndTheFilesRenderLists() throws IOException {
+    Path source = dir.resolve("src/main/java/com/example/Big.java");
+    Files.createDirectories(source.getParent());
+    Files.writeString(source, "class Big {}\n");
+    Element report =
+        report(
+            "<package name=\"com/example\">" + sourceFile("Big.java", 30, 10) + "</package>",
+            "<counter type=\"INSTRUCTION\" missed=\"30\" covered=\"10\"/>"
+                + "<counter type=\"BRANCH\" missed=\"1\" covered=\"3\"/>");
+
+    assertThat(
+            CoverageSummaryTask.findings(
+                report, 80, 70, path -> "src/main/java/" + path, dir.toFile()))
+        .containsExactly(
+            new Finding(
+                "coverage-instruction",
+                "JaCoCo instruction coverage",
+                "instruction: 25.0% (below minimum 80%)",
+                null,
+                0,
+                null,
+                true),
+            new Finding(
+                "coverage-missed-instructions",
+                "JaCoCo missed instructions",
+                "30 of 40 instructions missed",
+                source.toFile().getAbsolutePath(),
+                0,
+                null,
+                false));
+  }
+
+  @Test
+  void noFindingsWhenBothMeasurementsMeetTheirThresholds() throws IOException {
+    Element report =
+        report(
+            "<package name=\"app\">" + sourceFile("A.java", 1, 9) + "</package>",
+            "<counter type=\"INSTRUCTION\" missed=\"1\" covered=\"9\"/>");
+
+    assertThat(CoverageSummaryTask.findings(report, 80, 70, UNCHANGED, dir.toFile())).isEmpty();
+  }
+
+  @Test
   void printsNothingWhenBothMeasurementsMeetTheirThresholds() throws IOException {
     Element report =
         report(
