@@ -25,6 +25,7 @@ errorProne.versionSource
 errorProne.warningsAsErrors
 errorProne.errorsAsWarnings
 errorProne.disabledChecks
+errorProne.patchChecks
 nullAway
 nullAway.enabled
 nullAway.active

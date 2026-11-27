@@ -56,6 +56,24 @@ public abstract class ErrorProneSettings {
   public abstract Property<Boolean> getErrorsAsWarnings();
 
   /**
+   * The Error Prone checks {@code stlFix} patches, by check name.
+   *
+   * <p>Defaults to {@code AnnotationPosition}, which moves type-use annotations such as JSpecify's
+   * {@code @Nullable} to where the Google Java Style Guide puts them (§4.8.5.1), and a short list
+   * of checks whose fixes keep a program's behaviour: {@code MissingOverride}, {@code
+   * UnnecessaryParentheses}, {@code OperatorPrecedence}, {@code PatternMatchingInstanceof} and
+   * {@code EmptyBlockTag}. {@link #disable(String...)} removes a check from the run too. Not every
+   * suggested fix keeps behaviour (removing an unused variable can drop a side effect), so add
+   * checks only after reading what they rewrite.
+   *
+   * <p>{@code stlFix} enables each of these checks, as a warning, for its own run only; it doesn't
+   * turn them on for ordinary builds. {@code add} appends to the defaults.
+   *
+   * @return the patched checks
+   */
+  public abstract SetProperty<String> getPatchChecks();
+
+  /**
    * The Error Prone checks turned off, by check name. Empty by default.
    *
    * <p>{@link #disable(String...)} is the usual way to add to it.

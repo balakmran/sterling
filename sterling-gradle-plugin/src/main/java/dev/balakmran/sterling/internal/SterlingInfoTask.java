@@ -155,6 +155,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<String> getFormatRatchetFrom();
 
   /**
+   * The Error Prone checks {@code stlFix} patches.
+   *
+   * @return the check names
+   */
+  @Input
+  public abstract SetProperty<String> getPatchChecks();
+
+  /**
    * Whether Error Prone's errors are reported as warnings.
    *
    * @return whether errors are demoted
@@ -480,6 +488,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
     List<String> disabled = new ArrayList<>(getDisabledChecks().get());
     disabled.sort(null);
     errorProne.put("disabledChecks", disabled);
+    List<String> patched = new ArrayList<>(getPatchChecks().get());
+    patched.sort(null);
+    errorProne.put("patchChecks", patched);
     root.put("errorProne", errorProne);
 
     Map<String, Object> nullAway = new LinkedHashMap<>();

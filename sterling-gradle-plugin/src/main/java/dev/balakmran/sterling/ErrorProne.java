@@ -4,6 +4,7 @@ import static dev.balakmran.sterling.Flags.whenOn;
 
 import dev.balakmran.sterling.internal.ErrorsAsWarnings;
 import dev.balakmran.sterling.internal.WarningsAsErrors;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -30,6 +31,16 @@ final class ErrorProne {
    * so it also works on Windows.
    */
   static final String GENERATED_PATHS = ".*[/\\\\]build[/\\\\]generated[/\\\\].*";
+
+  /** The checks {@code stlFix} patches unless {@code errorProne.patchChecks} says otherwise. */
+  static final List<String> DEFAULT_PATCH_CHECKS =
+      List.of(
+          "AnnotationPosition",
+          "EmptyBlockTag",
+          "MissingOverride",
+          "OperatorPrecedence",
+          "PatternMatchingInstanceof",
+          "UnnecessaryParentheses");
 
   private ErrorProne() {}
 
