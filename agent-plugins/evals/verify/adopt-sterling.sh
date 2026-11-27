@@ -76,12 +76,25 @@ if [[ -n "$reformat_sha" ]]; then
   fi
   git worktree remove --force "$tmp/wt" 2>/dev/null
   check "its SHA is in .git-blame-ignore-revs" grep -q "$reformat_sha" .git-blame-ignore-revs
-  others="$(git log --format=%H "$initial..HEAD" | grep -v "$reformat_sha")"
+  # The stlFix commit is the one other that may change sources: Error Prone's own fixes.
+  stlfix_sha="$(git log --reverse --format='%H %s' "$initial..HEAD" | grep -E ' fix: apply Error Prone' | head -1 | cut -d' ' -f1)"
+  if [[ -n "$stlfix_sha" ]]; then
+    ok "a stlFix commit exists"
+    check "the stlFix commit touches only Java files" \
+      bash -c "! git diff-tree --no-commit-id --name-only -r $stlfix_sha | grep -v '\\.java\$' | grep -q ."
+    check "a second stlFix changes nothing" \
+      bash -c "./gradlew --console=plain -q stlFix >/dev/null 2>&1 && test -z \"\$(git status --porcelain)\""
+    git checkout -q -- . 2>/dev/null
+  elif [[ "$fixture" == brownfield-service ]]; then
+    # Receipt.toString() lacks @Override, which stlFix patches.
+    bad "no stlFix commit, though the fixture has a method missing @Override"
+  fi
+  others="$(git log --format=%H "$initial..HEAD" | grep -v "$reformat_sha" | grep -v "${stlfix_sha:-no-such-commit}")"
   src_touched=false
   for sha in $others; do
     git diff-tree --no-commit-id --name-only -r "$sha" | grep -vE '^(build-logic|buildSrc)/' | grep -qE '(^|/)src/' && src_touched=true
   done
-  check "no other commit touches src/" test "$src_touched" = false
+  check "no other commit touches src/ (besides the reformat and stlFix)" test "$src_touched" = false
 else
   # Fine when the sources were already formatted, or format.ratchetFrom was chosen.
   check "no reformat commit, so stlFmtCheck passes as it is" ./gradlew --console=plain -q stlFmtCheck

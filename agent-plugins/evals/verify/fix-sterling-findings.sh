@@ -15,6 +15,9 @@ agent_subjects | sed 's/^/  /'
 common_checks
 
 check "stlCheck succeeds" ./gradlew --console=plain -q stlCheck
+# Cleaner.toString() lacks @Override, which stlFix patches, in a commit of its own.
+check "Error Prone's fixes were applied with stlFix, in their own commit" \
+  bash -c "git log --format=%s $initial..HEAD | grep -qi 'stlFix'"
 check "the build, properties and filter files are unchanged" \
   test -z "$(git diff --name-only "$initial" HEAD -- '*.gradle.kts' '*.gradle' '*.properties' '*.toml' config)"
 check "no existing test was modified or deleted" \

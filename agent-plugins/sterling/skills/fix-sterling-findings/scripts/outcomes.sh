@@ -13,7 +13,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 allowed() {
   case "$1" in
-    stlFmt | stlFmtCheck | stlLint | stlSec | stlCov | stlCheck | stlInfo | --json) return 0 ;;
+    stlFmt | stlFix | stlFmtCheck | stlLint | stlSec | stlCov | stlCheck | stlInfo | --json) return 0 ;;
     compileJava | compileTestJava | test | jacocoTestReport | --continue | -q) return 0 ;;
     -Psterling.profile=lenient | -Psterling.profile=standard | -Psterling.profile=strict) return 0 ;;
     :*:stl* | :*:compileJava | :*:compileTestJava | :*:test | :*:jacocoTestReport)
