@@ -7,7 +7,8 @@ import org.gradle.api.provider.Property;
  *
  * <p>NullAway only checks code annotated {@code @NullMarked}, so a project adopts it one package at
  * a time by annotating that package's {@code package-info.java}. It reads JSpecify's annotations;
- * Sterling adds {@code org.jspecify:jspecify} to {@code compileOnly} while NullAway is on.
+ * Sterling adds {@code org.jspecify:jspecify} to every source set's compile-only configuration
+ * while NullAway is on.
  */
 public abstract class NullAwaySettings {
   /** Creates the settings. Gradle instantiates this class for the {@code sterling} extension. */

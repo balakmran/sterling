@@ -68,7 +68,7 @@ beside what the snippet and the plugin do:
 | JSpecify mode | on | `STRICT` only, or `nullAway { jspecifyMode = true }`. Spring calls it still under development, so Sterling takes it as a second step |
 | All of Error Prone's other checks | off (`disableAllChecks`) | **On**: Sterling runs Error Prone in full. Disable a check you aren't ready for with `errorProne { disable("CheckName") }` |
 | `RequireExplicitNullMarking` | plugin turns it on | Off; turn it on with `options.errorprone.error("RequireExplicitNullMarking")` |
-| JSpecify annotations on the compile classpath | a dependency of yours | Added to `compileOnly`, `testCompileOnly` |
+| JSpecify annotations on the compile classpath | a dependency of yours | Added to every source set's compile-only configuration |
 
 Expect findings the snippet never reported: Error Prone's other checks, and
 the contract and assertion checks above. Start on `LENIENT`

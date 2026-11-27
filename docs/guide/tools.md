@@ -110,8 +110,9 @@ Spring calls the mode still under development and recommends turning it on as
 a second step, once a codebase is clean without it, because most false
 positives on generic and lambda-heavy code come from it.
 
-Sterling adds [JSpecify](https://jspecify.dev) to `compileOnly` and
-`testCompileOnly` while NullAway is on, so the annotations work without a
+Sterling adds [JSpecify](https://jspecify.dev) to every source set's compile-only
+configuration (`compileOnly`, `testCompileOnly`, `integrationTestCompileOnly`,
+`testFixturesCompileOnly` and so on) while NullAway is on, so the annotations work without a
 dependency of your own. Spring Boot 4 apps get it through `spring-core` too.
 A **library** whose public API uses these annotations should still declare
 `api("org.jspecify:jspecify:1.0.1")`, so Kotlin callers and other tools see
