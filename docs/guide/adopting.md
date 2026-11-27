@@ -17,7 +17,8 @@ Each step is one pull request, and `main` stays green throughout:
    more than you can fix first, take a
    [baseline](tools.md#spotbugs-baseline) so only new findings fail.
 5. **Mark packages `@NullMarked`, one at a time.** NullAway checks only
-   those (see [Null checking](tools.md#null-checking-with-nullaway)).
+   those (see [Null checking](tools.md#null-checking-with-nullaway)), and
+   `stlInfo` counts how many of the main packages are marked.
 6. **Move to `STRICT`** once the codebase is clean, or run it in CI only with
    `-Psterling.profile=strict`.
 

@@ -2,6 +2,7 @@
 # Adding a key is allowed; removing or renaming one, or changing a value's type, raises the version.
 schemaVersion
 sterling
+consoleFormat
 project
 profile
 profileProperty
@@ -34,6 +35,9 @@ nullAway.versionSource
 nullAway.jspecify
 nullAway.jspecifySource
 nullAway.jspecifyMode
+nullAway.packages
+nullAway.packages.total
+nullAway.packages.nullMarked
 spotbugs
 spotbugs.enabled
 spotbugs.version

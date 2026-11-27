@@ -20,6 +20,8 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.specs.Spec;
+import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.compile.JavaCompile;
@@ -224,8 +226,17 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));
               task.getCoverageExcludes().set(coverage.getExcludes());
               task.getCoverageTestTasks().convention(List.of());
+              task.getPackagesCounted().convention(false);
               task.getExcludesMainClass().convention(false);
             });
+  }
+
+  // A class rather than a lambda, so the configuration cache can store it.
+  private static final class NotGenerated implements Spec<File> {
+    @Override
+    public boolean isSatisfiedBy(File directory) {
+      return !directory.getPath().replace(File.separatorChar, '/').contains("/build/generated/");
+    }
   }
 
   /**
@@ -299,6 +310,16 @@ public class SterlingPlugin implements Plugin<Project> {
         .named(INFO, SterlingInfoTask.class)
         .configure(task -> {
           task.getJavaToolchain().set(toolchainVersion.map(String::valueOf));
+          task.getPackagesCounted().set(true);
+          task.getMainSourceDirectories()
+              .from(
+                  project
+                      .getExtensions()
+                      .getByType(SourceSetContainer.class)
+                      .getByName("main")
+                      .getJava()
+                      .getSourceDirectories()
+                      .filter(new NotGenerated()));
           task.getCoverageTestTasks()
               .set(
                   project.provider(

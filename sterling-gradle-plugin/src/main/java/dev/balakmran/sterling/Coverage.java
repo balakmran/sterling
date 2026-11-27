@@ -150,6 +150,16 @@ final class Coverage {
                           () -> report.get().getReports().getXml().getOutputLocation().get()));
               task.dependsOn(report);
               task.getFailedMarker().set(failedMarker);
+              task.getSourceDirectories()
+                  .from(
+                      project
+                          .getExtensions()
+                          .getByType(SourceSetContainer.class)
+                          .getByName("main")
+                          .getJava()
+                          .getSourceDirectories());
+              task.getRootDirectory()
+                  .set(project.getRootProject().getLayout().getProjectDirectory());
               task.getInstruction()
                   .set(Validation.percent(coverage.getInstruction(), "coverage.instruction"));
               task.getBranch().set(Validation.percent(coverage.getBranch(), "coverage.branch"));

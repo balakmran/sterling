@@ -125,8 +125,10 @@ class CoverageTest {
         .contains("Coverage is below the thresholds:")
         .containsPattern("(?m)^  instruction: [0-9.]+% \\(below minimum 80%\\)$")
         .containsPattern("(?m)^  branch: [0-9.]+% \\(below minimum 70%\\)$")
-        .containsPattern("(?m)^app/Uncovered\\.java \\[JaCoCo:INSTRUCTION\\] (\\d+) of \\1 missed$")
-        .containsPattern("(?m)^app/Calc\\.java \\[JaCoCo:INSTRUCTION\\] \\d+ of \\d+ missed$");
+        .containsPattern(
+            "(?m)^src/main/java/app/Uncovered\\.java \\[JaCoCo:INSTRUCTION\\] (\\d+) of \\1 missed$")
+        .containsPattern(
+            "(?m)^src/main/java/app/Calc\\.java \\[JaCoCo:INSTRUCTION\\] \\d+ of \\d+ missed$");
     // Most missed first.
     assertThat(result.getOutput().indexOf("app/Uncovered.java"))
         .isLessThan(result.getOutput().indexOf("app/Calc.java"));

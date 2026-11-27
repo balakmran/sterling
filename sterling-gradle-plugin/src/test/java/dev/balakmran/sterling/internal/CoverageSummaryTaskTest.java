@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.testfixtures.ProjectBuilder;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Element;
 
 class CoverageSummaryTaskTest {
+  private static final Function<String, String> UNCHANGED = Function.identity();
+
   @TempDir Path dir;
 
   // JaCoCo's reports start with a document type declaration naming a DTD that isn't there.
@@ -49,7 +52,7 @@ class CoverageSummaryTaskTest {
             "<counter type=\"INSTRUCTION\" missed=\"32\" covered=\"68\"/>"
                 + "<counter type=\"BRANCH\" missed=\"1\" covered=\"3\"/>");
 
-    assertThat(CoverageSummaryTask.render(report, 80, 70))
+    assertThat(CoverageSummaryTask.render(report, 80, 70, UNCHANGED))
         .containsExactly(
             "Coverage is below the thresholds:",
             "  instruction: 68.0% (below minimum 80%)",
@@ -59,20 +62,82 @@ class CoverageSummaryTaskTest {
   }
 
   @Test
+  void namesEachFileByItsSourcePathAndFallsBackToThePackagePath() throws IOException {
+    Element report =
+        report(
+            "<package name=\"com/example\">"
+                + sourceFile("Found.java", 30, 10)
+                + sourceFile("Lost.java", 20, 10)
+                + "</package>",
+            "<counter type=\"INSTRUCTION\" missed=\"50\" covered=\"20\"/>");
+    Function<String, String> path =
+        sourcePath ->
+            sourcePath.endsWith("Found.java") ? "src/main/java/" + sourcePath : sourcePath;
+
+    assertThat(CoverageSummaryTask.render(report, 80, 70, path))
+        .contains(
+            "src/main/java/com/example/Found.java [JaCoCo:INSTRUCTION] 30 of 40 missed",
+            "com/example/Lost.java [JaCoCo:INSTRUCTION] 20 of 30 missed");
+  }
+
+  @Test
+  void findingsNameEachShortfallAndTheFilesRenderLists() throws IOException {
+    Path source = dir.resolve("src/main/java/com/example/Big.java");
+    Files.createDirectories(source.getParent());
+    Files.writeString(source, "class Big {}\n");
+    Element report =
+        report(
+            "<package name=\"com/example\">" + sourceFile("Big.java", 30, 10) + "</package>",
+            "<counter type=\"INSTRUCTION\" missed=\"30\" covered=\"10\"/>"
+                + "<counter type=\"BRANCH\" missed=\"1\" covered=\"3\"/>");
+
+    assertThat(
+            CoverageSummaryTask.findings(
+                report, 80, 70, path -> "src/main/java/" + path, dir.toFile()))
+        .containsExactly(
+            new Finding(
+                "coverage-instruction",
+                "JaCoCo instruction coverage",
+                "instruction: 25.0% (below minimum 80%)",
+                null,
+                0,
+                null,
+                true),
+            new Finding(
+                "coverage-missed-instructions",
+                "JaCoCo missed instructions",
+                "30 of 40 instructions missed",
+                source.toFile().getAbsolutePath(),
+                0,
+                null,
+                false));
+  }
+
+  @Test
+  void noFindingsWhenBothMeasurementsMeetTheirThresholds() throws IOException {
+    Element report =
+        report(
+            "<package name=\"app\">" + sourceFile("A.java", 1, 9) + "</package>",
+            "<counter type=\"INSTRUCTION\" missed=\"1\" covered=\"9\"/>");
+
+    assertThat(CoverageSummaryTask.findings(report, 80, 70, UNCHANGED, dir.toFile())).isEmpty();
+  }
+
+  @Test
   void printsNothingWhenBothMeasurementsMeetTheirThresholds() throws IOException {
     Element report =
         report(
             "<package name=\"app\">" + sourceFile("A.java", 1, 9) + "</package>",
             "<counter type=\"INSTRUCTION\" missed=\"1\" covered=\"9\"/>");
 
-    assertThat(CoverageSummaryTask.render(report, 80, 70)).isEmpty();
+    assertThat(CoverageSummaryTask.render(report, 80, 70, UNCHANGED)).isEmpty();
   }
 
   @Test
   void roundsDownSoAShortfallNeverPrintsAsTheThreshold() throws IOException {
     Element report = report("", "<counter type=\"INSTRUCTION\" missed=\"2001\" covered=\"7999\"/>");
 
-    assertThat(CoverageSummaryTask.render(report, 80, 70))
+    assertThat(CoverageSummaryTask.render(report, 80, 70, UNCHANGED))
         .contains(
             "  instruction: 79.9% (below minimum 80%)", "  branch: nothing to cover (minimum 70%)");
   }
@@ -90,7 +155,8 @@ class CoverageSummaryTaskTest {
             report(
                 files.toString(), "<counter type=\"INSTRUCTION\" missed=\"78\" covered=\"12\"/>"),
             80,
-            70);
+            70,
+            UNCHANGED);
 
     assertThat(lines).hasSize(3 + CoverageSummaryTask.TOP);
     assertThat(lines.get(3)).isEqualTo("F12.java [JaCoCo:INSTRUCTION] 12 of 13 missed");

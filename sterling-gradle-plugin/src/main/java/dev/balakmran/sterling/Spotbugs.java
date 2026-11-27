@@ -129,7 +129,8 @@ final class Spotbugs {
               task.getHtmlReport().set(project.provider(() -> report(spotbugsMain, "html")));
               task.mustRunAfter(spotbugsMain);
               task.getSourceDirectories().from(main.getJava().getSourceDirectories());
-              task.getProjectDirectory().set(project.getLayout().getProjectDirectory());
+              task.getRootDirectory()
+                  .set(project.getRootProject().getLayout().getProjectDirectory());
             });
     spotbugsMain.configure(task ->
         task.finalizedBy(

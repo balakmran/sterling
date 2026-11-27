@@ -136,6 +136,11 @@ import org.jspecify.annotations.NullMarked;
 Inside that package, anything that may be null must be annotated `@Nullable`,
 and NullAway fails compilation where such a value is used without a check.
 
+`stlInfo` shows how far along you are: `3 of 7 main packages @NullMarked`
+counts the directories under main's source directories (outside
+`build/generated`) that hold Java files, and those whose `package-info.java`
+carries `@NullMarked`. Classes marked one by one aren't counted.
+
 `nullAway.jspecifyMode` also checks nullness in generic type arguments
 (`List<@Nullable String>`), arrays and varargs. It's on only in `STRICT`:
 Spring calls the mode still under development and recommends turning it on as
@@ -320,6 +325,39 @@ classes compile to their own files, like `Legacy$1.class`, which
 | SpotBugs | `build/reports/spotbugs/main.html`, `main.xml` and `main.sarif` |
 | JaCoCo | `build/reports/jacoco/test/html/index.html` and `jacocoTestReport.xml` |
 
+## Reading Sterling's output
+
+Error Prone and NullAway findings are javac's own diagnostics, which IDEs,
+CI and coding agents already parse:
+
+```text
+/work/repo/src/main/java/app/App.java:11: error: [NullAway] dereferenced expression 'find()' is @Nullable
+```
+
+SpotBugs and JaCoCo findings print one per line in Sterling's console format,
+version 1:
+
+```text
+<path>[:<line>] [<Tool>:<Rule>] <message>
+```
+
+The path is the source file's, relative to the root project and with `/`
+separators, so it opens from the repository root. The line is left out when a
+finding has none, as with coverage. `stlInfo --json` reports the version as
+`consoleFormat`. Changing the shape of a printed line raises it, and the
+[upgrade notes](upgrading.md) say so. Pull request annotations from these
+lines: [Sterling in CI](ci.md).
+
+SpotBugs findings and coverage shortfalls are also reported through Gradle's
+Problems API, as problems in a `Sterling` group, so they appear in
+`build/reports/problems/problems-report.html` with the javac diagnostics Gradle
+already lists there. Each SpotBugs finding has its file and line and its rank
+and priority, and the report lists all of them, not only the 50 the console
+prints. The API is incubating: if a Gradle release changes it, Sterling logs
+that at info level and the console lines, which this doesn't replace, are
+unaffected. From Gradle 9.7 on, every problem a plugin reports shows as a
+warning in that report, whatever its severity.
+
 When `stlSec` or `stlCov` fails, the console says why, so neither report has
 to be opened first:
 
@@ -329,7 +367,8 @@ to be opened first:
 - **JaCoCo** (`stlCovSummary`, after a failed verification): the measured
   instruction and branch coverage against the thresholds, then the ten source
   files with the most missed instructions, such as
-  `com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed`. It prints
+  `src/main/java/com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed`
+  (a class whose source isn't found keeps its package path). It prints
   nothing when the verification passes.
 
 Neither changes the outcome: `spotbugsMain` and the verification fail as

@@ -11,11 +11,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.JavaVersion;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
@@ -41,6 +43,12 @@ import org.gradle.api.tasks.options.Option;
 public abstract class SterlingInfoTask extends DefaultTask {
   /** The version of the JSON format {@code --json} prints. */
   public static final int SCHEMA_VERSION = 1;
+
+  /**
+   * The version of the console format Sterling prints findings in. Changing a printed line's shape
+   * bumps it.
+   */
+  public static final int CONSOLE_FORMAT = 1;
 
   // The toolchain line's prefix when the Java tools aren't active.
   private static final String NOT_ACTIVE = "not active (";
@@ -169,6 +177,22 @@ public abstract class SterlingInfoTask extends DefaultTask {
    */
   @Input
   public abstract Property<Boolean> getErrorsAsWarnings();
+
+  /**
+   * Whether main's packages are counted: true once the {@code java} plugin is applied.
+   *
+   * @return whether {@code stlInfo} reports null-safety progress
+   */
+  @Input
+  public abstract Property<Boolean> getPackagesCounted();
+
+  /**
+   * Main's source directories outside {@code build/generated}, whose packages are counted.
+   *
+   * @return the source directories
+   */
+  @Internal
+  public abstract ConfigurableFileCollection getMainSourceDirectories();
 
   /**
    * Whether Error Prone is on.
@@ -394,6 +418,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + count(getDisabledChecks().get().size(), "check", "disabled");
   }
 
+  // The packages marked @NullMarked, when NullAway is active and the sources are known.
+  private java.util.Optional<NullMarkedPackages> progress() {
+    boolean active = getNullAwayEnabled().get() && getErrorProneEnabled().get();
+    return active && getPackagesCounted().getOrElse(false)
+        ? java.util.Optional.of(NullMarkedPackages.of(getMainSourceDirectories().getFiles()))
+        : java.util.Optional.empty();
+  }
+
   private String nullAwayStatus(Map<String, String> versions) {
     if (!getNullAwayEnabled().get()) {
       return "off";
@@ -407,6 +439,9 @@ public abstract class SterlingInfoTask extends DefaultTask {
         + version(versions, "jspecify")
         + "; @NullMarked code only"
         + (getJspecifyMode().get() ? "; JSpecify mode" : "")
+        + progress()
+            .map(p -> "; " + p.nullMarked() + " of " + p.total() + " main packages @NullMarked")
+            .orElse("")
         + ")";
   }
 
@@ -462,6 +497,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> root = new LinkedHashMap<>();
     root.put("schemaVersion", SCHEMA_VERSION);
     root.put("sterling", versions.get("sterling"));
+    root.put("consoleFormat", CONSOLE_FORMAT);
     root.put("project", getProjectPath().get());
     root.put("profile", getProfile().get().name());
     root.put("profileProperty", getProfileProperty().getOrNull());
@@ -499,6 +535,13 @@ public abstract class SterlingInfoTask extends DefaultTask {
     putVersion(nullAway, "version", versions, "nullaway");
     putVersion(nullAway, "jspecify", versions, "jspecify");
     nullAway.put("jspecifyMode", getJspecifyMode().get());
+    progress()
+        .ifPresent(p -> {
+          Map<String, Object> packages = new LinkedHashMap<>();
+          packages.put("total", p.total());
+          packages.put("nullMarked", p.nullMarked());
+          nullAway.put("packages", packages);
+        });
     root.put("nullAway", nullAway);
 
     Map<String, Object> spotbugs = new LinkedHashMap<>();

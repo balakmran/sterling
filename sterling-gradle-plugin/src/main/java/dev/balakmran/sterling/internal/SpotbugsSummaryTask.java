@@ -1,15 +1,17 @@
 package dev.balakmran.sterling.internal;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
+import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -72,34 +74,79 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
   public abstract ConfigurableFileCollection getSourceDirectories();
 
   /**
-   * The project directory, which printed paths are relative to.
+   * The root project's directory, which printed paths are relative to.
    *
-   * @return the project directory
+   * @return the root project directory
    */
   @Internal
-  public abstract DirectoryProperty getProjectDirectory();
+  public abstract DirectoryProperty getRootDirectory();
 
-  /** Prints the findings. */
+  /**
+   * Gradle's object factory, which instantiates the Problems API reporter.
+   *
+   * @return the object factory
+   */
+  @Inject
+  protected abstract ObjectFactory getObjects();
+
+  /** Prints the findings, and reports them through Gradle's Problems API. */
   @TaskAction
   public void print() {
-    Path project = getProjectDirectory().get().getAsFile().toPath();
-    List<File> sourceDirectories = List.copyOf(getSourceDirectories().getFiles());
+    File root = getRootDirectory().get().getAsFile();
+    Element bugs =
+        Xml.parseReport(getXmlReport().get().getAsFile(), "SpotBugs").getDocumentElement();
     Function<String, String> path =
-        sourcePath -> {
-          for (File directory : sourceDirectories) {
-            File source = new File(directory, sourcePath);
-            if (source.isFile()) {
-              return relative(project, source);
-            }
-          }
-          return sourcePath;
-        };
-    List<String> lines =
-        render(
-            Xml.parseReport(getXmlReport().get().getAsFile(), "SpotBugs").getDocumentElement(),
-            path,
-            relative(project, getHtmlReport().get().getAsFile()));
-    lines.forEach(getLogger()::error);
+        SourcePaths.resolver(root, List.copyOf(getSourceDirectories().getFiles()));
+    render(bugs, path, SourcePaths.relative(root.toPath(), getHtmlReport().get().getAsFile()))
+        .forEach(getLogger()::error);
+    ProblemReports.report(getObjects(), getLogger(), findings(bugs, path, root));
+  }
+
+  /**
+   * The findings of a report, for the Problems API: all of them, not only the ones printed.
+   *
+   * @param bugCollection the report's {@code <BugCollection>} element
+   * @param path turns a source path relative to a source directory into the path to print
+   * @param root the root project's directory, which printed paths are relative to
+   * @return one finding per {@code <BugInstance>}
+   */
+  static List<Finding> findings(Element bugCollection, Function<String, String> path, File root) {
+    List<Finding> findings = new ArrayList<>();
+    for (Element bug : Xml.children(bugCollection, "BugInstance")) {
+      String type = bug.getAttribute("type");
+      Element line = sourceLine(bug);
+      String shown =
+          line != null && line.hasAttribute("sourcepath")
+              ? path.apply(line.getAttribute("sourcepath"))
+              : null;
+      // A path the lookup couldn't place is still package-relative: no file to point at.
+      File file = shown == null ? null : new File(root, shown);
+      boolean placed = file != null && file.isFile();
+      int start =
+          line != null && line.hasAttribute("start") ? parseLine(line.getAttribute("start")) : 0;
+      int rank = parseLine(bug.getAttribute("rank"));
+      findings.add(
+          new Finding(
+              type.toLowerCase(Locale.ROOT).replace('_', '-'),
+              type,
+              message(bug),
+              placed ? file.getAbsolutePath() : null,
+              placed ? start : 0,
+              "SpotBugs rank "
+                  + bug.getAttribute("rank")
+                  + ", priority "
+                  + bug.getAttribute("priority"),
+              rank > 0 && rank <= 9));
+    }
+    return findings;
+  }
+
+  private static int parseLine(String value) {
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
   }
 
   /**
@@ -126,7 +173,7 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
   }
 
   // The bug's own source line, else its class's.
-  private static String location(Element bug, Function<String, String> path) {
+  private static Element sourceLine(Element bug) {
     List<Element> lines = Xml.children(bug, "SourceLine");
     Element line =
         lines.stream()
@@ -137,6 +184,11 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
       Element type = first(Xml.children(bug, "Class"));
       line = type == null ? null : first(Xml.children(type, "SourceLine"));
     }
+    return line;
+  }
+
+  private static String location(Element bug, Function<String, String> path) {
+    Element line = sourceLine(bug);
     if (line == null) {
       return bug.getAttribute("type");
     }
@@ -168,12 +220,5 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
 
   private static Element first(List<Element> elements) {
     return elements.isEmpty() ? null : elements.get(0);
-  }
-
-  private static String relative(Path project, File file) {
-    Path target = file.toPath();
-    String shown =
-        target.startsWith(project) ? project.relativize(target).toString() : target.toString();
-    return shown.replace(File.separatorChar, '/');
   }
 }
