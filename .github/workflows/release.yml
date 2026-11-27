@@ -1,8 +1,10 @@
 name: Release
 
+# By hand, not on every push: release-please updates its PR on each push to main, and each update
+# starts the PR's CI. Run it with `gh workflow run release.yml --ref main` when a release is ready,
+# and again after the release PR merges, which tags, creates the release and publishes.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read

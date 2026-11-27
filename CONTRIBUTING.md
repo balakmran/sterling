@@ -41,17 +41,24 @@ unit tests check that.
 
 ## Releasing
 
-release-please opens a release PR after changes land on `main`, whatever they
-are, and nothing merges it but the maintainer. CI ran one test cell on every
-change, so before merging:
+The release workflow runs only when you start it, so release-please doesn't
+rebuild its PR, and CI doesn't run on it, after every change that lands on
+`main`. When the changes you want are on `main`:
 
-1. Check out the release PR's branch and run `./gradlew build
-   functionalTestLocal`, which runs the other three cells.
-2. Run the latest JDK and the next Gradle once: `./gradlew functionalTest
+1. Run `gh workflow run release.yml --ref main`. It opens the release PR, or
+   brings it up to date, once. Add the "Can change findings" section to the
+   PR's `CHANGELOG.md` and body last, just before merging: the next run
+   rebuilds both.
+2. CI ran one test cell on every change, so before merging, check out the
+   release PR's branch and run `./gradlew build functionalTestLocal`, which runs
+   the other three cells.
+3. Run the latest JDK and the next Gradle once: `./gradlew functionalTest
    -Psterling.test.java=27`, then `-Psterling.test.gradle=<newest release
    candidate or nightly>`. A failure is reported in the release PR, and blocks
    the release only if it's a regression in a supported cell.
-3. Dogfood `../blade-svc-java-webmvc` as `CLAUDE.md` describes, and run the
+4. Dogfood `../blade-svc-java-webmvc` as `CLAUDE.md` describes, and run the
    agent plugin's evals if the release changes a skill.
-4. Merge the release PR. The `publish` job uploads to the Plugin Portal and
-   attests the jars' build provenance; then merge the marketplace PR it opens.
+5. Merge the release PR, then run `gh workflow run release.yml --ref main`
+   again. That run tags the release and creates it, and the `publish` job
+   uploads to the Plugin Portal and attests the jars' build provenance; then
+   merge the marketplace PR it opens.
