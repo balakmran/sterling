@@ -138,6 +138,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<FormatSettings.Style> getFormatStyle();
 
   /**
+   * Whether Spotless's {@code formatAnnotations()} step is on.
+   *
+   * @return whether the step is on
+   */
+  @Input
+  public abstract Property<Boolean> getFormatAnnotations();
+
+  /**
    * The git reference formatting ratchets from, if any.
    *
    * @return the ratchet reference
@@ -145,6 +153,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   @Input
   @Optional
   public abstract Property<String> getFormatRatchetFrom();
+
+  /**
+   * Whether Error Prone's errors are reported as warnings.
+   *
+   * @return whether errors are demoted
+   */
+  @Input
+  public abstract Property<Boolean> getErrorsAsWarnings();
 
   /**
    * Whether Error Prone is on.
@@ -218,6 +234,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
   @Input
   @Optional
   public abstract Property<String> getExcludeFilter();
+
+  /**
+   * The project's SpotBugs baseline, relative to the project directory, if it set one.
+   *
+   * @return the baseline's path, with {@code /} separators
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getBaselineFile();
 
   /**
    * SpotBugs' report files by format ({@code xml}, {@code sarif}), relative to the project
@@ -343,6 +368,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return "google-java-format "
         + versions.get("google-java-format")
         + style
+        + (getFormatAnnotations().get() ? ", formatAnnotations on" : "")
         + (getFormatRatchetFrom().isPresent()
             ? ", ratchet from " + getFormatRatchetFrom().get()
             : "")
@@ -356,6 +382,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return version(versions, "errorprone")
         + "; "
         + warnings
+        + (getErrorsAsWarnings().get() ? "; errors are warnings" : "")
         + count(getDisabledChecks().get().size(), "check", "disabled");
   }
 
@@ -377,13 +404,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String spotbugsDetail(Map<String, String> versions) {
     String filter = getExcludeFilter().isPresent() ? "; consumer filter merged" : "";
+    String baseline = getBaselineFile().isPresent() ? "; baseline " + getBaselineFile().get() : "";
     return version(versions, "spotbugs")
         + "; effort "
         + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
         + "; "
         + getSpotbugsReportLevel().get().name().toLowerCase(Locale.ROOT)
         + " confidence and up"
-        + filter;
+        + filter
+        + baseline;
   }
 
   private String coverageDetail(Map<String, String> versions) {
@@ -435,6 +464,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> format = new LinkedHashMap<>();
     format.put("enabled", getFormatEnabled().get());
     format.put("style", getFormatStyle().get().name());
+    format.put("formatAnnotations", getFormatAnnotations().get());
     format.put("ratchetFrom", getFormatRatchetFrom().getOrNull());
     Map<String, Object> formatVersions = new LinkedHashMap<>();
     formatVersions.put("google-java-format", versions.get("google-java-format"));
@@ -446,6 +476,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     errorProne.put("enabled", getErrorProneEnabled().get());
     putVersion(errorProne, "version", versions, "errorprone");
     errorProne.put("warningsAsErrors", getWarningsAsErrors().get());
+    errorProne.put("errorsAsWarnings", getErrorsAsWarnings().get());
     List<String> disabled = new ArrayList<>(getDisabledChecks().get());
     disabled.sort(null);
     errorProne.put("disabledChecks", disabled);
@@ -465,6 +496,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     spotbugs.put("effort", getSpotbugsEffort().get().name());
     spotbugs.put("reportLevel", getSpotbugsReportLevel().get().name());
     spotbugs.put("excludeFilter", getExcludeFilter().getOrNull());
+    spotbugs.put("baselineFile", getBaselineFile().getOrNull());
     putReports(spotbugs, getSpotbugsReports().get());
     root.put("spotbugs", spotbugs);
 

@@ -127,8 +127,10 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getAttachToCheck().convention(profile.map(p -> p.attachToCheck));
     sterling.getFormat().getEnabled().convention(true);
     sterling.getFormat().getStyle().convention(FormatSettings.Style.GOOGLE);
+    sterling.getFormat().getFormatAnnotations().convention(false);
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
+    sterling.getErrorProne().getErrorsAsWarnings().convention(profile.map(p -> p.errorsAsWarnings));
     sterling.getNullAway().getEnabled().convention(true);
     sterling.getNullAway().getJspecifyMode().convention(profile.map(p -> p.jspecifyMode));
     sterling.getSpotbugs().getEnabled().convention(profile.map(p -> p.spotbugs));
@@ -183,12 +185,14 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
               task.getFormatEnabled().set(sterling.getFormat().getEnabled());
               task.getFormatStyle().set(sterling.getFormat().getStyle());
+              task.getFormatAnnotations().set(sterling.getFormat().getFormatAnnotations());
               task.getFormatRatchetFrom()
                   .set(
                       Validation.notEmpty(
                           sterling.getFormat().getRatchetFrom(), "format.ratchetFrom"));
               task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
               task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
+              task.getErrorsAsWarnings().set(sterling.getErrorProne().getErrorsAsWarnings());
               task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
               task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
               task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
@@ -200,6 +204,12 @@ public class SterlingPlugin implements Plugin<Project> {
                       sterling
                           .getSpotbugs()
                           .getExcludeFilter()
+                          .map(file -> relativePath(projectDir, file.getAsFile())));
+              task.getBaselineFile()
+                  .set(
+                      sterling
+                          .getSpotbugs()
+                          .getBaselineFile()
                           .map(file -> relativePath(projectDir, file.getAsFile())));
               task.getCoverageEnabled().set(sterling.getCoverage().getEnabled());
               var coverage = sterling.getCoverage();

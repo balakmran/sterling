@@ -65,14 +65,26 @@ release's changes are in [Upgrading Sterling](upgrading.md).
 Spring AOT) are left alone. Each file keeps the line endings it has; enforce
 those with `.gitattributes` or Spotless's own `lineEndings` setting.
 
+Sterling formats as google-java-format does, which is the Google Java Style
+Guide's layout. For annotations that means declaration annotations one per
+line before the declaration, and a lone field annotation on the field's line
+(§4.8.5). Spotless's `formatAnnotations()` step is off: it picks type-use
+annotations by name rather than by `@Target`, and joined stacked Bean
+Validation annotations onto lines past the 100-column limit. Set
+`format.formatAnnotations = true` to turn it back on; files formatted without
+it then fail `stlFmtCheck` until `stlFmt` runs.
+
 `format.style = FormatSettings.Style.AOSP` runs the same google-java-format
 with 4-space indentation instead of 2, for a codebase that already indents
 by 4 (see [Reformatting](adopting.md#reformatting-and-first-findings)).
 
 ## Error Prone
 
-Error Prone runs inside every Java compilation. Error-level findings always
-fail it; warnings fail it only with `warningsAsErrors`. Sources under
+Error Prone runs inside every Java compilation. Error-level findings fail it
+unless `errorsAsWarnings` is on, as it is in `LENIENT`, where they print as
+warnings and javac's cap of 100 printed warnings is raised to 10,000.
+Warnings fail it only with `warningsAsErrors`; the two settings together are
+rejected. Sources under
 `build/generated` are skipped entirely, and warnings in code annotated
 `@Generated` are ignored.
 
@@ -98,8 +110,9 @@ Spring calls the mode still under development and recommends turning it on as
 a second step, once a codebase is clean without it, because most false
 positives on generic and lambda-heavy code come from it.
 
-Sterling adds [JSpecify](https://jspecify.dev) to `compileOnly` and
-`testCompileOnly` while NullAway is on, so the annotations work without a
+Sterling adds [JSpecify](https://jspecify.dev) to every source set's compile-only
+configuration (`compileOnly`, `testCompileOnly`, `integrationTestCompileOnly`,
+`testFixturesCompileOnly` and so on) while NullAway is on, so the annotations work without a
 dependency of your own. Spring Boot 4 apps get it through `spring-core` too.
 A **library** whose public API uses these annotations should still declare
 `api("org.jspecify:jspecify:1.0.1")`, so Kotlin callers and other tools see
@@ -181,6 +194,41 @@ for generated code that lives somewhere else:
   </Match>
 </FindBugsFilter>
 ```
+
+### SpotBugs baseline
+
+`spotbugs.baselineFile` points at a SpotBugs XML report whose findings are
+known: `stlSec` fails only on findings that aren't in it, and the console
+summary and reports leave the known ones out. Take one when you adopt SpotBugs
+on a codebase with many findings:
+
+```bash
+./gradlew spotbugsMain --continue
+mkdir -p config/spotbugs
+cp build/reports/spotbugs/main.xml config/spotbugs/baseline.xml
+```
+
+```kotlin
+sterling {
+    spotbugs { baselineFile = file("config/spotbugs/baseline.xml") }
+}
+```
+
+Commit the file, then fix findings and shrink it over time. A few things to
+know:
+
+- Findings are matched by what they are (the pattern, the class, the method
+  and its signature, the field), not by line number, so edits above a known
+  finding don't bring it back. Renaming or moving the class, method or field,
+  or changing the method's signature, does.
+- SpotBugs reports repeats of one pattern in one method as a single finding,
+  so a second one added to a baselined method stays hidden.
+- Refresh the file only to accept findings on purpose, and from a run
+  *without* the baseline set: a run with it writes only the new findings, so
+  copying that report would drop the known ones. The XML holds absolute paths
+  and timestamps, so every refresh shows as a diff.
+- A SpotBugs upgrade that changes what a detector records can bring known
+  findings back, so a bump is reviewed like any other change in findings.
 
 ## Coverage
 

@@ -6,14 +6,16 @@ Each step is one pull request, and `main` stays green throughout:
 
 1. **Apply Sterling on `LENIENT`.** `sterling.profile=lenient` in
    `gradle.properties`. The tools run on demand, but `check` doesn't run the
-   gate, so nothing new fails `build` except Error Prone's error-level
-   findings, which fail compilation in every profile.
+   gate, and Error Prone's and NullAway's errors are reported as warnings, so
+   nothing new fails `build`.
 2. **Reformat, or choose not to.** See [below](#reformatting-and-first-findings).
 3. **Clear Error Prone's findings.** Fix them, or disable a check by name
    while you work through it.
 4. **Switch to `STANDARD`.** Remove the property. SpotBugs and coverage join
    the gate; set `coverage.instruction` and `coverage.branch` to where the
-   codebase is today, and raise them as tests are added.
+   codebase is today, and raise them as tests are added. If SpotBugs reports
+   more than you can fix first, take a
+   [baseline](tools.md#spotbugs-baseline) so only new findings fail.
 5. **Mark packages `@NullMarked`, one at a time.** NullAway checks only
    those (see [Null checking](tools.md#null-checking-with-nullaway)).
 6. **Move to `STRICT`** once the codebase is clean, or run it in CI only with

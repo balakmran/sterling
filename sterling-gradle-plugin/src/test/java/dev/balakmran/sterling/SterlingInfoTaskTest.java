@@ -80,6 +80,18 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void reportsTheSpotbugsBaselineInTextAndJson() {
+    assertThat(render()).doesNotContain("baseline");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("spotbugs")).get("baselineFile")).isNull();
+
+    sterling.getSpotbugs().getBaselineFile().set(project.file("config/spotbugs/baseline.xml"));
+
+    assertThat(render()).contains("; baseline config/spotbugs/baseline.xml)");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("spotbugs")).get("baselineFile"))
+        .isEqualTo("config/spotbugs/baseline.xml");
+  }
+
+  @Test
   void coverageListsTheCountedTestTasks() {
     project
         .getTasks()
@@ -111,6 +123,18 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void formattingReportsFormatAnnotationsOnlyWhenOn() {
+    assertThat(render()).doesNotContain("formatAnnotations");
+    assertThat(task().jsonModel("25"))
+        .extracting(model -> ((Map<?, ?>) model.get("format")).get("formatAnnotations"))
+        .isEqualTo(false);
+
+    sterling.getFormat().getFormatAnnotations().set(true);
+
+    assertThat(render()).contains(", formatAnnotations on via Spotless ");
+  }
+
+  @Test
   void anEmptyRatchetFromFailsWithTheSettingNamed() {
     sterling.getFormat().getRatchetFrom().set("");
 
@@ -118,6 +142,17 @@ class SterlingInfoTaskTest {
         .rootCause()
         .isInstanceOf(InvalidUserDataException.class)
         .hasMessageContaining("sterling.format.ratchetFrom must not be empty");
+  }
+
+  @Test
+  void errorProneReportsErrorsAsWarningsOnLenient() {
+    assertThat(render()).doesNotContain("errors are warnings");
+
+    sterling.getProfile().set(Profile.LENIENT);
+
+    assertThat(render()).contains("; warnings are not errors; errors are warnings");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("errorProne")).get("errorsAsWarnings"))
+        .isEqualTo(true);
   }
 
   @Test

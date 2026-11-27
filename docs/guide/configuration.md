@@ -10,8 +10,10 @@ own in the `sterling { }` block.
 | `attachToCheck` | false | true | true |
 | `format.enabled` | true | true | true |
 | `format.style` | `GOOGLE` | `GOOGLE` | `GOOGLE` |
+| `format.formatAnnotations` | false | false | false |
 | `errorProne.enabled` | true | true | true |
 | `errorProne.warningsAsErrors` | false | false | true |
+| `errorProne.errorsAsWarnings` | true | false | false |
 | `nullAway.enabled` | true | true | true |
 | `nullAway.jspecifyMode` | false | false | true |
 | `spotbugs.enabled` | false | true | true |
@@ -23,9 +25,9 @@ own in the `sterling { }` block.
 
 ## What the profiles mean
 
-- `LENIENT` still compiles with Error Prone and NullAway, so their
-  error-level findings still fail the build. It only stops `check` from
-  running the gate.
+- `LENIENT` still compiles with Error Prone and NullAway, but reports their
+  error-level findings as warnings (`errorsAsWarnings`), so nothing new fails
+  the build. It also stops `check` from running the gate.
 - `STRICT`'s `warningsAsErrors` adds `-Werror`, which also fails on javac's own
   warnings, such as `[removal]`.
 - NullAway is on in every profile because it does nothing until a package
@@ -70,11 +72,13 @@ sterling {
     format {
         enabled = true
         style = FormatSettings.Style.GOOGLE // GOOGLE | AOSP (4-space indentation)
+        formatAnnotations = false       // true adds Spotless's formatAnnotations() step
         // ratchetFrom = "origin/main"  // unset: formats every file, not just changed ones
     }
     errorProne {
         enabled = true
         warningsAsErrors = false        // adds -Werror to javac
+        errorsAsWarnings = false        // reports Error Prone's errors as warnings; true in LENIENT
         disable("UnusedVariable")       // turns checks off by name
     }
     nullAway {
@@ -86,6 +90,7 @@ sterling {
         effort = SpotbugsSettings.Effort.DEFAULT       // MIN | LESS | DEFAULT | MORE | MAX
         reportLevel = SpotbugsSettings.Confidence.MEDIUM // LOW | MEDIUM | HIGH
         excludeFilter = file("config/spotbugs-exclude.xml") // added to Sterling's
+        // baselineFile = file("config/spotbugs/baseline.xml") // unset: every finding counts
     }
     coverage {
         enabled = true
@@ -103,7 +108,7 @@ naming the setting.
 
 An empty `format.ratchetFrom` fails too; leave it unset to format every file.
 
-`format.style` and `format.ratchetFrom` are read once, when Spotless
+`format.style`, `format.formatAnnotations` and `format.ratchetFrom` are read once, when Spotless
 configures `spotlessJava`, normally after every build script has run. A
 build that realises `spotlessJava` early and sets either later, in an `afterEvaluate` block for
 example, fails with Gradle's "final" error rather than having the value
@@ -142,9 +147,11 @@ sterling {
 | `attachToCheck` | Boolean | From the profile |
 | `format.enabled` | Boolean | true |
 | `format.style` | `FormatSettings.Style`: `GOOGLE` or `AOSP` | `GOOGLE` |
+| `format.formatAnnotations` | Boolean | false |
 | `format.ratchetFrom` | A git reference, such as `origin/main` | Unset: every file is formatted |
 | `errorProne.enabled` | Boolean | true |
 | `errorProne.warningsAsErrors` | Boolean | From the profile |
+| `errorProne.errorsAsWarnings` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |
 | `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
 | `nullAway.enabled` | Boolean | true (needs Error Prone) |
@@ -153,6 +160,7 @@ sterling {
 | `spotbugs.effort` | `SpotbugsSettings.Effort`: `MIN`, `LESS`, `DEFAULT`, `MORE` or `MAX` | From the profile |
 | `spotbugs.reportLevel` | `SpotbugsSettings.Confidence`: `LOW`, `MEDIUM` or `HIGH` | From the profile |
 | `spotbugs.excludeFilter` | File | None |
+| `spotbugs.baselineFile` | File: a SpotBugs XML report whose findings don't fail `stlSec` | None |
 | `coverage.enabled` | Boolean | From the profile |
 | `coverage.instruction` | Percent, 0 to 100 | From the profile |
 | `coverage.branch` | Percent, 0 to 100 | From the profile |
@@ -166,7 +174,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. A version the project overrides
@@ -190,6 +198,7 @@ given as an absolute path.
 | `javaToolchain.reason` | Why the Java tools aren't active |
 | `format.enabled` | Boolean |
 | `format.style` | `GOOGLE` or `AOSP` |
+| `format.formatAnnotations` | Boolean |
 | `format.ratchetFrom` | The git reference, or `null` |
 | `format.versions` | Object |
 | `format.versions.google-java-format` | Version |
@@ -198,6 +207,7 @@ given as an absolute path.
 | `errorProne.version` | Version |
 | `errorProne.versionSource` | `"sterling"` for Sterling's pin, `"project"` for a [project override](tools.md#using-a-different-tool-version) |
 | `errorProne.warningsAsErrors` | Boolean |
+| `errorProne.errorsAsWarnings` | Boolean |
 | `errorProne.disabledChecks` | Check names, sorted |
 | `nullAway.enabled` | Boolean |
 | `nullAway.active` | Whether NullAway runs: `enabled` and Error Prone on |
@@ -212,6 +222,7 @@ given as an absolute path.
 | `spotbugs.effort` | `MIN` to `MAX` |
 | `spotbugs.reportLevel` | `LOW`, `MEDIUM` or `HIGH` |
 | `spotbugs.excludeFilter` | The project's filter, or `null` |
+| `spotbugs.baselineFile` | The baseline's path relative to the project, or `null` |
 | `spotbugs.reports` | Object; absent without the `java` plugin |
 | `spotbugs.reports.sarif` | Path |
 | `spotbugs.reports.xml` | Path |
@@ -269,9 +280,9 @@ tasks.named<SpotBugsTask>("spotbugsMain") {
 }
 ```
 
-Sterling already adds Spotless's `googleJavaFormat()` and
-`formatAnnotations()` steps, so adding either again fails; add other steps
-instead. [Migrating to Sterling](migrating.md) covers a `build-logic` that sets these
+Sterling already adds Spotless's `googleJavaFormat()` step, so adding it again
+fails (and `formatAnnotations()` too, with `format.formatAnnotations = true`);
+add other steps instead. [Migrating to Sterling](migrating.md) covers a `build-logic` that sets these
 tools up itself.
 
 To run a tool at another version than Sterling pins, see

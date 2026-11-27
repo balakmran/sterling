@@ -6,6 +6,7 @@ import java.util.Map;
 import net.ltgt.gradle.errorprone.CheckSeverity;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSetContainer;
 
 /**
  * NullAway's part of the Error Prone setup: its jar, JSpecify's annotations, and its options.
@@ -33,8 +34,12 @@ final class NullAway {
   }
 
   /**
-   * Adds NullAway to the {@code errorprone} configuration, and JSpecify to {@code compileOnly} and
-   * {@code testCompileOnly}, while NullAway is active.
+   * Adds NullAway to the {@code errorprone} configuration, and JSpecify to every source set's
+   * compile-only configuration, while NullAway is active.
+   *
+   * <p>NullAway runs on every {@code JavaCompile}, so a {@code @NullMarked} package in any source
+   * set, such as an {@code integrationTest} suite or test fixtures, needs the annotations. Source
+   * sets are taken as they appear, so ones added after Sterling is applied are covered.
    *
    * <p>JSpecify is compile-only: annotations aren't needed at runtime, and Spring Boot apps already
    * get it through {@code spring-core}.
@@ -50,21 +55,38 @@ final class NullAway {
         "nullaway",
         ToolVersions.get("nullaway"),
         active);
-    for (String configuration : new String[] {"compileOnly", "testCompileOnly"}) {
-      ToolDependencies.addWhenOn(
-          project, configuration, "org.jspecify", "jspecify", ToolVersions.get("jspecify"), active);
-    }
+    project
+        .getExtensions()
+        .getByType(SourceSetContainer.class)
+        .configureEach(sourceSet ->
+            ToolDependencies.addWhenOn(
+                project,
+                sourceSet.getCompileOnlyConfigurationName(),
+                "org.jspecify",
+                "jspecify",
+                ToolVersions.get("jspecify"),
+                active));
   }
 
   /**
    * NullAway's check severity: error while active, nothing while not, since naming the check
    * without its jar would fail Error Prone.
    *
+   * <p>With {@code errorsAsWarnings} it's a warning: an explicit severity is applied after Error
+   * Prone's blanket demotion and would otherwise override it.
+   *
    * @param active whether NullAway runs
+   * @param errorsAsWarnings whether Error Prone's errors are reported as warnings
    * @return the check entries to add to Error Prone's options
    */
-  static Provider<Map<String, CheckSeverity>> checks(Provider<Boolean> active) {
-    return active.map(on -> on ? Map.of(CHECK, CheckSeverity.ERROR) : Map.of());
+  static Provider<Map<String, CheckSeverity>> checks(
+      Provider<Boolean> active, Provider<Boolean> errorsAsWarnings) {
+    return active.zip(
+        errorsAsWarnings,
+        (on, demoted) ->
+            on
+                ? Map.of(CHECK, demoted ? CheckSeverity.WARN : CheckSeverity.ERROR)
+                : Map.<String, CheckSeverity>of());
   }
 
   /**

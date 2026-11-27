@@ -112,6 +112,67 @@ class FormattingTest {
     assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
   }
 
+  private static final String STACKED_FIELD =
+      """
+      import jakarta.validation.constraints.NotBlank;
+      import jakarta.validation.constraints.Size;
+
+      public class App {
+        private static final int MAX_PAYLOAD_SIZE = 10;
+
+        @NotBlank(message = "uadInput is required and must not be blank")
+        @Size(max = MAX_PAYLOAD_SIZE, message = "uadInput exceeds maximum allowed size (10 MB)")
+        @Deprecated
+        private String uadInput = "";
+      }
+      """;
+
+  // The layout 0.2.0's formatAnnotations() step gave STACKED_FIELD: two joined past column 100.
+  private static final String JOINED_FIELD = STACKED_FIELD.replace("\n  @Size(", " @Size(");
+
+  private static final String VALIDATION =
+      "dependencies { compileOnly(\"jakarta.validation:jakarta.validation-api:3.1.1\") }\n";
+
+  private static final String FORMAT_ANNOTATIONS =
+      "sterling { format { formatAnnotations = true } }\n";
+
+  @Test
+  void stackedAnnotationsOnePerLineAreFormattedAndNoLineExceedsTheLimit() {
+    Fixture fixture = fixture(VALIDATION).file("src/main/java/App.java", STACKED_FIELD);
+
+    BuildResult result = fixture.build("stlFmtCheck");
+
+    assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("src/main/java/App.java").lines()).allMatch(l -> l.length() <= 100);
+  }
+
+  @Test
+  void annotationsJoinedOntoOneLineFailTheCheckAndStlFmtSplitsThem() {
+    Fixture fixture = fixture(VALIDATION).file("src/main/java/App.java", JOINED_FIELD);
+
+    BuildResult check = fixture.buildAndFail("stlFmtCheck");
+    assertThat(outcome(check, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.FAILED);
+
+    BuildResult apply = fixture.build("stlFmt");
+    assertThat(outcome(apply, ":spotlessJavaApply")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("src/main/java/App.java")).isEqualTo(STACKED_FIELD);
+    assertThat(fixture.read("src/main/java/App.java").lines()).allMatch(l -> l.length() <= 100);
+
+    BuildResult passing = fixture.build("stlFmtCheck");
+    assertThat(outcome(passing, ":spotlessJavaCheck"))
+        .isIn(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE);
+  }
+
+  @Test
+  void formatAnnotationsOnKeepsTheJoinedLayout() {
+    Fixture fixture =
+        fixture(VALIDATION + FORMAT_ANNOTATIONS).file("src/main/java/App.java", JOINED_FIELD);
+
+    BuildResult result = fixture.build("stlFmtCheck");
+
+    assertThat(outcome(result, ":spotlessJavaCheck")).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
   private static final String FOUR_SPACE =
       """
       public class App {
@@ -260,7 +321,8 @@ class FormattingTest {
 
     assertThat(json)
         .contains(
-            "\"format\":{\"enabled\":true,\"style\":\"AOSP\",\"ratchetFrom\":\"origin/main\",");
+            "\"format\":{\"enabled\":true,\"style\":\"AOSP\",\"formatAnnotations\":false,"
+                + "\"ratchetFrom\":\"origin/main\",");
   }
 
   @Test

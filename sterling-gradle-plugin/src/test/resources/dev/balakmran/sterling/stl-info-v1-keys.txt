@@ -13,6 +13,7 @@ javaToolchain.version
 format
 format.enabled
 format.style
+format.formatAnnotations
 format.ratchetFrom
 format.versions
 format.versions.google-java-format
@@ -22,6 +23,7 @@ errorProne.enabled
 errorProne.version
 errorProne.versionSource
 errorProne.warningsAsErrors
+errorProne.errorsAsWarnings
 errorProne.disabledChecks
 nullAway
 nullAway.enabled
@@ -38,6 +40,7 @@ spotbugs.versionSource
 spotbugs.effort
 spotbugs.reportLevel
 spotbugs.excludeFilter
+spotbugs.baselineFile
 spotbugs.reports
 spotbugs.reports.sarif
 spotbugs.reports.xml

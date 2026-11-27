@@ -145,6 +145,68 @@ class NullAwayTest {
         .doesNotContain("jspecify");
   }
 
+  // A @NullMarked package in the integrationTest suite and in test fixtures, with no JSpecify
+  // declared: each source set must get the annotations itself.
+  private static final String EXTRA_SOURCE_SETS =
+      """
+      apply(plugin = "java-test-fixtures")
+
+      testing {
+          suites {
+              register<JvmTestSuite>("integrationTest")
+          }
+      }
+      """;
+
+  private Fixture extraSourceSets(String source) {
+    return fixture(EXTRA_SOURCE_SETS)
+        .file("src/integrationTest/java/app/package-info.java", NULL_MARKED)
+        .file("src/integrationTest/java/app/It.java", source.replace("App", "It"))
+        .file("src/testFixtures/java/app/package-info.java", NULL_MARKED)
+        .file("src/testFixtures/java/app/Fx.java", source.replace("App", "Fx"));
+  }
+
+  @Test
+  void nullMarkedCodeInIntegrationTestAndTestFixturesCompilesWithoutDeclaringJspecify() {
+    Fixture fixture =
+        extraSourceSets(
+            """
+            package app;
+
+            import org.jspecify.annotations.Nullable;
+
+            public class App {
+              static @Nullable String find() {
+                return null;
+              }
+
+              public int length() {
+                String value = find();
+                return value == null ? 0 : value.length();
+              }
+            }
+            """);
+
+    BuildResult result = fixture.build("compileIntegrationTestJava", "compileTestFixturesJava");
+
+    assertThat(outcome(result, ":compileIntegrationTestJava")).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(outcome(result, ":compileTestFixturesJava")).isEqualTo(TaskOutcome.SUCCESS);
+  }
+
+  @Test
+  void nullAwayFindingsInIntegrationTestAndTestFixturesFailAsInMain() {
+    Fixture fixture = extraSourceSets(UNCHECKED_NULLABLE);
+
+    BuildResult result =
+        fixture.buildAndFail("compileIntegrationTestJava", "compileTestFixturesJava", "--continue");
+
+    assertThat(outcome(result, ":compileIntegrationTestJava")).isEqualTo(TaskOutcome.FAILED);
+    assertThat(outcome(result, ":compileTestFixturesJava")).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput())
+        .contains("It.java:11: error: [NullAway]")
+        .contains("Fx.java:11: error: [NullAway]");
+  }
+
   @Test
   void disablingTheNullAwayCheckWhileNullAwayIsOffStillCompiles() {
     BuildResult result =

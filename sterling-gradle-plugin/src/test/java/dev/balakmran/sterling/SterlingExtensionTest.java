@@ -28,16 +28,18 @@ class SterlingExtensionTest {
 
   @Test
   void profileSetsEveryDefault() {
-    // attachToCheck, warningsAsErrors, jspecifyMode, spotbugs, effort, reportLevel, coverage,
+    // attachToCheck, warningsAsErrors, errorsAsWarnings, jspecifyMode, spotbugs, effort,
+    // reportLevel, coverage,
     // instruction, branch
     Map<Profile, List<Object>> expected =
         Map.of(
             Profile.LENIENT,
-            List.of(false, false, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
+            List.of(false, false, true, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
             Profile.STANDARD,
-            List.of(true, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
+            List.of(
+                true, false, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
             Profile.STRICT,
-            List.of(true, true, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85));
+            List.of(true, true, false, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85));
 
     expected.forEach((profile, values) -> {
       sterling.getProfile().set(profile);
@@ -46,6 +48,7 @@ class SterlingExtensionTest {
           List.of(
               sterling.getAttachToCheck().get(),
               sterling.getErrorProne().getWarningsAsErrors().get(),
+              sterling.getErrorProne().getErrorsAsWarnings().get(),
               sterling.getNullAway().getJspecifyMode().get(),
               sterling.getSpotbugs().getEnabled().get(),
               sterling.getSpotbugs().getEffort().get(),
