@@ -14,9 +14,9 @@ import org.gradle.api.provider.Provider;
  *
  * <p>Spotless is applied and configured whatever {@code format.enabled} says; the flag only decides
  * whether the Sterling tasks depend on Spotless's. Spotless has no lazy API for its steps, so
- * {@code format.style} and {@code format.ratchetFrom} are read in the {@code spotless { java { } }}
- * action, which Spotless runs in its {@code afterEvaluate} or when {@code spotlessJava} is
- * realised, whichever is later, and are final from then on.
+ * {@code format.style}, {@code format.formatAnnotations} and {@code format.ratchetFrom} are read in
+ * the {@code spotless { java { } }} action, which Spotless runs in its {@code afterEvaluate} or
+ * when {@code spotlessJava} is realised, whichever is later, and are final from then on.
  */
 final class Formatting {
   /** Generated sources, wherever a generator puts them under a build directory. */
@@ -45,6 +45,8 @@ final class Formatting {
     // later; a set after that must fail rather than be ignored.
     Property<FormatSettings.Style> style = sterling.getFormat().getStyle();
     style.finalizeValueOnRead();
+    Property<Boolean> formatAnnotations = sterling.getFormat().getFormatAnnotations();
+    formatAnnotations.finalizeValueOnRead();
     Property<String> ratchet = sterling.getFormat().getRatchetFrom();
     ratchet.finalizeValueOnRead();
     Provider<String> ratchetFrom = Validation.notEmpty(ratchet, "format.ratchetFrom");
@@ -55,11 +57,13 @@ final class Formatting {
         if (style.get() == FormatSettings.Style.AOSP) {
           googleJavaFormat.aosp();
         }
-        java.formatAnnotations();
+        if (formatAnnotations.get()) {
+          java.formatAnnotations();
+        }
       } catch (GradleException e) {
         // Fails here only when the project's step came first, as from a convention plugin.
         if (e.getMessage() != null && e.getMessage().startsWith(DUPLICATE_STEP)) {
-          throw new GradleException(duplicateStepMessage(), e);
+          throw new GradleException(duplicateStepMessage(formatAnnotations.get()), e);
         }
         throw e;
       }
@@ -90,12 +94,19 @@ final class Formatting {
   /**
    * Why a project can't add Sterling's Spotless steps as well as Sterling, and what to do.
    *
+   * @param formatAnnotations whether {@code format.formatAnnotations} adds that step too
    * @return the message, naming the version Sterling pins
    */
-  static String duplicateStepMessage() {
-    return "Sterling adds google-java-format "
-        + ToolVersions.get("google-java-format")
-        + " and formatAnnotations() to Spotless itself. Remove both from the project's"
-        + " spotless { java { } } block; its other steps keep working.";
+  static String duplicateStepMessage(boolean formatAnnotations) {
+    String steps = "google-java-format " + ToolVersions.get("google-java-format");
+    return formatAnnotations
+        ? "Sterling adds "
+            + steps
+            + " and formatAnnotations() to Spotless itself. Remove both from the project's"
+            + " spotless { java { } } block; its other steps keep working."
+        : "Sterling adds "
+            + steps
+            + " to Spotless itself. Remove googleJavaFormat() from the project's"
+            + " spotless { java { } } block; its other steps keep working.";
   }
 }

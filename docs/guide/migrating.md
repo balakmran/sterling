@@ -14,7 +14,7 @@ and [a hand-written `build-logic`](#from-a-hand-written-build-logic).
 | `spotbugs { effort }` and `spotbugs { reportLevel }` | Win over Sterling's profile | `sterling { spotbugs { effort; reportLevel } }` |
 | `spotbugs { excludeFilter }` | Replaces Sterling's default filter | `sterling { spotbugs { excludeFilter } }`, which adds to it |
 | `googleJavaFormat()` in `spotless { java { } }` | Fails: "Multiple steps with name 'google-java-format'" | Remove it; Sterling adds it at its pinned version |
-| `formatAnnotations()` in `spotless { java { } }` | Fails the same way | Remove it |
+| `formatAnnotations()` in `spotless { java { } }` | Works alongside Sterling's, unless `format.formatAnnotations = true`, which fails the same way | Keep it, or remove it to get google-java-format's own layout |
 | `removeUnusedImports()`, `trimTrailingWhitespace()` and `endWithNewline()` on Java | Redundant: google-java-format does all three | Remove them |
 | Other Spotless steps, such as a license header | Work alongside Sterling's | Keep them |
 | `errorprone("com.google.errorprone:error_prone_core:<version>")`, `errorprone("com.uber.nullaway:nullaway:<version>")` and `compileOnly("org.jspecify:jspecify:<version>")` | A version other than Sterling's is a [project override](tools.md#using-a-different-tool-version) | Remove them, unless you want a newer version than Sterling pins |
@@ -84,9 +84,10 @@ up already. Sterling applies them itself, so:
 
 - **Spotless:** keeping `com.diffplug.spotless` is fine, at any version.
   Gradle loads one Spotless for the whole build script, the higher of yours
-  and Sterling's (8.11.0). Remove `googleJavaFormat()` and
-  `formatAnnotations()` from your `spotless { java { } }` block: Sterling adds
-  both, google-java-format at its pinned version, and a second one fails.
+  and Sterling's (8.11.0). Remove `googleJavaFormat()` from your
+  `spotless { java { } }` block: Sterling adds it at its pinned version, and a
+  second one fails. `formatAnnotations()` only clashes with
+  `format.formatAnnotations = true`.
 - **SpotBugs:** remove the `com.github.spotbugs` plugin. Your `spotbugs { }`
   settings keep working; a convention plugin that sets them applies
   `com.github.spotbugs-base` instead. Effort and report level set there win

@@ -101,7 +101,7 @@ class ExistingToolPluginsTest {
 
   @Test
   void sterlingsStepsFromAConventionPluginFailWithSterlingsMessage() {
-    for (String step : new String[] {"googleJavaFormat()", "formatAnnotations()"}) {
+    for (boolean formatAnnotations : new boolean[] {false, true}) {
       // Configured before Sterling applies, as a build-logic convention plugin does.
       BuildResult result =
           fixture(
@@ -110,19 +110,45 @@ class ExistingToolPluginsTest {
                   id("com.diffplug.spotless")
                   id("dev.balakmran.sterling") apply false
                   """,
-                  "spotless { java { "
-                      + step
-                      + " } }\n\napply(plugin = \"dev.balakmran.sterling\")\n")
+                  "spotless { java { googleJavaFormat() } }\n\n"
+                      + "apply(plugin = \"dev.balakmran.sterling\")\n"
+                      + "extensions.configure<dev.balakmran.sterling.SterlingExtension>"
+                      + "(\"sterling\") { format { formatAnnotations = "
+                      + formatAnnotations
+                      + " } }\n")
               .buildAndFail("stlFmtCheck");
 
+      String version = System.getProperty("sterling.googleJavaFormatVersion");
       assertThat(result.getOutput())
-          .describedAs(step)
+          .describedAs("formatAnnotations = " + formatAnnotations)
           .contains(
-              "Sterling adds google-java-format "
-                  + System.getProperty("sterling.googleJavaFormatVersion")
-                  + " and formatAnnotations() to Spotless itself. Remove both from the project's"
-                  + " spotless { java { } } block; its other steps keep working.");
+              formatAnnotations
+                  ? "Sterling adds google-java-format "
+                      + version
+                      + " and formatAnnotations() to Spotless itself. Remove both from the"
+                      + " project's spotless { java { } } block; its other steps keep working."
+                  : "Sterling adds google-java-format "
+                      + version
+                      + " to Spotless itself. Remove googleJavaFormat() from the project's"
+                      + " spotless { java { } } block; its other steps keep working.");
     }
+  }
+
+  @Test
+  void aProjectsOwnFormatAnnotationsStepWorksWhileSterlingsIsOff() {
+    BuildResult result =
+        fixture(
+                """
+                java
+                id("com.diffplug.spotless")
+                id("dev.balakmran.sterling") apply false
+                """,
+                "spotless { java { formatAnnotations() } }\n\n"
+                    + "apply(plugin = \"dev.balakmran.sterling\")\n")
+            .build("stlFmtCheck");
+
+    assertThat(outcome(result, ":spotlessJavaCheck"))
+        .isIn(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE);
   }
 
   @Test

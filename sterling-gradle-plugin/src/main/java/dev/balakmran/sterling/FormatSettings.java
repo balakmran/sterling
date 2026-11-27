@@ -56,6 +56,23 @@ public abstract class FormatSettings {
    */
   public abstract Property<String> getRatchetFrom();
 
+  /**
+   * Whether Spotless's {@code formatAnnotations()} step runs after google-java-format.
+   *
+   * <p>Defaults to false in every profile, so formatting is google-java-format's own layout, the
+   * one the Google Java Style Guide describes. The step moves annotations it takes for type-use
+   * onto the declaration's line, and joined stacked Bean Validation annotations past the 100-column
+   * limit. When true, Sterling adds the step and files formatted without it fail {@code
+   * stlFmtCheck} until {@code stlFmt} runs.
+   *
+   * <p>While false, a project's own {@code formatAnnotations()} in {@code spotless { java { } }}
+   * doesn't clash with Sterling. Like {@link #getStyle()}, it's read when Spotless configures
+   * {@code spotlessJava} and is final from then on.
+   *
+   * @return the format-annotations property
+   */
+  public abstract Property<Boolean> getFormatAnnotations();
+
   /** A google-java-format style. */
   public enum Style {
     /** Google Java Style: 2-space indentation, 4 for continuation lines. */

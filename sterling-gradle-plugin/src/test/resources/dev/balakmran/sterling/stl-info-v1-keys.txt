@@ -13,6 +13,7 @@ javaToolchain.version
 format
 format.enabled
 format.style
+format.formatAnnotations
 format.ratchetFrom
 format.versions
 format.versions.google-java-format

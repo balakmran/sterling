@@ -25,7 +25,6 @@ spotless {
     java {
         target("sterling-gradle-plugin/src/**/*.java")
         googleJavaFormat(libs.versions.google.java.format.get())
-        formatAnnotations()
     }
     kotlinGradle {
         target("*.gradle.kts", "sterling-gradle-plugin/*.gradle.kts")

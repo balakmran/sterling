@@ -65,6 +65,15 @@ release's changes are in [Upgrading Sterling](upgrading.md).
 Spring AOT) are left alone. Each file keeps the line endings it has; enforce
 those with `.gitattributes` or Spotless's own `lineEndings` setting.
 
+Sterling formats as google-java-format does, which is the Google Java Style
+Guide's layout. For annotations that means declaration annotations one per
+line before the declaration, and a lone field annotation on the field's line
+(§4.8.5). Spotless's `formatAnnotations()` step is off: it picks type-use
+annotations by name rather than by `@Target`, and joined stacked Bean
+Validation annotations onto lines past the 100-column limit. Set
+`format.formatAnnotations = true` to turn it back on; files formatted without
+it then fail `stlFmtCheck` until `stlFmt` runs.
+
 `format.style = FormatSettings.Style.AOSP` runs the same google-java-format
 with 4-space indentation instead of 2, for a codebase that already indents
 by 4 (see [Reformatting](adopting.md#reformatting-and-first-findings)).

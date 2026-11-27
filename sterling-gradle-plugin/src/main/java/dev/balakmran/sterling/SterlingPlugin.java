@@ -127,6 +127,7 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getAttachToCheck().convention(profile.map(p -> p.attachToCheck));
     sterling.getFormat().getEnabled().convention(true);
     sterling.getFormat().getStyle().convention(FormatSettings.Style.GOOGLE);
+    sterling.getFormat().getFormatAnnotations().convention(false);
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
     sterling.getNullAway().getEnabled().convention(true);
@@ -183,6 +184,7 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getJavaToolchain().convention(JAVA_NOT_APPLIED);
               task.getFormatEnabled().set(sterling.getFormat().getEnabled());
               task.getFormatStyle().set(sterling.getFormat().getStyle());
+              task.getFormatAnnotations().set(sterling.getFormat().getFormatAnnotations());
               task.getFormatRatchetFrom()
                   .set(
                       Validation.notEmpty(

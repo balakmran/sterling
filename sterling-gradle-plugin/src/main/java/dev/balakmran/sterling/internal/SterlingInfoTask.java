@@ -138,6 +138,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<FormatSettings.Style> getFormatStyle();
 
   /**
+   * Whether Spotless's {@code formatAnnotations()} step is on.
+   *
+   * @return whether the step is on
+   */
+  @Input
+  public abstract Property<Boolean> getFormatAnnotations();
+
+  /**
    * The git reference formatting ratchets from, if any.
    *
    * @return the ratchet reference
@@ -343,6 +351,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return "google-java-format "
         + versions.get("google-java-format")
         + style
+        + (getFormatAnnotations().get() ? ", formatAnnotations on" : "")
         + (getFormatRatchetFrom().isPresent()
             ? ", ratchet from " + getFormatRatchetFrom().get()
             : "")
@@ -435,6 +444,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> format = new LinkedHashMap<>();
     format.put("enabled", getFormatEnabled().get());
     format.put("style", getFormatStyle().get().name());
+    format.put("formatAnnotations", getFormatAnnotations().get());
     format.put("ratchetFrom", getFormatRatchetFrom().getOrNull());
     Map<String, Object> formatVersions = new LinkedHashMap<>();
     formatVersions.put("google-java-format", versions.get("google-java-format"));

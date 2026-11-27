@@ -111,6 +111,18 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void formattingReportsFormatAnnotationsOnlyWhenOn() {
+    assertThat(render()).doesNotContain("formatAnnotations");
+    assertThat(task().jsonModel("25"))
+        .extracting(model -> ((Map<?, ?>) model.get("format")).get("formatAnnotations"))
+        .isEqualTo(false);
+
+    sterling.getFormat().getFormatAnnotations().set(true);
+
+    assertThat(render()).contains(", formatAnnotations on via Spotless ");
+  }
+
+  @Test
   void anEmptyRatchetFromFailsWithTheSettingNamed() {
     sterling.getFormat().getRatchetFrom().set("");
 
