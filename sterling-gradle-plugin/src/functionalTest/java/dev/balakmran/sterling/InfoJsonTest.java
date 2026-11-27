@@ -157,4 +157,53 @@ class InfoJsonTest {
     assertThat(second.getOutput()).contains("Configuration cache entry reused.");
     assertThat(json(second)).singleElement().asString().contains("\"schemaVersion\":1");
   }
+
+  @Test
+  void stlInfoCountsTheNullMarkedPackagesInTextAndJson() {
+    Fixture fixture =
+        new Fixture(dir)
+            .file("build.gradle.kts", JAVA_AND_STERLING)
+            .file("src/main/java/app/A.java", "package app;\nclass A {}\n")
+            .file(
+                "src/main/java/app/package-info.java",
+                "@NullMarked\npackage app;\n\nimport org.jspecify.annotations.NullMarked;\n")
+            .file("src/main/java/app/b/B.java", "package app.b;\nclass B {}\n")
+            .file(
+                "src/main/java/app/b/package-info.java",
+                "@org.jspecify.annotations.NullMarked\npackage app.b;\n")
+            .file("src/main/java/app/c/C.java", "package app.c;\nclass C {}\n")
+            .file("src/main/java/app/d/D.java", "package app.d;\nclass D {}\n")
+            .file("src/main/java/app/e/E.java", "package app.e;\nclass E {}\n")
+            // Generated sources aren't the project's to mark.
+            .file("build/generated/sources/gen/g/G.java", "package g;\nclass G {}\n")
+            .file(
+                "build.gradle.kts",
+                JAVA_AND_STERLING
+                    + "sourceSets.main { java.srcDir(\"build/generated/sources/gen\") }\n");
+
+    BuildResult text = fixture.build("stlInfo");
+    BuildResult json = fixture.build("-q", "stlInfo", "--json");
+
+    assertThat(text.getOutput()).contains("; 2 of 5 main packages @NullMarked)");
+    assertThat(json(json))
+        .singleElement()
+        .asString()
+        .contains("\"schemaVersion\":1")
+        .contains("\"consoleFormat\":1")
+        .contains("\"packages\":{\"total\":5,\"nullMarked\":2}");
+  }
+
+  @Test
+  void withoutTheJavaPluginThereIsNoCount() {
+    BuildResult result =
+        new Fixture(dir)
+            .file(
+                "build.gradle.kts",
+                """
+                plugins { id("dev.balakmran.sterling") }
+                """)
+            .build("-q", "stlInfo", "--json");
+
+    assertThat(json(result)).singleElement().asString().doesNotContain("\"packages\"");
+  }
 }

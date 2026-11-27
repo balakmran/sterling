@@ -7,6 +7,8 @@ import dev.balakmran.sterling.internal.SterlingInfoTask;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -177,9 +179,42 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void nullSafetyProgressIsLeftOutWithoutJavaAndWhileNullAwayIsInactive() {
+    assertThat(render()).doesNotContain("main packages");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("nullAway")).containsKey("packages"))
+        .isFalse();
+
+    SterlingInfoTask task = task();
+    task.getPackagesCounted().set(true);
+    sterling.getErrorProne().getEnabled().set(false);
+
+    assertThat(task.render("25")).doesNotContain("main packages");
+    assertThat(((Map<?, ?>) task.jsonModel("25").get("nullAway")).containsKey("packages"))
+        .isFalse();
+  }
+
+  @Test
+  void nullSafetyProgressCountsMainPackagesAndTheNullMarkedOnes() throws IOException {
+    Path source = project.getProjectDir().toPath().resolve("src/main/java");
+    Files.createDirectories(source.resolve("app/api"));
+    Files.writeString(source.resolve("app/Main.java"), "package app;\nclass Main {}\n");
+    Files.writeString(
+        source.resolve("app/api/package-info.java"),
+        "@org.jspecify.annotations.NullMarked\npackage app.api;\n");
+    SterlingInfoTask task = task();
+    task.getPackagesCounted().set(true);
+    task.getMainSourceDirectories().from(source.toFile());
+
+    assertThat(task.render("25")).contains("; 1 of 2 main packages @NullMarked)");
+    assertThat(((Map<?, ?>) ((Map<?, ?>) task.jsonModel("25").get("nullAway")).get("packages")))
+        .isEqualTo(Map.of("total", 2, "nullMarked", 1));
+  }
+
+  @Test
   void jsonHasExactlyTheSchemaVersion1Keys() throws IOException {
     SterlingInfoTask task = task();
     task.getJavaToolchain().set("25");
+    task.getPackagesCounted().set(true);
     task.getSpotbugsReports().put("xml", "build/reports/spotbugs/main.xml");
     task.getSpotbugsReports().put("sarif", "build/reports/spotbugs/main.sarif");
     task.getCoverageReports().put("xml", "build/reports/jacoco/test/jacocoTestReport.xml");

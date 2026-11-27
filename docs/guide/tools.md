@@ -136,6 +136,11 @@ import org.jspecify.annotations.NullMarked;
 Inside that package, anything that may be null must be annotated `@Nullable`,
 and NullAway fails compilation where such a value is used without a check.
 
+`stlInfo` shows how far along you are: `3 of 7 main packages @NullMarked`
+counts the directories under main's source directories (outside
+`build/generated`) that hold Java files, and those whose `package-info.java`
+carries `@NullMarked`. Classes marked one by one aren't counted.
+
 `nullAway.jspecifyMode` also checks nullness in generic type arguments
 (`List<@Nullable String>`), arrays and varargs. It's on only in `STRICT`:
 Spring calls the mode still under development and recommends turning it on as

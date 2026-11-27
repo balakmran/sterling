@@ -35,6 +35,9 @@ nullAway.versionSource
 nullAway.jspecify
 nullAway.jspecifySource
 nullAway.jspecifyMode
+nullAway.packages
+nullAway.packages.total
+nullAway.packages.nullMarked
 spotbugs
 spotbugs.enabled
 spotbugs.version
