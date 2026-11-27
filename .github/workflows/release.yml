@@ -22,7 +22,6 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
-      pr: ${{ steps.release.outputs.pr }}
 
     steps:
       # The App's token, not GITHUB_TOKEN: a release PR opened with GITHUB_TOKEN doesn't start CI.
@@ -40,57 +39,17 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-  # A release PR holding only dependency bumps that change no findings merges itself once CI
-  # passes; anything else waits for the maintainer.
-  auto-release:
-    name: Auto-merge a dependency-only release PR
-    needs: release-please
-    if: needs.release-please.outputs.pr != ''
-    runs-on: ubuntu-latest
-    environment: release
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - id: commits
-        name: Check what the release holds
-        run: |
-          last_tag="$(git describe --tags --abbrev=0)"
-          subjects="$(git log --format=%s "$last_tag"..HEAD)"
-          echo "$subjects"
-          if grep -Evq '^(fix|ci)\(deps\): ' <<<"$subjects"; then
-            echo "deps_only=false" >>"$GITHUB_OUTPUT"
-          else
-            echo "deps_only=true" >>"$GITHUB_OUTPUT"
-          fi
-
-      - id: app-token
-        if: steps.commits.outputs.deps_only == 'true'
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ vars.AGENT_PLUGINS_APP_CLIENT_ID }}
-          private-key: ${{ secrets.AGENT_PLUGINS_APP_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
-
-      - name: Merge once CI passes
-        if: steps.commits.outputs.deps_only == 'true'
-        run: gh pr merge --auto --rebase "$PR_NUMBER" --repo "$GITHUB_REPOSITORY"
-        env:
-          PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
   # Runs here, not on a release event: releases made with GITHUB_TOKEN don't start other workflows.
   publish:
     name: Publish to the Gradle Plugin Portal
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
+    # Only the attestation step uses these two: it signs with the job's OIDC token.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -111,6 +70,12 @@ jobs:
         env:
           GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
           GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+
+      # After publishing, so only jars that reached the Plugin Portal are attested.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: sterling-gradle-plugin/build/libs/*.jar
 
   # Opens a PR on the marketplace repository that pins the new tag. After `publish`, so the Sterling
   # version the skills apply resolves from the Plugin Portal before anyone installs them.

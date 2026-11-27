@@ -204,8 +204,9 @@ If a version in the plan doesn't exist, use the latest available and update the 
 - Dependency bumps: Dependabot commits Gradle bumps as `fix(deps):` and
   auto-merges them once CI passes, except Error Prone, NullAway, SpotBugs and
   google-java-format, which it labels `changes-findings`. Reword those to
-  `feat(deps):` with a note on what may newly fail (`ROADMAP.md` rule 7). A
-  release PR holding only `fix(deps):`/`ci(deps):` commits merges itself.
+  `feat(deps):` with a note on what may newly fail (`ROADMAP.md` rule 7). No
+  release PR merges itself: run the release checklist in `CONTRIBUTING.md`,
+  then merge by hand.
 - Sterling's own Java is formatted with google-java-format, and build scripts
   with ktfmt, both via Spotless. javac runs with `-Xlint:all -Werror`.
 - Code comments (`//` and `/* */` inside method bodies, fields and build
