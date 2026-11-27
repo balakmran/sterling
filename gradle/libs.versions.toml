@@ -17,7 +17,7 @@ jspecify = "1.0.1"
 nullaway = "0.14.3"
 spotbugs = "4.10.5"
 spotbugs-gradle = "6.5.13"
-spotless = "8.11.0"
+spotless = "8.12.0"
 spotless-lib = "4.11.0" # What the Spotless plugin above depends on; bump them together.
 
 # --- Sterling build: never shipped ---
