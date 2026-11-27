@@ -7,7 +7,7 @@ description: >-
   project whose build applies the dev.balakmran.sterling plugin.
 license: Apache-2.0
 metadata:
-  sterling-version: "0.2.0" # x-release-please-version
+  sterling-version: "0.3.0" # x-release-please-version
 ---
 
 # Writing Java that passes Sterling

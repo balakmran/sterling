@@ -11,7 +11,7 @@ description: >-
 license: Apache-2.0
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/outcomes.sh:*) Bash(${CLAUDE_SKILL_DIR}/scripts/coverage.sh:*)
 metadata:
-  sterling-version: "0.2.0" # x-release-please-version
+  sterling-version: "0.3.0" # x-release-please-version
 ---
 
 # Upgrade Sterling
