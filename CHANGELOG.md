@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0](https://github.com/balakmran/sterling/compare/v0.2.0...v0.3.0) (2026-11-27)
+
+
+### Features
+
+* brownfield adoption settings (formatting, LENIENT, JSpecify, SpotBugs baseline) ([#45](https://github.com/balakmran/sterling/issues/45)) ([9ca1d48](https://github.com/balakmran/sterling/commit/9ca1d48fef1e339dada00c61ad2571cb3058f219))
+* console format 1, Problems API reporting, null-safety progress ([#49](https://github.com/balakmran/sterling/issues/49)) ([7940a51](https://github.com/balakmran/sterling/commit/7940a51c3f7e50219664f904a1c1a96fa04e85cd))
+* **deps:** Error Prone 2.53.0, NullAway 0.14.4 and the other tool bumps ([#50](https://github.com/balakmran/sterling/issues/50)) ([f748311](https://github.com/balakmran/sterling/commit/f748311317bd01dba8aed5503d66da9c4ba90c8f))
+* stlFix ([#48](https://github.com/balakmran/sterling/issues/48)) ([734514b](https://github.com/balakmran/sterling/commit/734514bdcf98bfbfc39225113a46275fe5e1a806))
+
+
+### Bug Fixes
+
+* **skills:** let outcomes.sh run stlFix, and make the evals exercise it ([#52](https://github.com/balakmran/sterling/issues/52)) ([0dbbc4b](https://github.com/balakmran/sterling/commit/0dbbc4b9f3fbd69e9a8192888100811c25470c04))
+
 ## [0.2.0](https://github.com/balakmran/sterling/compare/v0.1.0...v0.2.0) (2026-11-15)
 
 

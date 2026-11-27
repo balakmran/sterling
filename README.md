@@ -63,7 +63,7 @@ all five.
 ```kotlin
 plugins {
     java
-    id("dev.balakmran.sterling") version "0.2.0"
+    id("dev.balakmran.sterling") version "0.3.0"
 }
 
 repositories { mavenCentral() }
