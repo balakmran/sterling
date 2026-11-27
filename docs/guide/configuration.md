@@ -176,7 +176,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"],"patchChecks":["AnnotationPosition","EmptyBlockTag","MissingOverride","OperatorPrecedence","PatternMatchingInstanceof","UnnecessaryParentheses"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","consoleFormat":1,"project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"],"patchChecks":["AnnotationPosition","EmptyBlockTag","MissingOverride","OperatorPrecedence","PatternMatchingInstanceof","UnnecessaryParentheses"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. A version the project overrides
@@ -189,6 +189,7 @@ given as an absolute path.
 |---|---|
 | `schemaVersion` | The format's version, 1 |
 | `sterling` | Sterling's version |
+| `consoleFormat` | The version of the [console format](tools.md#reading-sterlings-output), 1 |
 | `project` | The project's path, such as `:` or `:api` |
 | `profile` | The resolved profile |
 | `profileProperty` | The `sterling.profile` property as given, or `null` |

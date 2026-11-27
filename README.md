@@ -212,6 +212,8 @@ Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; te
   `sterling { }` block, every setting, and the tools' own DSLs.
 - [The tools](docs/guide/tools.md): pinned versions, what an upgrade can
   change, and notes on each tool.
+- [Sterling in CI](docs/guide/ci.md): pull request annotations from the
+  console output, and SARIF for SpotBugs.
 - [Roadmap](ROADMAP.md) and [changelog](CHANGELOG.md).
 - [Contributing](CONTRIBUTING.md): building and testing Sterling.
 

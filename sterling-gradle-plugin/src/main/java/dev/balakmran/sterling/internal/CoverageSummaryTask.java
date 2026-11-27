@@ -9,9 +9,12 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -32,7 +35,9 @@ import org.w3c.dom.Element;
  * <p>It finalizes {@code jacocoTestCoverageVerification} and reads {@code jacocoTestReport}'s XML
  * report, which covers the same classes. It prints the measured instruction and branch coverage
  * against the thresholds, then the {@value #TOP} source files with the most missed instructions,
- * each as {@code com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed}, at error level.
+ * each as {@code src/main/java/com/example/Foo.java [JaCoCo:INSTRUCTION] 12 of 40 missed}, at error
+ * level. The path is the source file's, relative to the root project; a class whose source isn't
+ * found keeps the package path JaCoCo reports.
  *
  * <p>It prints only when the verification failed. The verification's first action writes a marker
  * file and its last action deletes it ({@link #markFailed}, {@link #clearFailed}), so the marker is
@@ -74,6 +79,22 @@ public abstract class CoverageSummaryTask extends DefaultTask {
   public abstract RegularFileProperty getFailedMarker();
 
   /**
+   * Main's source directories, to turn a class's package-relative source path into a file path.
+   *
+   * @return the source directories
+   */
+  @Internal
+  public abstract ConfigurableFileCollection getSourceDirectories();
+
+  /**
+   * The root project's directory, which printed paths are relative to.
+   *
+   * @return the root project directory
+   */
+  @Internal
+  public abstract DirectoryProperty getRootDirectory();
+
+  /**
    * The minimum instruction coverage, in percent.
    *
    * @return the instruction threshold
@@ -104,7 +125,10 @@ public abstract class CoverageSummaryTask extends DefaultTask {
     }
     Element report =
         Xml.parseReport(getXmlReport().get().getAsFile(), "JaCoCo").getDocumentElement();
-    render(report, getInstruction().get(), getBranch().get()).forEach(getLogger()::error);
+    var path =
+        SourcePaths.resolver(
+            getRootDirectory().get().getAsFile(), List.copyOf(getSourceDirectories().getFiles()));
+    render(report, getInstruction().get(), getBranch().get(), path).forEach(getLogger()::error);
   }
 
   /**
@@ -113,10 +137,13 @@ public abstract class CoverageSummaryTask extends DefaultTask {
    * @param report the report's {@code <report>} element
    * @param instruction the instruction threshold, in percent
    * @param branch the branch threshold, in percent
+   * @param path turns a source path relative to a source directory, such as {@code
+   *     com/example/Foo.java}, into the path to print; one it can't place stays as it is
    * @return the measurements, then up to {@value #TOP} source files with missed instructions; or
    *     nothing when neither measurement is below its threshold
    */
-  public static List<String> render(Element report, int instruction, int branch) {
+  public static List<String> render(
+      Element report, int instruction, int branch, Function<String, String> path) {
     String instructionLine = measurement(report, "INSTRUCTION", "instruction", instruction);
     String branchLine = measurement(report, "BRANCH", "branch", branch);
     // The verification failed for another reason, which its own error already says.
@@ -146,7 +173,7 @@ public abstract class CoverageSummaryTask extends DefaultTask {
         .limit(TOP)
         .forEach(file ->
             lines.add(
-                file.file()
+                path.apply(file.file())
                     + " [JaCoCo:INSTRUCTION] "
                     + file.missed()
                     + " of "

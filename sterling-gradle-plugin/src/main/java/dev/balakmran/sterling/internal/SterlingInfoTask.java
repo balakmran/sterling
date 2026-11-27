@@ -42,6 +42,12 @@ public abstract class SterlingInfoTask extends DefaultTask {
   /** The version of the JSON format {@code --json} prints. */
   public static final int SCHEMA_VERSION = 1;
 
+  /**
+   * The version of the console format Sterling prints findings in. Changing a printed line's shape
+   * bumps it.
+   */
+  public static final int CONSOLE_FORMAT = 1;
+
   // The toolchain line's prefix when the Java tools aren't active.
   private static final String NOT_ACTIVE = "not active (";
 
@@ -462,6 +468,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     Map<String, Object> root = new LinkedHashMap<>();
     root.put("schemaVersion", SCHEMA_VERSION);
     root.put("sterling", versions.get("sterling"));
+    root.put("consoleFormat", CONSOLE_FORMAT);
     root.put("project", getProjectPath().get());
     root.put("profile", getProfile().get().name());
     root.put("profileProperty", getProfileProperty().getOrNull());

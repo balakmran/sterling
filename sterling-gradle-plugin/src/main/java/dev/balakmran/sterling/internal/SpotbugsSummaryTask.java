@@ -1,7 +1,6 @@
 package dev.balakmran.sterling.internal;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -72,33 +71,22 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
   public abstract ConfigurableFileCollection getSourceDirectories();
 
   /**
-   * The project directory, which printed paths are relative to.
+   * The root project's directory, which printed paths are relative to.
    *
-   * @return the project directory
+   * @return the root project directory
    */
   @Internal
-  public abstract DirectoryProperty getProjectDirectory();
+  public abstract DirectoryProperty getRootDirectory();
 
   /** Prints the findings. */
   @TaskAction
   public void print() {
-    Path project = getProjectDirectory().get().getAsFile().toPath();
-    List<File> sourceDirectories = List.copyOf(getSourceDirectories().getFiles());
-    Function<String, String> path =
-        sourcePath -> {
-          for (File directory : sourceDirectories) {
-            File source = new File(directory, sourcePath);
-            if (source.isFile()) {
-              return relative(project, source);
-            }
-          }
-          return sourcePath;
-        };
+    File root = getRootDirectory().get().getAsFile();
     List<String> lines =
         render(
             Xml.parseReport(getXmlReport().get().getAsFile(), "SpotBugs").getDocumentElement(),
-            path,
-            relative(project, getHtmlReport().get().getAsFile()));
+            SourcePaths.resolver(root, List.copyOf(getSourceDirectories().getFiles())),
+            SourcePaths.relative(root.toPath(), getHtmlReport().get().getAsFile()));
     lines.forEach(getLogger()::error);
   }
 
@@ -168,12 +156,5 @@ public abstract class SpotbugsSummaryTask extends DefaultTask {
 
   private static Element first(List<Element> elements) {
     return elements.isEmpty() ? null : elements.get(0);
-  }
-
-  private static String relative(Path project, File file) {
-    Path target = file.toPath();
-    String shown =
-        target.startsWith(project) ? project.relativize(target).toString() : target.toString();
-    return shown.replace(File.separatorChar, '/');
   }
 }

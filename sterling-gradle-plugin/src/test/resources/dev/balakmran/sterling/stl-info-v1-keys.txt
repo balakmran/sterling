@@ -2,6 +2,7 @@
 # Adding a key is allowed; removing or renaming one, or changing a value's type, raises the version.
 schemaVersion
 sterling
+consoleFormat
 project
 profile
 profileProperty

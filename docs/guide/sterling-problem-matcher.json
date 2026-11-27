@@ -1,0 +1,29 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "sterling-javac",
+      "pattern": [
+        {
+          "regexp": "^(.+\\.java):(\\d+): (error|warning): (.+)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "sterling",
+      "severity": "error",
+      "pattern": [
+        {
+          "regexp": "^(\\S+\\.java)(?::(\\d+))? \\[(\\w+:[\\w$]+)\\] (.+)$",
+          "file": 1,
+          "line": 2,
+          "code": 3,
+          "message": 4
+        }
+      ]
+    }
+  ]
+}
