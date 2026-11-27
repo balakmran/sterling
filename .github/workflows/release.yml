@@ -26,7 +26,7 @@ jobs:
     steps:
       # The App's token, not GITHUB_TOKEN: a release PR opened with GITHUB_TOKEN doesn't start CI.
       - id: app-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ vars.AGENT_PLUGINS_APP_CLIENT_ID }}
           private-key: ${{ secrets.AGENT_PLUGINS_APP_KEY }}
@@ -104,7 +104,7 @@ jobs:
       # An App installed on the marketplace repository only: GITHUB_TOKEN can't write to another
       # repository, a PAT expires, and a PR opened with either wouldn't start that repository's CI.
       - id: app-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ vars.AGENT_PLUGINS_APP_CLIENT_ID }}
           private-key: ${{ secrets.AGENT_PLUGINS_APP_KEY }}
