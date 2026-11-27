@@ -28,9 +28,9 @@ opening a pull request. To run one combination, CI's for example:
 passes. The commit messages drive the version and the changelog, through
 release-please.
 
-Dependabot bumps that can't change findings merge themselves once CI passes,
-and a release made only of them publishes without anyone's help. A bump of
-Error Prone, NullAway, SpotBugs or google-java-format is labelled
+Dependabot bumps that can't change findings merge themselves once CI passes.
+No release does: CI runs one test cell, so a release PR waits for the
+[release checklist](#releasing). A bump of Error Prone, NullAway, SpotBugs or google-java-format is labelled
 `changes-findings` instead: reword its commit to `feat(deps):` and say what
 may newly fail, because it can fail builds that changed nothing.
 
@@ -38,3 +38,20 @@ A change to the plugin's behaviour needs a functional test, and a new or
 changed setting needs its line in the
 [settings reference](docs/guide/configuration.md#settings-reference); the
 unit tests check that.
+
+## Releasing
+
+release-please opens a release PR after changes land on `main`, whatever they
+are, and nothing merges it but the maintainer. CI ran one test cell on every
+change, so before merging:
+
+1. Check out the release PR's branch and run `./gradlew build
+   functionalTestLocal`, which runs the other three cells.
+2. Run the latest JDK and the next Gradle once: `./gradlew functionalTest
+   -Psterling.test.java=27`, then `-Psterling.test.gradle=<newest release
+   candidate or nightly>`. A failure is reported in the release PR, and blocks
+   the release only if it's a regression in a supported cell.
+3. Dogfood `../blade-svc-java-webmvc` as `CLAUDE.md` describes, and run the
+   agent plugin's evals if the release changes a skill.
+4. Merge the release PR. The `publish` job uploads to the Plugin Portal and
+   attests the jars' build provenance; then merge the marketplace PR it opens.

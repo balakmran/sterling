@@ -10,6 +10,19 @@ updates:
     commit-message:
       prefix: fix
       include: scope
+    # A consumer's buildscript classpath gets a tool release the day it's published, with no
+    # person involved, so wait a week. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 7
+      include:
+        - "com.diffplug.spotless:*"
+        - "com.github.spotbugs*"
+        - "com.google.errorprone:*"
+        - "com.google.googlejavaformat:*"
+        - "com.uber.nullaway:*"
+        - "net.ltgt.gradle:*"
+        - "org.jacoco:*"
+        - "org.jspecify:*"
     groups:
       # Only Sterling's own build uses these; one PR for all of them.
       build-tools:
