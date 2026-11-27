@@ -3,17 +3,37 @@
 ## [0.3.0](https://github.com/balakmran/sterling/compare/v0.2.0...v0.3.0) (2026-11-27)
 
 
+### ⚠ Can change findings
+
+* Error Prone 2.53.0 adds checks: `EqualsHashCode` flags a class that overrides `hashCode` without `equals`, `ImpossibleNullComparison` covers `Objects.equals`, `Objects.isNull` and `Objects.nonNull`, and `MustBeClosedChecker` enforces `@MustBeClosed` on method and constructor references.
+* NullAway 0.14.4 can report new errors in code that passed before: unboxing a nullable `Iterable`'s elements in an enhanced `for` loop, lambda returns checked against unannotated interface methods, and the implicit receiver of a call inside an anonymous class.
+* `stlFmtCheck` fails until you run `stlFmt` once: `format.formatAnnotations` is now off, so Sterling formats as google-java-format does and no longer joins annotations onto one line. Commit the result alone and add it to `.git-blame-ignore-revs`, or set `format.formatAnnotations = true` to keep the old layout.
+* Console lines changed (`consoleFormat` 1): coverage lines name the source file (`src/main/java/com/example/Foo.java`), and SpotBugs lines are relative to the root project. A script that parses them needs the new shape.
+
+See [Upgrading Sterling](docs/guide/upgrading.md#020-to-030).
+
 ### Features
 
-* brownfield adoption settings (formatting, LENIENT, JSpecify, SpotBugs baseline) ([#45](https://github.com/balakmran/sterling/issues/45)) ([9ca1d48](https://github.com/balakmran/sterling/commit/9ca1d48fef1e339dada00c61ad2571cb3058f219))
-* console format 1, Problems API reporting, null-safety progress ([#49](https://github.com/balakmran/sterling/issues/49)) ([7940a51](https://github.com/balakmran/sterling/commit/7940a51c3f7e50219664f904a1c1a96fa04e85cd))
-* **deps:** Error Prone 2.53.0, NullAway 0.14.4 and the other tool bumps ([#50](https://github.com/balakmran/sterling/issues/50)) ([f748311](https://github.com/balakmran/sterling/commit/f748311317bd01dba8aed5503d66da9c4ba90c8f))
-* stlFix ([#48](https://github.com/balakmran/sterling/issues/48)) ([734514b](https://github.com/balakmran/sterling/commit/734514bdcf98bfbfc39225113a46275fe5e1a806))
-
+* **Brownfield adoption** ([#45](https://github.com/balakmran/sterling/issues/45)) ([9ca1d48](https://github.com/balakmran/sterling/commit/9ca1d48fef1e339dada00c61ad2571cb3058f219)):
+  * `LENIENT` no longer fails compilation on Error Prone or NullAway errors: they print as warnings (`errorProne.errorsAsWarnings`, on by default in `LENIENT`) and javac prints up to 10,000 of them instead of 100. Setting it together with `warningsAsErrors` fails the build.
+  * `format.formatAnnotations` (default off) controls whether Spotless joins annotations onto one line. A project's own `formatAnnotations()` step no longer clashes with Sterling's while it is off.
+  * JSpecify's annotations are on the compile classpath of every source set, not only `main` and `test`.
+  * `spotbugs.baselineFile` takes a baseline, so only new SpotBugs findings fail the build. Findings match by instance hash, not line number, so renaming a class or method brings its findings back.
+* **`stlFix`** ([#48](https://github.com/balakmran/sterling/issues/48)) ([734514b](https://github.com/balakmran/sterling/commit/734514bdcf98bfbfc39225113a46275fe5e1a806)): applies Error Prone's suggested fixes, then formats. `errorProne.patchChecks` chooses the checks; the default is `AnnotationPosition`, `EmptyBlockTag`, `MissingOverride`, `OperatorPrecedence`, `PatternMatchingInstanceof` and `UnnecessaryParentheses`. It never runs in the same build as a verification task, is never up to date or cached, and patches even under `-Werror`.
+* **Reporting** ([#49](https://github.com/balakmran/sterling/issues/49)) ([7940a51](https://github.com/balakmran/sterling/commit/7940a51c3f7e50219664f904a1c1a96fa04e85cd)):
+  * Console format 1: `<path>[:<line>] [<Tool>:<Rule>] <message>`, relative to the root project. `stlInfo --json` reports `consoleFormat`.
+  * SpotBugs findings and coverage shortfalls also appear in Gradle's problems report (Gradle 9.x's incubating Problems API). Builds on a Gradle without it are unaffected.
+  * A GitHub Actions problem matcher turns the console lines into pull request annotations; see `docs/guide/ci.md`.
+  * `stlInfo` shows how many main packages are `@NullMarked`.
+* **Tool versions** ([#50](https://github.com/balakmran/sterling/issues/50)) ([f748311](https://github.com/balakmran/sterling/commit/f748311317bd01dba8aed5503d66da9c4ba90c8f)): Error Prone 2.52.0 to 2.53.0 and NullAway 0.14.3 to 0.14.4. In Sterling's own build: Spotless 8.12.0, the SpotBugs Gradle plugin 6.5.15 and Gradle 9.9.2. google-java-format, JSpecify, SpotBugs and JaCoCo are unchanged.
 
 ### Bug Fixes
 
-* **skills:** let outcomes.sh run stlFix, and make the evals exercise it ([#52](https://github.com/balakmran/sterling/issues/52)) ([0dbbc4b](https://github.com/balakmran/sterling/commit/0dbbc4b9f3fbd69e9a8192888100811c25470c04))
+* **skills:** `outcomes.sh` now accepts `stlFix`, so the agent plugin's skills can run it, and the evals' fixtures and checks exercise it ([#52](https://github.com/balakmran/sterling/issues/52)) ([0dbbc4b](https://github.com/balakmran/sterling/commit/0dbbc4b9f3fbd69e9a8192888100811c25470c04)).
+
+### Documentation
+
+* New pages: Sterling in CI, Sterling in plain Gradle, Compatibility and IDE setup, plus a security policy ([#51](https://github.com/balakmran/sterling/issues/51)). The upgrade guide has a 0.2.0 to 0.3.0 section, and the agent plugin's skills cover `stlFix`, baselines and the reformat decision.
 
 ## [0.2.0](https://github.com/balakmran/sterling/compare/v0.1.0...v0.2.0) (2026-11-15)
 
