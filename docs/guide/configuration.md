@@ -80,6 +80,7 @@ sterling {
         warningsAsErrors = false        // adds -Werror to javac
         errorsAsWarnings = false        // reports Error Prone's errors as warnings; true in LENIENT
         disable("UnusedVariable")       // turns checks off by name
+        // patchChecks.add("UnusedMethod") // stlFix patches these as well as the defaults
     }
     nullAway {
         enabled = true                  // needs Error Prone
@@ -154,6 +155,7 @@ sterling {
 | `errorProne.errorsAsWarnings` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |
 | `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
+| `errorProne.patchChecks` | Set of check names `stlFix` patches; `add` appends to the defaults | `AnnotationPosition`, `EmptyBlockTag`, `MissingOverride`, `OperatorPrecedence`, `PatternMatchingInstanceof`, `UnnecessaryParentheses` |
 | `nullAway.enabled` | Boolean | true (needs Error Prone) |
 | `nullAway.jspecifyMode` | Boolean | From the profile |
 | `spotbugs.enabled` | Boolean | From the profile |
@@ -174,7 +176,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"],"patchChecks":["AnnotationPosition","EmptyBlockTag","MissingOverride","OperatorPrecedence","PatternMatchingInstanceof","UnnecessaryParentheses"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. A version the project overrides
@@ -209,6 +211,7 @@ given as an absolute path.
 | `errorProne.warningsAsErrors` | Boolean |
 | `errorProne.errorsAsWarnings` | Boolean |
 | `errorProne.disabledChecks` | Check names, sorted |
+| `errorProne.patchChecks` | Check names, sorted |
 | `nullAway.enabled` | Boolean |
 | `nullAway.active` | Whether NullAway runs: `enabled` and Error Prone on |
 | `nullAway.version` | Version |

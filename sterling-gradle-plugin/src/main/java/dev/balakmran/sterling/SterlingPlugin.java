@@ -44,7 +44,8 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin;
  * <p>The tasks:
  *
  * <ul>
- *   <li>{@code stlFmt} formats sources; it's the only task that changes them.
+ *   <li>{@code stlFmt} formats sources, and {@code stlFix} applies Error Prone's fixes and then
+ *       formats; they're the only tasks that change sources.
  *   <li>{@code stlFmtCheck}, {@code stlLint}, {@code stlSec} and {@code stlCov} verify formatting,
  *       compile-time analysis, bytecode analysis and coverage.
  *   <li>{@code stlCheck} runs those four, and is the task {@code check} depends on.
@@ -58,6 +59,7 @@ public class SterlingPlugin implements Plugin<Project> {
   static final String EXTENSION = "sterling";
   static final String GROUP = "sterling";
   static final String FMT = "stlFmt";
+  static final String FIX = "stlFix";
   static final String FMT_CHECK = "stlFmtCheck";
   static final String LINT = "stlLint";
   static final String SEC = "stlSec";
@@ -131,6 +133,7 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
     sterling.getErrorProne().getErrorsAsWarnings().convention(profile.map(p -> p.errorsAsWarnings));
+    sterling.getErrorProne().getPatchChecks().convention(ErrorProne.DEFAULT_PATCH_CHECKS);
     sterling.getNullAway().getEnabled().convention(true);
     sterling.getNullAway().getJspecifyMode().convention(profile.map(p -> p.jspecifyMode));
     sterling.getSpotbugs().getEnabled().convention(profile.map(p -> p.spotbugs));
@@ -144,6 +147,8 @@ public class SterlingPlugin implements Plugin<Project> {
   // Tool configuration adds each task's dependencies; these only define the gate's shape.
   private static TaskProvider<Task> registerLifecycleTasks(TaskContainer tasks) {
     lifecycle(tasks, FMT, "Formats Java sources with google-java-format.");
+    lifecycle(
+        tasks, FIX, "Applies Error Prone's fixes to the sources, then formats them. Changes code.");
     var fmtCheck = lifecycle(tasks, FMT_CHECK, "Verifies Java sources are formatted.");
     var lint = lifecycle(tasks, LINT, "Compiles Java sources with Error Prone and NullAway.");
     var sec = lifecycle(tasks, SEC, "Analyses bytecode with SpotBugs.");
@@ -194,6 +199,7 @@ public class SterlingPlugin implements Plugin<Project> {
               task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
               task.getErrorsAsWarnings().set(sterling.getErrorProne().getErrorsAsWarnings());
               task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
+              task.getPatchChecks().set(sterling.getErrorProne().getPatchChecks());
               task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
               task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());
               task.getSpotbugsEnabled().set(sterling.getSpotbugs().getEnabled());
@@ -304,6 +310,7 @@ public class SterlingPlugin implements Plugin<Project> {
     Coverage.configure(project, sterling, generated);
     Spotbugs.configure(project, sterling, generated);
     ErrorProne.configure(project, sterling);
+    Fix.configure(project, sterling);
     project
         .getTasks()
         .named(INFO, SterlingInfoTask.class)

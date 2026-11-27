@@ -88,6 +88,38 @@ rejected. Sources under
 `build/generated` are skipped entirely, and warnings in code annotated
 `@Generated` are ignored.
 
+### Fixing with stlFix
+
+`stlFix` applies Error Prone's own fixes to your sources, then runs `stlFmt`.
+It compiles every source set with Error Prone in patch mode, so it rewrites
+the files in place, and it's never up to date and never taken from the build
+cache. It fixes the checks in `errorProne.patchChecks`:
+
+| Check | What it fixes |
+|---|---|
+| `AnnotationPosition` | Puts a type-use annotation such as JSpecify's `@Nullable` after the modifiers, directly before the type: `private @Nullable String note;` (Google Java Style §4.8.5.1) |
+| `MissingOverride` | Adds `@Override` |
+| `UnnecessaryParentheses` | Removes parentheses around simple expressions, as in `(x)` |
+| `OperatorPrecedence` | Adds parentheses where `&&`/`||` or shifts are mixed |
+| `PatternMatchingInstanceof` | Replaces an `instanceof` and its cast with a pattern |
+| `EmptyBlockTag` | Removes empty Javadoc block tags |
+
+`stlFix` turns each of these on, as a warning, for its own run only, so
+`AnnotationPosition` isn't enforced afterwards. To enforce it, add
+`options.errorprone.error("AnnotationPosition")` to your `JavaCompile` tasks.
+`errorProne.disable(...)` takes a check out of the run as well, and with Error
+Prone off, `stlFix` only formats. It doesn't fail on findings it can't patch:
+run `stlLint` afterwards to see what's left. Sources under `build/generated`
+are never touched.
+
+Not every fix keeps behaviour. Removing an unused variable can drop a side
+effect, so those checks aren't in the default list. Read what a check rewrites
+before adding it with `patchChecks.add("...")`, and review the diff.
+
+`stlFix` changes sources, so it can't run in the same build as `stlCheck`,
+`stlLint`, `stlSec`, `stlCov`, `stlFmtCheck` or `check`: run it, review and
+commit the result, then verify.
+
 ## Null checking with NullAway
 
 NullAway only checks packages marked `@NullMarked`, so you adopt it one package

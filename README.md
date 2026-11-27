@@ -167,7 +167,8 @@ All in the `sterling` group:
 
 | Task | What it does |
 |---|---|
-| `stlFmt` | Formats Java sources in place. The only task that changes code. |
+| `stlFmt` | Formats Java sources in place. |
+| `stlFix` | Applies Error Prone's fixes to the sources, then formats them. Changes code, so it can't run in the same build as the verification tasks. |
 | `stlFmtCheck` | Fails if any source isn't formatted. |
 | `stlLint` | Compiles main and test sources with Error Prone and NullAway. |
 | `stlSec` | Runs SpotBugs on the main classes. |
