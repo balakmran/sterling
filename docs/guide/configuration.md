@@ -90,6 +90,7 @@ sterling {
         effort = SpotbugsSettings.Effort.DEFAULT       // MIN | LESS | DEFAULT | MORE | MAX
         reportLevel = SpotbugsSettings.Confidence.MEDIUM // LOW | MEDIUM | HIGH
         excludeFilter = file("config/spotbugs-exclude.xml") // added to Sterling's
+        // baselineFile = file("config/spotbugs/baseline.xml") // unset: every finding counts
     }
     coverage {
         enabled = true
@@ -159,6 +160,7 @@ sterling {
 | `spotbugs.effort` | `SpotbugsSettings.Effort`: `MIN`, `LESS`, `DEFAULT`, `MORE` or `MAX` | From the profile |
 | `spotbugs.reportLevel` | `SpotbugsSettings.Confidence`: `LOW`, `MEDIUM` or `HIGH` | From the profile |
 | `spotbugs.excludeFilter` | File | None |
+| `spotbugs.baselineFile` | File: a SpotBugs XML report whose findings don't fail `stlSec` | None |
 | `coverage.enabled` | Boolean | From the profile |
 | `coverage.instruction` | Percent, 0 to 100 | From the profile |
 | `coverage.branch` | Percent, 0 to 100 | From the profile |
@@ -172,7 +174,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"baselineFile":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. A version the project overrides
@@ -220,6 +222,7 @@ given as an absolute path.
 | `spotbugs.effort` | `MIN` to `MAX` |
 | `spotbugs.reportLevel` | `LOW`, `MEDIUM` or `HIGH` |
 | `spotbugs.excludeFilter` | The project's filter, or `null` |
+| `spotbugs.baselineFile` | The baseline's path relative to the project, or `null` |
 | `spotbugs.reports` | Object; absent without the `java` plugin |
 | `spotbugs.reports.sarif` | Path |
 | `spotbugs.reports.xml` | Path |

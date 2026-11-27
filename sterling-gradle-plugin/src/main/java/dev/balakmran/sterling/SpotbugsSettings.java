@@ -47,6 +47,20 @@ public abstract class SpotbugsSettings {
   public abstract Property<Confidence> getReportLevel();
 
   /**
+   * A SpotBugs baseline: the findings it lists are known and don't fail {@code stlSec}. Unset by
+   * default.
+   *
+   * <p>It's a convention on the SpotBugs extension's {@code baselineFile}, so a project's own
+   * {@code spotbugs { baselineFile }} or task setting wins. Only findings missing from the file are
+   * reported, so a codebase can adopt SpotBugs at once and pay its findings down over time. The
+   * file is a SpotBugs XML report; a file that doesn't exist fails {@code spotbugsMain} with
+   * SpotBugs's own message.
+   *
+   * @return the baseline file
+   */
+  public abstract RegularFileProperty getBaselineFile();
+
+  /**
    * A SpotBugs analysis effort, the same levels as SpotBugs' {@code -effort} option.
    *
    * <p>{@link #MORE} is the same as {@link #DEFAULT} on current SpotBugs releases.

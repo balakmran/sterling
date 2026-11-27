@@ -13,7 +13,9 @@ Each step is one pull request, and `main` stays green throughout:
    while you work through it.
 4. **Switch to `STANDARD`.** Remove the property. SpotBugs and coverage join
    the gate; set `coverage.instruction` and `coverage.branch` to where the
-   codebase is today, and raise them as tests are added.
+   codebase is today, and raise them as tests are added. If SpotBugs reports
+   more than you can fix first, take a
+   [baseline](tools.md#spotbugs-baseline) so only new findings fail.
 5. **Mark packages `@NullMarked`, one at a time.** NullAway checks only
    those (see [Null checking](tools.md#null-checking-with-nullaway)).
 6. **Move to `STRICT`** once the codebase is clean, or run it in CI only with

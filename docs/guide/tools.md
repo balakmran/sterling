@@ -195,6 +195,41 @@ for generated code that lives somewhere else:
 </FindBugsFilter>
 ```
 
+### SpotBugs baseline
+
+`spotbugs.baselineFile` points at a SpotBugs XML report whose findings are
+known: `stlSec` fails only on findings that aren't in it, and the console
+summary and reports leave the known ones out. Take one when you adopt SpotBugs
+on a codebase with many findings:
+
+```bash
+./gradlew spotbugsMain --continue
+mkdir -p config/spotbugs
+cp build/reports/spotbugs/main.xml config/spotbugs/baseline.xml
+```
+
+```kotlin
+sterling {
+    spotbugs { baselineFile = file("config/spotbugs/baseline.xml") }
+}
+```
+
+Commit the file, then fix findings and shrink it over time. A few things to
+know:
+
+- Findings are matched by what they are (the pattern, the class, the method
+  and its signature, the field), not by line number, so edits above a known
+  finding don't bring it back. Renaming or moving the class, method or field,
+  or changing the method's signature, does.
+- SpotBugs reports repeats of one pattern in one method as a single finding,
+  so a second one added to a baselined method stays hidden.
+- Refresh the file only to accept findings on purpose, and from a run
+  *without* the baseline set: a run with it writes only the new findings, so
+  copying that report would drop the known ones. The XML holds absolute paths
+  and timestamps, so every refresh shows as a diff.
+- A SpotBugs upgrade that changes what a detector records can bring known
+  findings back, so a bump is reviewed like any other change in findings.
+
 ## Coverage
 
 Coverage is measured on every `Test` task in the project: `test`, and any

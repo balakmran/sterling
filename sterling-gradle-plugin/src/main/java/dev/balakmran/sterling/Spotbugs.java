@@ -69,6 +69,7 @@ final class Spotbugs {
     SpotbugsSettings settings = sterling.getSpotbugs();
     extension.getEffort().convention(settings.getEffort().map(Spotbugs::effort));
     extension.getReportLevel().convention(settings.getReportLevel().map(Spotbugs::confidence));
+    extension.getBaselineFile().convention(settings.getBaselineFile());
 
     TaskContainer tasks = project.getTasks();
     SourceSet main = project.getExtensions().getByType(SourceSetContainer.class).getByName("main");

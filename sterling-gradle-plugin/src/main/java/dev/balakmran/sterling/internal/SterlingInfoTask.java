@@ -236,6 +236,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<String> getExcludeFilter();
 
   /**
+   * The project's SpotBugs baseline, relative to the project directory, if it set one.
+   *
+   * @return the baseline's path, with {@code /} separators
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getBaselineFile();
+
+  /**
    * SpotBugs' report files by format ({@code xml}, {@code sarif}), relative to the project
    * directory. Empty without the {@code java} plugin.
    *
@@ -395,13 +404,15 @@ public abstract class SterlingInfoTask extends DefaultTask {
 
   private String spotbugsDetail(Map<String, String> versions) {
     String filter = getExcludeFilter().isPresent() ? "; consumer filter merged" : "";
+    String baseline = getBaselineFile().isPresent() ? "; baseline " + getBaselineFile().get() : "";
     return version(versions, "spotbugs")
         + "; effort "
         + getSpotbugsEffort().get().name().toLowerCase(Locale.ROOT)
         + "; "
         + getSpotbugsReportLevel().get().name().toLowerCase(Locale.ROOT)
         + " confidence and up"
-        + filter;
+        + filter
+        + baseline;
   }
 
   private String coverageDetail(Map<String, String> versions) {
@@ -485,6 +496,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     spotbugs.put("effort", getSpotbugsEffort().get().name());
     spotbugs.put("reportLevel", getSpotbugsReportLevel().get().name());
     spotbugs.put("excludeFilter", getExcludeFilter().getOrNull());
+    spotbugs.put("baselineFile", getBaselineFile().getOrNull());
     putReports(spotbugs, getSpotbugsReports().get());
     root.put("spotbugs", spotbugs);
 

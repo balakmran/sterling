@@ -40,6 +40,7 @@ spotbugs.versionSource
 spotbugs.effort
 spotbugs.reportLevel
 spotbugs.excludeFilter
+spotbugs.baselineFile
 spotbugs.reports
 spotbugs.reports.sarif
 spotbugs.reports.xml

@@ -80,6 +80,18 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void reportsTheSpotbugsBaselineInTextAndJson() {
+    assertThat(render()).doesNotContain("baseline");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("spotbugs")).get("baselineFile")).isNull();
+
+    sterling.getSpotbugs().getBaselineFile().set(project.file("config/spotbugs/baseline.xml"));
+
+    assertThat(render()).contains("; baseline config/spotbugs/baseline.xml)");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("spotbugs")).get("baselineFile"))
+        .isEqualTo("config/spotbugs/baseline.xml");
+  }
+
+  @Test
   void coverageListsTheCountedTestTasks() {
     project
         .getTasks()

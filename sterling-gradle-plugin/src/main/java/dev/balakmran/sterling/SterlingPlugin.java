@@ -205,6 +205,12 @@ public class SterlingPlugin implements Plugin<Project> {
                           .getSpotbugs()
                           .getExcludeFilter()
                           .map(file -> relativePath(projectDir, file.getAsFile())));
+              task.getBaselineFile()
+                  .set(
+                      sterling
+                          .getSpotbugs()
+                          .getBaselineFile()
+                          .map(file -> relativePath(projectDir, file.getAsFile())));
               task.getCoverageEnabled().set(sterling.getCoverage().getEnabled());
               var coverage = sterling.getCoverage();
               task.getInstruction()

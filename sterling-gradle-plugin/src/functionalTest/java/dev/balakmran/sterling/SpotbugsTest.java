@@ -112,6 +112,76 @@ class SpotbugsTest {
         .containsPattern("(?m)^src/main/java/app/Bad\\.java:6 \\[SpotBugs:NP_[A-Z_]+\\] .*text");
   }
 
+  private static final String BASELINE = "config/spotbugs/baseline.xml";
+
+  private static final String BASELINE_SETTING =
+      "sterling { spotbugs { baselineFile = file(\"" + BASELINE + "\") } }\n";
+
+  // A project whose one finding, in Bad, is taken as the baseline; Bad's finding is then known.
+  private Fixture baselined() {
+    Fixture fixture = fixture("").file("src/main/java/app/Bad.java", BAD);
+    fixture.buildAndFail("stlSec");
+    fixture
+        .file(BASELINE, fixture.read("build/reports/spotbugs/main.xml"))
+        .file("build.gradle.kts", fixture.read("build.gradle.kts") + BASELINE_SETTING);
+    return fixture;
+  }
+
+  @Test
+  void aBaselinedFindingPassesAndOnlyANewOneFailsAndIsPrinted() {
+    Fixture fixture = baselined();
+
+    BuildResult known = fixture.build("stlSec");
+    assertThat(outcome(known, SPOTBUGS)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(known.getOutput()).doesNotContain("[SpotBugs:");
+
+    fixture.file("src/main/java/app/Worse.java", BAD.replace("Bad", "Worse"));
+    BuildResult added = fixture.buildAndFail("stlSec");
+
+    assertThat(outcome(added, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(added.getOutput())
+        .contains("src/main/java/app/Worse.java:6 [SpotBugs:")
+        .doesNotContain("app/Bad.java");
+  }
+
+  @Test
+  void aBaselinedFindingStaysSuppressedWhenItsLineMoves() {
+    Fixture fixture = baselined();
+    // Adds lines above the finding without adding a finding of its own.
+    fixture.file(
+        "src/main/java/app/Bad.java",
+        BAD.replace(
+            "public int length() {",
+            "public int zero() {\n    return 0;\n  }\n\n  public int length() {"));
+
+    BuildResult result = fixture.build("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(fixture.read("build/reports/spotbugs/main.xml")).doesNotContain("<BugInstance");
+  }
+
+  @Test
+  void renamingTheMethodOfABaselinedFindingBringsItBack() {
+    Fixture fixture = baselined();
+    fixture.file(
+        "src/main/java/app/Bad.java", BAD.replace("public int length()", "public int size()"));
+
+    BuildResult result = fixture.buildAndFail("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(result.getOutput()).contains("src/main/java/app/Bad.java:6 [SpotBugs:");
+  }
+
+  @Test
+  void aBaselineFileThatDoesntExistFailsSpotbugsMain() {
+    BuildResult result =
+        fixture(BASELINE_SETTING)
+            .file("src/main/java/app/Holder.java", HOLDER)
+            .buildAndFail("stlSec");
+
+    assertThat(outcome(result, SPOTBUGS)).isEqualTo(TaskOutcome.FAILED);
+  }
+
   @Test
   void printsFiftyFindingsThenPointsAtTheReport() {
     Fixture fixture = fixture("");
