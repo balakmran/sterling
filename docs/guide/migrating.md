@@ -84,7 +84,7 @@ up already. Sterling applies them itself, so:
 
 - **Spotless:** keeping `com.diffplug.spotless` is fine, at any version.
   Gradle loads one Spotless for the whole build script, the higher of yours
-  and Sterling's (8.11.0). Remove `googleJavaFormat()` from your
+  and Sterling's (8.12.0). Remove `googleJavaFormat()` from your
   `spotless { java { } }` block: Sterling adds it at its pinned version, and a
   second one fails. `formatAnnotations()` only clashes with
   `format.formatAnnotations = true`.

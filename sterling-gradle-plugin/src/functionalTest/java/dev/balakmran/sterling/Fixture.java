@@ -25,13 +25,11 @@ import org.gradle.testkit.runner.TaskOutcome;
  */
 final class Fixture {
   /**
-   * Deprecation warnings from third-party plugins, matched by prefix. Remove each one once a
-   * release of that plugin fixes it.
+   * Deprecation warnings from third-party plugins, matched by prefix. Empty since SpotBugs Gradle
+   * plugin 6.5.15 stopped calling {@code Configuration.setVisible}. Remove each entry once a
+   * release of its plugin fixes it.
    */
-  private static final List<String> KNOWN_DEPRECATIONS =
-      List.of(
-          // SpotBugs Gradle plugin 6.5.13 (the latest) calls it; Gradle 9.9 deprecates it.
-          "The Configuration.setVisible(boolean) method has been deprecated.");
+  private static final List<String> KNOWN_DEPRECATIONS = List.of();
 
   private static final String INIT_SCRIPT = ".sterling-toolchain.init.gradle";
 
