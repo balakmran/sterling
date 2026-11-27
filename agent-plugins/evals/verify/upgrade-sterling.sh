@@ -26,7 +26,7 @@ check "format.formatAnnotations isn't set to keep the old layout" \
 
 # 0.3.0 formats as google-java-format does, so a file 0.2.0 joined fails stlFmtCheck: the upgrade
 # needs a reformat commit, hidden from git blame, that changes nothing but Java files.
-reformat="$(git log --format='%H %s' "$initial..HEAD" | grep -i 'reformat' | head -1 | cut -d' ' -f1)"
+reformat="$(git log --format='%H %s' "$initial..HEAD" | grep -E ' style: reformat' | head -1 | cut -d' ' -f1)"
 check "a reformat commit follows, since stlFmtCheck failed after the bump" test -n "$reformat"
 if [[ -n "$reformat" ]]; then
   check "the reformat commit changes only Java files" \

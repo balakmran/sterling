@@ -66,6 +66,17 @@ class AgentScriptsTest {
   }
 
   @Test
+  void outcomesAcceptsStlFix() {
+    javaProject();
+
+    Run run = run("outcomes.sh", "stlFix");
+
+    // Without Sterling the task doesn't exist: the run is recorded as failed, not rejected.
+    assertThat(run.output()).doesNotContain("is not allowed");
+    assertThat(run.exitCode()).isZero();
+  }
+
+  @Test
   void outcomesRecordsEachTaskWithTheConfigurationCache() {
     javaProject();
     write("src/main/java/app/App.java", "package app;\n\npublic class App {}\n");

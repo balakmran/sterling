@@ -144,6 +144,8 @@ case "$skill" in
     ;;
   upgrade-sterling)
     prompt="Use the upgrade-sterling skill to upgrade Sterling in this project. $approval"
+    # Before the release there is no v<version> tag to fetch the upgrade notes from.
+    $published || prompt="$prompt This release isn't published yet, so read its upgrade notes from $sim/docs/guide/upgrading.md instead of fetching them."
     ;;
   sterling-conventions)
     prompt="Add a GET /greetings endpoint that returns a greeting for an optional 'name' query parameter (a service plus a controller, with a test), then run the checks. Keep to this project's conventions."

@@ -20,6 +20,11 @@ public final class Cleaner {
     return missing;
   }
 
+  /** Names this cleaner. */
+  public String toString() {
+    return "Cleaner";
+  }
+
   /** Counts the files that are there. */
   public int countPresent(File... files) {
     return files.length - countMissing(files);

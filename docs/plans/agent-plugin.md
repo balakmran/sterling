@@ -873,7 +873,7 @@ init` and commits it):
 | `adopt-sterling` (new) | Sterling at the skill's version on `STANDARD`; `stlFmtCheck` succeeds; hook present |
 | `adopt-sterling` (unsupported) | No commits, no file changes; the report names the Gradle or JDK version to upgrade to |
 | `fix-sterling-findings` | `stlCheck` SUCCESS; existing tests unchanged and passing; thresholds, `disable(...)`, excludes and filters unchanged; every new `@SuppressWarnings` or `<Match>` has a reason comment and appears in the report |
-| `upgrade-sterling` | Version equals the skill's; separate reformat commit if and only if google-java-format changed; `stlCheck` outcome reported matches a re-run |
+| `upgrade-sterling` | Version equals the skill's; a separate reformat commit if and only if `stlFmtCheck` fails after the bump (a new formatter version, or a changed default such as 0.3.0's `formatAnnotations`); `stlCheck` outcome reported matches a re-run |
 | `sterling-conventions` | Asked to add a small feature (a REST endpoint with a service and a nullable query parameter) to `greenfield` with Sterling at `STRICT`: `stlCheck` succeeds on the first run after the agent's edit |
 
 Plus a human check of each report against guardrail 8.
@@ -890,7 +890,7 @@ prompt that pre-approves the plan):
 **Dogfood:** `../blade-svc-java-webmvc` (Spring Boot 4, Java 25, Lombok).
 `adopt-sterling` runs on a scratch clone checked out at its last commit before
 Sterling, and passes the `adopt-sterling` (existing) checks. `upgrade-sterling`
-runs on its current state, moving it from 0.1.0. Don't edit the service to
+runs on its current state, moving it from the previous release. Don't edit the service to
 make a run pass; record what failed.
 
 ## CI and release
