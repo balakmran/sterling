@@ -82,6 +82,49 @@ class FixTest {
     }
   }
 
+  // One construct per default patch check: each must be rewritten, and the result must be stable.
+  private static final String EVERY_DEFAULT_CHECK =
+      """
+      package app;
+
+      import org.jspecify.annotations.Nullable;
+
+      public class Everything {
+        @Nullable private String note;
+
+        public String toString() {
+          return "everything";
+        }
+
+        public boolean precedence(boolean a, boolean b, boolean c) {
+          return a && b || c;
+        }
+
+        public int parentheses(int x) {
+          int y = (x);
+          return y;
+        }
+
+        public int pattern(Object o) {
+          if (o instanceof String) {
+            String s = (String) o;
+            return s.length();
+          }
+          return 0;
+        }
+
+        /**
+         * Doubles.
+         *
+         * @param x
+         * @return
+         */
+        public int twice(int x) {
+          return 2 * x;
+        }
+      }
+      """;
+
   private static final String MISPLACED_PATH = "src/main/java/app/Misplaced.java";
 
   @Test
@@ -242,5 +285,31 @@ class FixTest {
             "\"patchChecks\":[\"AnnotationPosition\",\"EmptyBlockTag\",\"MissingOverride\","
                 + "\"OperatorPrecedence\",\"PatternMatchingInstanceof\","
                 + "\"UnnecessaryParentheses\"]");
+  }
+
+  @Test
+  void everyDefaultPatchCheckRewritesItsOwnFindingAndASecondRunChangesNothing() {
+    Fixture fixture = fixture("").file("src/main/java/app/Everything.java", EVERY_DEFAULT_CHECK);
+
+    fixture.build("stlFix");
+    String fixed = fixture.read("src/main/java/app/Everything.java");
+
+    assertThat(fixed)
+        .describedAs("AnnotationPosition")
+        .contains("private @Nullable String note;")
+        .describedAs("MissingOverride")
+        .contains("@Override\n  public String toString()")
+        .describedAs("OperatorPrecedence")
+        .contains("(a && b) || c")
+        .describedAs("UnnecessaryParentheses")
+        .contains("int y = x;")
+        .describedAs("PatternMatchingInstanceof")
+        .contains("o instanceof String s")
+        .describedAs("EmptyBlockTag")
+        .doesNotContain("@param x\n")
+        .doesNotContain("@return\n");
+
+    fixture.build("stlFix");
+    assertThat(fixture.read("src/main/java/app/Everything.java")).isEqualTo(fixed);
   }
 }

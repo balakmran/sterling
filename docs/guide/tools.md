@@ -8,8 +8,8 @@ Sterling configures these versions of each tool:
 |---|---|
 | google-java-format | 2.0.0 |
 | Spotless | 8.11.0 |
-| Error Prone | 2.52.0 |
-| NullAway | 0.14.3 |
+| Error Prone | 2.53.0 |
+| NullAway | 0.14.4 |
 | JSpecify | 1.0.1 |
 | SpotBugs | 4.10.5 |
 | JaCoCo | 0.8.16 |
