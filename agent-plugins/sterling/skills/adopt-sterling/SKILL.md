@@ -5,7 +5,8 @@ description: >-
   (google-java-format, Error Prone, NullAway with JSpecify, SpotBugs, JaCoCo),
   to a new or existing Gradle project, as a short series of reviewable commits:
   plugin, one reformat commit hidden from git blame, the project's duplicate
-  tool config removed, coverage thresholds set from the measured value, and a
+  tool config removed, Error Prone's automatic fixes applied, a SpotBugs
+  baseline when asked, coverage thresholds set from the measured value, and a
   pre-commit hook. Use when asked to add, set up or adopt Sterling, or to add a
   quality gate, Error Prone or NullAway to a Gradle Java project. Stops with a
   clear message when Gradle is below 9.0 or the JDK is below 21.
@@ -34,7 +35,8 @@ These hold for the whole run.
 1. Stop on a dirty working tree. If the current branch is the default branch,
    create `sterling/adopt-sterling` first. Never push, never open a PR.
 2. Change build files, `gradle.properties`, `.git-blame-ignore-revs`, hook
-   config and what `stlFmt` rewrites, and nothing else. Never change business
+   config, a SpotBugs baseline file, and what `stlFmt` and `stlFix` rewrite,
+   and nothing else. Never change business
    logic or tests. If a step needs that, stop and point to the
    `fix-sterling-findings` skill.
 3. Never lower a threshold below the measured value, never switch a check or
@@ -85,6 +87,12 @@ show it, and wait for confirmation (guardrail 7). It names:
   and let the user choose when you can ask. When you can't, or the request
   already named a style, use that style and say in the report that `AOSP`
   would have shrunk the reformat
+- the `stlFix` commit (commit 5): Error Prone's own fixes, such as `@Override`
+  and type-use annotation placement, applied across the sources. Ask for the
+  user's go-ahead; when you can't ask and the request didn't approve it, skip
+  it and say so in the report
+- the SpotBugs baseline (commit 7), when SpotBugs reports findings at
+  `STANDARD`: offer it; the user decides
 - the reformat commit, or `format.ratchetFrom` instead, which formats only
   changed files and skips the reformat and blame commits (needs the base
   branch fetched in CI)
@@ -113,17 +121,18 @@ After each, `git status` is clean.
    "<version>"`; Groovy builds use `id 'dev.balakmran.sterling' version
    '<version>'`) and `sterling.profile=lenient` in `gradle.properties`. Sterling
    refuses to configure beside the `com.github.spotbugs` plugin or Spotless's
-   `googleJavaFormat()`/`formatAnnotations()` steps, so remove exactly those in
-   this commit and name them in its body; the rest of the duplicates go in
+   `googleJavaFormat()` step, so remove exactly those in this commit and name
+   them in its body. A project's own `formatAnnotations()` step stays: it only
+   clashes when `format.formatAnnotations` is on, which the skill never sets; the rest of the duplicates go in
    commit 4. A `spotbugs { }` block and its `com.github.spotbugs.snom` imports
    can't compile without that plugin, so move those settings to
    `sterling { spotbugs { } }` in this commit (see `reference/settings.md` for
    the types), put their values in the commit body, and drop the SpotBugs
    plugin dependency from `build-logic` with them. Apply Sterling after any plugin it replaces. Then
-   `scripts/outcomes.sh compileJava compileTestJava` must succeed; Error
-   Prone's error-level findings fail compilation in every profile. If it
-   fails, stop and hand over to `fix-sterling-findings` (with the user's
-   go-ahead).
+   `scripts/outcomes.sh compileJava compileTestJava` must succeed: `LENIENT`
+   reports Error Prone's and NullAway's errors as warnings, so it does unless
+   the project fails to compile for another reason. If it fails, stop and
+   hand over to `fix-sterling-findings` (with the user's go-ahead).
 2. **`style: reformat with google-java-format <version>`** (skip this and
    commit 3 when `stlFmt` changes nothing: the sources were already formatted,
    and the report says so and leaves out the `blame.ignoreRevsFile` step) (the version is
@@ -147,7 +156,16 @@ After each, `git status` is clean.
    compilation now fails because the project's own `disableAllChecks` is gone,
    that is Error Prone finding real problems: stop and hand over to
    `fix-sterling-findings`.
-5. **`build: set coverage thresholds from the measured value`.** Run
+5. **`fix: apply Error Prone's fixes with stlFix`** (with the go-ahead; skip
+   when `scripts/outcomes.sh stlFix` changes nothing). Run `scripts/outcomes.sh
+   stlFix` on its own: it changes sources, so it never shares a Gradle run with
+   `stlCheck` or another verification task. Commit only that: stage with
+   `git add -A` and check `git diff --cached --name-only` lists nothing but
+   `.java` files. Then verify: run `stlFix` again and `git status --porcelain`
+   must be empty, and `scripts/outcomes.sh compileJava compileTestJava` must
+   succeed. The checks it patches are `errorProne.patchChecks`; don't add to
+   them.
+6. **`build: set coverage thresholds from the measured value`.** Run
    `scripts/outcomes.sh test jacocoTestReport -Psterling.profile=standard`,
    which runs every `Test` task with the agent on. For each module, take
    `coverage.reports.xml` from `scripts/outcomes.sh -q stlInfo --json` (one
@@ -159,12 +177,24 @@ After each, `git status` is clean.
    gets `branch = 0`; say so in the report. Never set a value above the
    measurement. A minimum the project set before that was higher than the
    measurement was not being enforced: report it, don't keep it.
-6. **`build: move to STANDARD`**, only if `scripts/outcomes.sh stlCheck
+7. **`build: baseline the existing SpotBugs findings`**, only when `stlSec` is
+   the one task that fails at `STANDARD` (run `scripts/outcomes.sh stlCheck
+   -Psterling.profile=standard --continue` and read the outcomes) and the user
+   agrees: run `scripts/outcomes.sh spotbugsMain
+   -Psterling.profile=standard --continue`, copy each failing module's
+   `build/reports/spotbugs/main.xml` to `config/spotbugs/baseline.xml` in that
+   module, and set `sterling { spotbugs { baselineFile =
+   file("config/spotbugs/baseline.xml") } }` in its build script. Only new
+   findings then fail. Report the number of findings baselined per module and
+   that the baseline is a debt to pay down; never baseline to hide a finding
+   in code you changed. Never refresh a baseline from a run that already uses
+   it: that report holds only the new findings.
+8. **`build: move to STANDARD`**, only if `scripts/outcomes.sh stlCheck
    -Psterling.profile=standard` succeeds: remove `sterling.profile` from
    `gradle.properties` (delete the file if it's empty and new). Otherwise stay
    on `LENIENT` and list in the report each failing task, with its findings'
    count, and point to `fix-sterling-findings`.
-7. **`chore: check formatting before every commit`.** The hook, from
+9. **`chore: check formatting before every commit`.** The hook, from
    `reference/hooks.md`, committed as config so the team gets it. Never run
    `prek install` or touch `.git/hooks`: the report asks the user to.
 
@@ -178,7 +208,8 @@ Finish with:
   format style, thresholds per module
 - everything left off, kept, suppressed or excluded, with why: Checkstyle and
   PMD (left alone), a project tool version newer than Sterling's (kept), a
-  `branch = 0` module, a profile left on `LENIENT`
+  `branch = 0` module, a SpotBugs baseline (per module, with the count of
+  findings it hides), a profile left on `LENIENT`
 - what the user does next: `git config blame.ignoreRevsFile
   .git-blame-ignore-revs`; `prek install` (or the project's hook manager) so
   the hook runs; mark packages `@NullMarked` one at a time; run `STRICT` in CI
@@ -190,5 +221,6 @@ Finish with:
 Only these exist, so only these appear in a plan: `format.style`,
 `format.ratchetFrom`, `errorProne.disable(...)`, `nullAway.jspecifyMode`,
 `spotbugs.effort`, `spotbugs.reportLevel`, `spotbugs.excludeFilter`,
+`spotbugs.baselineFile`,
 `coverage.instruction`, `coverage.branch`, `coverage.testTasks`,
 `coverage.excludes`. `reference/settings.md` says when each applies.

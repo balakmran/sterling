@@ -17,13 +17,26 @@ common_checks
 
 build_files="$(git ls-files '*.gradle.kts' '*.gradle' '*.properties' '*.toml' | grep -v '^gradle/wrapper/' | tr '\n' ' ')"
 check "the build applies Sterling $version" grep -qE "dev.balakmran.sterling.*\"$version\"" $build_files
-check "no 0.1.0 is left" bash -c "! grep -q 'dev.balakmran.sterling.*\"0\\.1\\.0\"' $build_files"
+check "no 0.2.0 is left" bash -c "! grep -q 'dev.balakmran.sterling.*\"0\\.2\\.0\"' $build_files"
 check "the first commit is the upgrade" grep -qi "upgrade Sterling" <<<"$(head -1 <<<"$subjects")"
-check "no reformat commit, since google-java-format didn't change" \
-  bash -c "! grep -qi 'reformat' <<<'$subjects'"
-check "the Application exclude is removed" bash -c "! grep -rq 'Application\\*' $build_files"
-check "CustomContractAnnotations is removed" bash -c "! grep -rq 'CustomContractAnnotations' $build_files"
-check "no source file changed" test -z "$(git diff --name-only "$initial" HEAD -- src)"
+check "only the version changed in the build files" \
+  bash -c "! git diff -U0 $initial HEAD -- $build_files | grep -E '^[+-][^+-]' | grep -qv 'dev.balakmran.sterling'"
+check "format.formatAnnotations isn't set to keep the old layout" \
+  bash -c "! grep -rq 'formatAnnotations' $build_files"
+
+# 0.3.0 formats as google-java-format does, so a file 0.2.0 joined fails stlFmtCheck: the upgrade
+# needs a reformat commit, hidden from git blame, that changes nothing but Java files.
+reformat="$(git log --format='%H %s' "$initial..HEAD" | grep -i 'reformat' | head -1 | cut -d' ' -f1)"
+check "a reformat commit follows, since stlFmtCheck failed after the bump" test -n "$reformat"
+if [[ -n "$reformat" ]]; then
+  check "the reformat commit changes only Java files" \
+    test -z "$(git diff --name-only "$reformat^" "$reformat" | grep -v '\.java$')"
+  check "the reformat commit changes the request class" \
+    bash -c "git diff --name-only $reformat^ $reformat | grep -q CreateStockRequest.java"
+  check "the reformat is listed in .git-blame-ignore-revs" grep -q "$reformat" .git-blame-ignore-revs
+fi
+check "no test changed" test -z "$(git diff --name-only "$initial" HEAD -- src/test)"
+check "stlFmtCheck passes" ./gradlew --console=plain -q stlFmtCheck
 
 info="$(stl_info)"
 check "stlInfo reports Sterling $version" test "$(json_string "$(head -1 <<<"$info")" sterling)" = "$version"

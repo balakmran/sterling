@@ -14,6 +14,8 @@ Formatting   format.style <GOOGLE | AOSP>   (4-space share: <n>%)
 Remove       <each duplicate: file, what, and what replaces it>
 Coverage     measured per module, set to the floor: <module list>
 Hook         <.pre-commit-config.yaml (new | existing) | .husky/pre-commit | lefthook.yml>
+Auto-fix     <stlFix: Error Prone's fixes in their own commit | skipped>
+Baseline     <SpotBugs baseline per module, if STANDARD reports findings | none>
 Left alone   <Checkstyle, PMD, other>
 Unknown      <anything>
 
@@ -22,9 +24,11 @@ Commits
   2 style: reformat with google-java-format <version>
   3 chore: ignore the reformat in git blame
   4 build: let Sterling own the tool configuration
-  5 build: set coverage thresholds from the measured value
-  6 build: move to STANDARD            (only if the gate passes)
-  7 chore: check formatting before every commit
+  5 fix: apply Error Prone's fixes with stlFix      (with your go-ahead)
+  6 build: set coverage thresholds from the measured value
+  7 build: baseline the existing SpotBugs findings  (only if you agree)
+  8 build: move to STANDARD            (only if the gate passes)
+  9 chore: check formatting before every commit
 
 Proceed?
 ```

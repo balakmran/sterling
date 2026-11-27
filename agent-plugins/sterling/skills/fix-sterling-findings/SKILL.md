@@ -5,8 +5,9 @@ description: >-
   Prone and NullAway compile errors, SpotBugs findings, coverage below the
   threshold and formatting, in rounds, with one commit per tool. Use when
   stlCheck, stlLint, stlSec, stlCov or stlFmtCheck failed, or when asked to fix
-  the Sterling, Error Prone, NullAway, SpotBugs or coverage findings. Fixes
-  code and writes tests; suppresses only as a last resort, with a reason.
+  the Sterling, Error Prone, NullAway, SpotBugs or coverage findings. Applies
+  Error Prone's automatic fixes first, then fixes code and writes tests;
+  suppresses only as a last resort, with a reason.
 license: Apache-2.0
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/outcomes.sh:*) Bash(${CLAUDE_SKILL_DIR}/scripts/findings.sh)
 metadata:
@@ -46,7 +47,10 @@ Code: `${CLAUDE_SKILL_DIR}/scripts/outcomes.sh`) from the project root.
 
 Run `scripts/outcomes.sh stlCheck --continue` and read
 `build/sterling-agent/outcomes.json`: which tasks are `FAILED`. Then
-`scripts/findings.sh` prints every finding as one JSON line: compile findings
+`scripts/findings.sh` prints every finding as one JSON line (from javac's
+diagnostics and the tools' reports; the console lines Sterling prints for
+SpotBugs and JaCoCo are `<path>[:<line>] [<Tool>:<Rule>] <message>`, console
+format 1, and name the real source path): compile findings
 (`ErrorProne`, `NullAway`, `javac`), `SpotBugs` findings, and `JaCoCo`
 totals with the classes missing the most coverage. Read the thresholds from
 `scripts/outcomes.sh -q stlInfo --json` (the lines that start with `{`;
@@ -63,6 +67,15 @@ One commit per tool (compile findings from Error Prone and NullAway share one),
 formatting last so its diff is the formatter's. Conventional
 Commit subjects: `fix:` for code, `test:` for new tests, `style:` for `stlFmt`.
 
+0. **Automatic fixes** (once, in round 1, before the numbered steps): run
+   `scripts/outcomes.sh stlFix` on its own. It changes sources, so it never
+   shares a Gradle run with `stlCheck` or another verification task, and it
+   also formats what it touches. When the project's Sterling has no `stlFix`
+   task (older than 0.3.0), skip it. If it changed files, commit them alone as
+   `fix: apply Error Prone's fixes with stlFix`, after checking
+   `git diff --cached --name-only` lists only `.java` files, then run
+   `scripts/outcomes.sh stlCheck --continue` again: what's left is yours to
+   fix. It patches only `errorProne.patchChecks`, so most findings remain.
 1. **Compile findings** (`ErrorProne`, `NullAway`, `javac`): `reference/error-prone.md`
    and `reference/nullaway.md`. Re-run `scripts/outcomes.sh stlLint` until
    `compileJava` and `compileTestJava` succeed.
