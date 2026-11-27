@@ -9,7 +9,7 @@
 
 [versions]
 # --- Consumer tools: configured by Sterling or on the consumer's buildscript classpath ---
-errorprone = "2.52.0"
+errorprone = "2.53.0"
 errorprone-gradle = "5.2.0"
 google-java-format = "2.0.0"
 jacoco = "0.8.16"
