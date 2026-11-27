@@ -57,7 +57,12 @@ where null is meant. Inside marked packages:
 - Annotate anything that may be null with `org.jspecify.annotations.Nullable`,
   never `javax.annotation`, `jakarta.annotation`, `org.springframework.lang` or
   JetBrains annotations. Put it on the type: `@Nullable String name`,
-  `String @Nullable [] values`.
+  `String @Nullable [] values`. A type-use annotation such as `@Nullable`
+  goes after the modifiers, directly before the type: `private @Nullable String
+  note;`, `public @Nullable String find()`, never `@Nullable private String`.
+  Declaration annotations (Jakarta's `@NotBlank` and `@Size`, `@Deprecated`,
+  `@Override`) go before the declaration, one per line. `./gradlew stlFix`
+  moves misplaced `@Nullable`s; run it on its own, never with `stlCheck`.
 - Check a `@Nullable` value before dereferencing it, or pass it only where
   `@Nullable` is accepted.
 - Assign every non-null field in every constructor. A field that is set later
@@ -82,13 +87,15 @@ Compilation runs every default Error Prone check. Error-level findings fail
 the build in every profile; (STRICT) warnings fail it too, javac's own
 (`[removal]`, `[deprecation]`) included. Each message names the check and the
 fix, and `https://errorprone.info/bugpattern/<CheckName>` explains it. The ones
-that code written by an agent trips most, checked against Error Prone 2.52.0:
+that code written by an agent trips most, first checked against Error Prone
+2.52.0 (2.53.0 adds `EqualsHashCode` for `hashCode` without `equals`):
 
 Errors (fail in every profile):
 
 - `ArrayEquals`, `ArrayToString`: `Arrays.equals(a, b)`, `Arrays.toString(a)`,
   never `a.equals(b)` or `"" + a` on arrays
-- `EqualsHashCode`: override `hashCode` whenever you override `equals`
+- `EqualsHashCode`: override `hashCode` whenever you override `equals`, and
+  `equals` whenever you override `hashCode`
 - `ReturnValueIgnored`, `CheckReturnValue`: use the result of `String`,
   `Optional`, stream and `@CheckReturnValue` methods
 - `FormatString`: format placeholders match their arguments

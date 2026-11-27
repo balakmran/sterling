@@ -10,6 +10,7 @@ Every setting below exists in Sterling's DSL (`sterling { }`). Detection and
 | `errorProne.disable(...)` | Moves the project's own disabled checks; never add one to make a build pass |
 | `nullAway.jspecifyMode` | Only to keep a mode the project already had on |
 | `spotbugs.effort`, `spotbugs.reportLevel`, `spotbugs.excludeFilter` | Move the project's own SpotBugs settings here (see `duplicate-config.md`). They take Sterling's types: `import dev.balakmran.sterling.SpotbugsSettings`, then `SpotbugsSettings.Effort.MAX` and `SpotbugsSettings.Confidence.LOW`, in place of the `com.github.spotbugs.snom` enums |
+| `spotbugs.baselineFile` | Only when the user agrees to baseline SpotBugs's existing findings (commit 7): `sterling { spotbugs { baselineFile = file("config/spotbugs/baseline.xml") } }`, in the module's own build script. The file is a SpotBugs XML report taken without a baseline |
 | `coverage.instruction`, `coverage.branch` | From the measurement, per module, in that module's build script |
 | `coverage.testTasks` | Leave unset: every `Test` task counts, so an `integrationTest` suite is in the measurement. Set it only if the project's old coverage deliberately counted fewer |
 | `coverage.excludes` | Moves the project's existing excludes. Don't add one for the Spring Boot main class or for generated sources: Sterling leaves both out |

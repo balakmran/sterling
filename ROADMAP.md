@@ -155,8 +155,9 @@ Scope and acceptance criteria: [`docs/plans/v0.3.0.md`](docs/plans/v0.3.0.md).
 - A documented GitHub Actions recipe: pull request annotations first, SARIF
   upload where code scanning is available.
 - SpotBugs findings and coverage shortfalls reported through Gradle's
-  Problems API, which already carries javac's. The API is incubating but
-  unchanged from Gradle 9.0.0 to 9.9.1; a change in it can't fail a build.
+  Problems API, which already carries javac's. The API is incubating, and
+  Gradle 9.9 deprecated some calls Sterling uses; a change in it can't fail a
+  build, because the reporter is created inside a guarded `try`.
 - `stlInfo` reports null-safety progress: how many main packages are
   `@NullMarked`.
 
@@ -242,3 +243,8 @@ across a minor using only the upgrade notes.
 | 2026-11-26 | PMD 7, Picnic's Error Prone Support and the `kotlinGradle` format dropped | Each adds a pin to bump every month for a small gap (rule 1); revisit when a user asks |
 | 2026-11-26 | 1.0 defines what is stable and drops "five public projects" | Adopters are mostly closed-source, and findings can't be part of the promise under rule 7 |
 | 2026-11-26 | Android and Kotlin source modules named as not supported | Sterling activates on Kotlin JVM modules and does nothing on Android without saying so |
+| 2026-11-26 | NullAway's severity follows `errorProne.errorsAsWarnings` | Sterling sets `NullAway:ERROR` explicitly, and an explicit severity is applied after `-XepAllErrorsAsWarnings`, so the blanket demotion alone left NullAway failing compilation on `LENIENT` (found in step 3) |
+| 2026-11-26 | `stlFix` patches `AnnotationPosition`, `EmptyBlockTag`, `MissingOverride`, `OperatorPrecedence`, `PatternMatchingInstanceof` and `UnnecessaryParentheses` | Each was shown to patch in a functional test on Error Prone 2.52.0 and again on 2.53.0, and keeps behaviour. Checks that remove or reshape code (`UnusedVariable`, `UnnecessaryLambda`, `ClassCanBeStatic`) are out. `stlFix` adds `-nowarn`, because `-Werror` stops Error Prone writing patches |
+| 2026-11-26 | Printed paths are relative to the root project, not the module | A CI matcher, an IDE or an agent opens a file from the repository root; in a single project nothing changes |
+| 2026-11-26 | The Problems API reporter is built from a separate class, in a `try` that catches `LinkageError` and `ObjectInstantiationException` | Gradle 9.9 deprecated `ProblemGroup.create`, `ProblemId.create` and `severity`, and from 9.7 every reported problem shows as a warning, so the details carry SpotBugs's rank. A task class naming a missing API type fails at decoration, which can't be caught |
+| 2026-11-26 | IntelliJ's google-java-format plugin 2.0.0.x is the one to install | It bundles the formatter Sterling pins, and it can't be pointed at another version, so an older plugin disagrees with `stlFmtCheck` |

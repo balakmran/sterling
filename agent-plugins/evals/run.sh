@@ -13,7 +13,7 @@
 #              `// @sterling-eval-repo` marker in a plugin repositories block)
 #
 # By default the run simulates the release: the repository is copied, its version bumped to
-# --sterling-version (default 0.2.0) in version.txt, the three manifests and every skill, and the
+# --sterling-version (default 0.3.0) in version.txt, the three manifests and every skill, and the
 # Gradle plugin is published to a throwaway file repository the fixture's settings point to. That
 # lets a skill apply "its" Sterling version before it is on the Plugin Portal. --published skips
 # this and uses the plugin as it is, from the Plugin Portal.
@@ -44,7 +44,7 @@ fi
 agent=$1 skill=$2 fixture=$3
 shift 3
 
-style="google" published=false version="0.2.0" model="" keep=false prepare_only=false
+style="google" published=false version="0.3.0" model="" keep=false prepare_only=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --style) style=$2; shift 2 ;;

@@ -4,7 +4,8 @@ description: >-
   Upgrade Sterling (dev.balakmran.sterling) in a Gradle project to the version
   this skill was released with, following the upgrade notes: the version bump
   and any setting changes in one commit, a separate reformat commit only when
-  google-java-format changed, then a gate run that reports new findings. Use
+  `stlFmtCheck` fails after the bump, then a gate run that reports new
+  findings. Use
   when asked to upgrade or update Sterling, or when the project's Sterling is
   older than this skill's.
 license: Apache-2.0
@@ -64,39 +65,39 @@ changelog: its entries are commit subjects. If the page can't be fetched, stop
 and say so.
 
 Show a plan: the version bump, each setting the notes change, each exclude or
-option they make redundant, whether google-java-format's version changes, and
-what may add findings. Wait for confirmation (guardrail 6).
+option they make redundant, whether the notes say `stlFmtCheck` can fail after
+the bump (a changed google-java-format version, or a changed default such as
+0.3.0's `formatAnnotations`), and what may add findings. Wait for confirmation (guardrail 6).
 
 ## 3. Commits
 
 1. **`build: upgrade Sterling to <version>`**: the version in the catalog or
    `plugins { }` block (or the `build-logic` dependency), and every change the
-   notes call for in the same commit. For 0.1.0 to 0.2.0 that is:
-   - remove `NullAway:CustomContractAnnotations`,
-     `NullAway:CheckContracts` and `NullAway:HandleTestAssertionLibraries`
-     options from the project's `options.errorprone` settings
-   - remove a `coverage.excludes` entry that only covers the Spring Boot
-     application class (for example `com/example/Application*`) when the
-     project applies `org.springframework.boot`, or classes from generated
-     sources
-   - remove a tool version override (Error Prone, NullAway, JSpecify, SpotBugs,
-     JaCoCo) that the new Sterling's version meets or exceeds; a newer
-     override stays, reported
-   - keep `format.style` and `format.ratchetFrom` as they are
-
-   Remove what a removal leaves empty: a `tasks.withType<JavaCompile>` or
-   `sterling { }` block with nothing in it, and an import nothing uses.
-2. If google-java-format's version changed (compare the `format` versions before
-   and after with `stlInfo --json`): run `scripts/outcomes.sh stlFmt` and
-   commit it alone as `style: reformat with google-java-format <version>`,
-   then append its SHA, with a comment, to `.git-blame-ignore-revs` in a third
-   commit, `chore: ignore the reformat in git blame`. When it didn't change,
-   make no reformat commit.
-3. If coverage's counted tasks or excluded classes changed (the new version
-   counts every `Test` task and leaves out generated classes and the Spring
-   Boot main class; the `coverage` block of `stlInfo --json` shows what
-   applies),
-   re-measure: `scripts/outcomes.sh test jacocoTestReport`, then for each
+   notes call for in the same commit. The notes for 0.2.0 to 0.3.0 call for no
+   setting changes: every change in them is a new default. Don't set
+   `format.formatAnnotations` (it would keep the old layout, which is the
+   user's call: name it in the report), and don't touch a project's own
+   `formatAnnotations()` step. Keep `format.style` and `format.ratchetFrom` as
+   they are. A tool version override (Error Prone, NullAway, JSpecify,
+   SpotBugs, JaCoCo) that the new Sterling's version meets or exceeds is
+   removed; a newer override stays, reported. When notes name an option or an
+   exclude the new version makes redundant, remove exactly those, and what the
+   removal leaves empty: a `tasks.withType<JavaCompile>` or `sterling { }`
+   block with nothing in it, and an import nothing uses.
+2. Decide the reformat from the check, not from the formatter's version: after
+   commit 1 run `scripts/outcomes.sh stlFmtCheck`. If it fails (a changed
+   google-java-format version, or a changed default such as 0.3.0's
+   `formatAnnotations`, which leaves files that 0.2.0 formatted differently),
+   run `scripts/outcomes.sh stlFmt` and commit it alone as
+   `style: reformat with google-java-format <version>` (the version from
+   `stlInfo --json`), then verify it's formatting only (stage with
+   `git add -A`; `git diff --cached --name-only` lists only `.java` files) and
+   append its SHA, with a comment, to `.git-blame-ignore-revs` in a third
+   commit, `chore: ignore the reformat in git blame`. When `stlFmtCheck`
+   passes, make no reformat commit.
+3. If the notes say coverage's counted tasks or excluded classes changed
+   (0.2.0 to 0.3.0 doesn't change what is counted; the `coverage` block of
+   `stlInfo --json` shows what applies), re-measure: `scripts/outcomes.sh test jacocoTestReport`, then for each
    module run `scripts/coverage.sh <coverage.reports.xml from stlInfo --json>`.
    Report the new numbers against the thresholds, and say when they are now
    well above them: raising a threshold is the user's call, so leave it. Never
@@ -111,7 +112,8 @@ report lists:
 - the version change, and the notes' section it followed
 - the commits (SHA and subject)
 - every setting or exclude removed, and every override kept, with why
-- whether google-java-format changed, and so whether there is a reformat commit
+- whether `stlFmtCheck` failed after the bump, and so whether there is a reformat
+  commit, and why (a new formatter version or a changed default)
 - the outcome of `stlCheck`, from the task outcomes, and a pointer to
   `fix-sterling-findings` when it failed
 - the new coverage numbers when they changed

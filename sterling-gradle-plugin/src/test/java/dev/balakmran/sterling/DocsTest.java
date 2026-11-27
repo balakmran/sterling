@@ -53,6 +53,51 @@ class DocsTest {
   }
 
   @Test
+  void everyGuidePageAndTheSecurityPolicyIsLinkedFromTheReadme() {
+    Path readmeFile = Path.of(System.getProperty("sterling.readme"));
+
+    assertThat(readmeFile.resolveSibling("SECURITY.md")).isRegularFile();
+    assertThat(readme)
+        .contains("(SECURITY.md)")
+        .contains("(docs/guide/ci.md)")
+        .contains("(docs/guide/plain-gradle.md)")
+        .contains("(docs/guide/compatibility.md)")
+        .contains("(docs/guide/ide.md)");
+    assertThat(guide("sterling-problem-matcher.json")).contains("\"problemMatcher\"");
+  }
+
+  @Test
+  void theNewestCompatibilityRowListsTheVersionsSterlingPins() {
+    String table = guide("compatibility.md");
+    Matcher row = Pattern.compile("(?m)^\\| (\\d+\\.\\d+\\.\\d+) \\|(.+)\\|$").matcher(table);
+    assertThat(row.find()).isTrue();
+
+    List<String> cells = Stream.of(row.group(2).split("\\|")).map(String::strip).toList();
+
+    assertThat(cells)
+        .containsExactly(
+            ToolVersions.get("errorprone"),
+            ToolVersions.get("nullaway"),
+            ToolVersions.get("jspecify"),
+            ToolVersions.get("spotbugs"),
+            ToolVersions.get("jacoco"),
+            ToolVersions.get("google-java-format"),
+            ToolVersions.get("spotless"));
+  }
+
+  @Test
+  void thePlainGradlePageUsesTheVersionsSterlingPins() {
+    assertThat(guide("plain-gradle.md"))
+        .contains("googleJavaFormat(\"" + ToolVersions.get("google-java-format") + "\")")
+        .contains("com.diffplug.spotless\") version \"" + ToolVersions.get("spotless") + "\"")
+        .contains("error_prone_core:" + ToolVersions.get("errorprone"))
+        .contains("nullaway:" + ToolVersions.get("nullaway"))
+        .contains("org.jspecify:jspecify:" + ToolVersions.get("jspecify"))
+        .contains("toolVersion = \"" + ToolVersions.get("spotbugs") + "\"")
+        .contains("toolVersion = \"" + ToolVersions.get("jacoco") + "\"");
+  }
+
+  @Test
   void pinnedVersionsTableMatchesTheVersionResource() {
     Map<String, String> expected = new LinkedHashMap<>();
     TOOL_NAMES.forEach((key, name) -> expected.put(name, ToolVersions.get(key)));
@@ -198,7 +243,8 @@ class DocsTest {
         .describedAs(
             "newest section %d.%d vs version %s", newest[0], newest[1], String.join(".", current))
         .isGreaterThanOrEqualTo(released[0] * 1000 + released[1]);
-    assertThat(section(upgrading, heading.group(0).substring(0, heading.group(0).length())))
+    assertThat(section(upgrading, heading.group(0))).contains("Can add findings");
+    assertThat(section(upgrading, "## 0.1.0 to 0.2.0"))
         .contains("CheckContracts")
         .contains("HandleTestAssertionLibraries")
         .contains("Application*")

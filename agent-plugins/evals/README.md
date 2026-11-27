@@ -25,7 +25,7 @@ it when a check fails; the transcript is in `transcript.jsonl`.
 A skill applies its own `sterling-version`, which isn't on the Plugin Portal
 until the release. By default `run.sh` therefore simulates it: it copies this
 repository, sets the version in `version.txt`, the manifests and every skill
-(`--sterling-version`, default 0.2.0), publishes the Gradle plugin to a
+(`--sterling-version`, default 0.3.0), publishes the Gradle plugin to a
 throwaway file repository and points each fixture's `settings.gradle.kts`
 at it (the `// @sterling-eval-repo` line). `--published` skips all of this
 and uses the plugin as it is, from the Plugin Portal.
@@ -45,4 +45,4 @@ Load `<work>/plugin` as the plugin in any agent, give it `<work>/prompt.txt` in
 | `greenfield` | `adopt-sterling`, `sterling-conventions` | Spring Initializr output for Boot 4 and Java 25. For `sterling-conventions`, `run.sh` applies Sterling at `STRICT` first |
 | `unsupported/gradle-8`, `unsupported/toolchain-17` | `adopt-sterling` | A Gradle 8.14 build and a Java 17 toolchain: the skill must stop and change nothing |
 | `findings` | `fix-sterling-findings` | Sterling at `STANDARD` with an Error Prone error, a NullAway finding, a SpotBugs finding and coverage under the threshold |
-| `previous-sterling` | `upgrade-sterling` | A Spring service already on Sterling 0.1.0, with the `Application*` exclude and a redundant NullAway option |
+| `previous-sterling` | `upgrade-sterling` | A Spring service already on Sterling 0.2.0, with a request class whose stacked validation annotations 0.2.0 joined onto one line: `stlFmtCheck` fails after the upgrade until a reformat commit |

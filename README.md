@@ -51,6 +51,8 @@ all five.
   supported. A project that must ship Java 17 bytecode can still compile with
   a newer JDK and `options.release = 17`.
 - **Gradle 9.0 or later.**
+- **A Java project.** Android projects and modules with Kotlin sources aren't
+  supported (see [Compatibility](docs/guide/compatibility.md#not-supported)).
 - **`mavenCentral()`** in the project's repositories. Sterling downloads
   google-java-format, Error Prone, NullAway, JSpecify, SpotBugs and the JaCoCo
   agent from there, only for the tools that are on.
@@ -214,6 +216,12 @@ Coverage:             on   (JaCoCo 0.8.16; instruction >= 80%, branch >= 70%; te
   change, and notes on each tool.
 - [Sterling in CI](docs/guide/ci.md): pull request annotations from the
   console output, and SARIF for SpotBugs.
+- [Sterling in plain Gradle](docs/guide/plain-gradle.md): what Sterling
+  configures, as build scripts you can copy.
+- [Compatibility](docs/guide/compatibility.md): the Gradle, Java and tool
+  versions each release was tested with.
+- [IDE setup](docs/guide/ide.md): IntelliJ and VS Code.
+- [Security policy](SECURITY.md).
 - [Roadmap](ROADMAP.md) and [changelog](CHANGELOG.md).
 - [Contributing](CONTRIBUTING.md): building and testing Sterling.
 

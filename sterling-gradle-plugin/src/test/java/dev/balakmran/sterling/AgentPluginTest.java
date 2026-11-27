@@ -39,6 +39,7 @@ class AgentPluginTest {
   private static final Set<String> TASKS =
       Set.of(
           SterlingPlugin.FMT,
+          SterlingPlugin.FIX,
           SterlingPlugin.FMT_CHECK,
           SterlingPlugin.LINT,
           SterlingPlugin.SEC,

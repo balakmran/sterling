@@ -16,13 +16,13 @@ block, and the `errorprone(...)` declarations that went with it.
 | `spotbugs { effort }` and `spotbugs { reportLevel }` | Move to `sterling { spotbugs { effort; reportLevel } }`, same values |
 | `spotbugs { excludeFilter }` | Move to `sterling { spotbugs { excludeFilter } }`, same file |
 | `googleJavaFormat()` in `spotless { java { } }` | Remove (commit 1: a second one fails) |
-| `formatAnnotations()` in `spotless { java { } }` | Remove (commit 1: a second one fails) |
+| `formatAnnotations()` in `spotless { java { } }` | Keep: Sterling's own step is off, so the two don't clash, and keeping it keeps the reformat commit smaller. Say in the report that removing it gives google-java-format's own layout |
 | `removeUnusedImports()`, `trimTrailingWhitespace()` and `endWithNewline()` on Java | Remove from the Java block (commit 4) |
 | Other Spotless steps, such as a license header | Keep, in the same block |
 | `errorprone("com.google.errorprone:error_prone_core:<version>")`, `errorprone("com.uber.nullaway:nullaway:<version>")` and `compileOnly("org.jspecify:jspecify:<version>")` | Remove each declaration, then read the Error Prone, NullAway and JSpecify versions from `stlInfo --json`; if the removed version was newer than Sterling's, put it back and report it as a project override |
 | `options.errorprone` settings for `NullAway`, `NullAway:OnlyNullMarked`, `NullAway:JSpecifyMode`, `NullAway:CheckContracts`, `NullAway:HandleTestAssertionLibraries` and `NullAway:CustomContractAnnotations` | Remove each; `nullAway { jspecifyMode = true }` only if the project had JSpecify mode on and the profile isn't `STRICT` |
 | `disableAllChecks`, and `disable("CheckName")` on `JavaCompile` | Remove `disableAllChecks`, and say in the report that Error Prone now runs in full; move each `disable("Name")` to `errorProne { disable("Name") }` |
-| JaCoCo `violationRules` | Remove; `coverage.instruction` and `coverage.branch` come from the measurement (commit 5), never from the old minimum |
+| JaCoCo `violationRules` | Remove; `coverage.instruction` and `coverage.branch` come from the measurement (commit 6), never from the old minimum |
 | JaCoCo class excludes | Move each to `coverage.excludes`, unless it names generated sources or the Spring Boot main class, which Sterling skips; drop those |
 | `check { dependsOn(...) }` on a JaCoCo or SpotBugs task | Remove it (commit 4); `check` runs `stlCheck` |
 | Test tasks wired to `jacocoTestReport` | Remove the wiring; leave `coverage.testTasks` unset unless the project deliberately counted fewer |
