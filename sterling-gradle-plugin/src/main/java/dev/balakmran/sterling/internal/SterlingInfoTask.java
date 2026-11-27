@@ -155,6 +155,14 @@ public abstract class SterlingInfoTask extends DefaultTask {
   public abstract Property<String> getFormatRatchetFrom();
 
   /**
+   * Whether Error Prone's errors are reported as warnings.
+   *
+   * @return whether errors are demoted
+   */
+  @Input
+  public abstract Property<Boolean> getErrorsAsWarnings();
+
+  /**
    * Whether Error Prone is on.
    *
    * @return whether Error Prone is on
@@ -365,6 +373,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     return version(versions, "errorprone")
         + "; "
         + warnings
+        + (getErrorsAsWarnings().get() ? "; errors are warnings" : "")
         + count(getDisabledChecks().get().size(), "check", "disabled");
   }
 
@@ -456,6 +465,7 @@ public abstract class SterlingInfoTask extends DefaultTask {
     errorProne.put("enabled", getErrorProneEnabled().get());
     putVersion(errorProne, "version", versions, "errorprone");
     errorProne.put("warningsAsErrors", getWarningsAsErrors().get());
+    errorProne.put("errorsAsWarnings", getErrorsAsWarnings().get());
     List<String> disabled = new ArrayList<>(getDisabledChecks().get());
     disabled.sort(null);
     errorProne.put("disabledChecks", disabled);

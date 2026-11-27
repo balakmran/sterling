@@ -21,6 +21,8 @@ import org.gradle.api.InvalidUserDataException;
  *   <tr><th scope="row">{@code errorProne.enabled}</th><td>true</td><td>true</td><td>true</td></tr>
  *   <tr><th scope="row">{@code errorProne.warningsAsErrors}</th>
  *       <td>false</td><td>false</td><td>true</td></tr>
+ *   <tr><th scope="row">{@code errorProne.errorsAsWarnings}</th>
+ *       <td>true</td><td>false</td><td>false</td></tr>
  *   <tr><th scope="row">{@code nullAway.enabled}</th><td>true</td><td>true</td><td>true</td></tr>
  *   <tr><th scope="row">{@code nullAway.jspecifyMode}</th>
  *       <td>false</td><td>false</td><td>true</td></tr>
@@ -40,28 +42,29 @@ public enum Profile {
    * the gate, and SpotBugs and coverage are off. Turned on, SpotBugs reports only its
    * high-confidence findings.
    *
-   * <p>Error Prone and NullAway still run inside compilation, so their error-level findings still
-   * fail the build.
+   * <p>Error Prone and NullAway still run inside compilation, but their error-level findings are
+   * reported as warnings, so nothing new fails {@code build}.
    */
-  LENIENT(false, false, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
+  LENIENT(false, false, true, false, false, Effort.DEFAULT, Confidence.HIGH, false, 0, 0),
 
   /**
    * The default: every tool on, {@code check} runs the gate, and coverage must reach 80% of
    * instructions and 70% of branches.
    */
-  STANDARD(true, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
+  STANDARD(true, false, false, false, true, Effort.DEFAULT, Confidence.MEDIUM, true, 80, 70),
 
   /**
    * {@link #STANDARD} plus compiler warnings as errors, NullAway's JSpecify mode, SpotBugs at its
    * maximum effort, and coverage of 95% of instructions and 85% of branches.
    */
-  STRICT(true, true, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85);
+  STRICT(true, true, false, true, true, Effort.MAX, Confidence.MEDIUM, true, 95, 85);
 
   /** The Gradle property that chooses the profile when the build script doesn't. */
   static final String PROPERTY = "sterling.profile";
 
   final boolean attachToCheck;
   final boolean warningsAsErrors;
+  final boolean errorsAsWarnings;
   final boolean jspecifyMode;
   final boolean spotbugs;
   final Effort effort;
@@ -73,6 +76,7 @@ public enum Profile {
   Profile(
       boolean attachToCheck,
       boolean warningsAsErrors,
+      boolean errorsAsWarnings,
       boolean jspecifyMode,
       boolean spotbugs,
       Effort effort,
@@ -82,6 +86,7 @@ public enum Profile {
       int branch) {
     this.attachToCheck = attachToCheck;
     this.warningsAsErrors = warningsAsErrors;
+    this.errorsAsWarnings = errorsAsWarnings;
     this.jspecifyMode = jspecifyMode;
     this.spotbugs = spotbugs;
     this.effort = effort;

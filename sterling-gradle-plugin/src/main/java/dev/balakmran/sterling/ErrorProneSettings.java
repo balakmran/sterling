@@ -7,9 +7,10 @@ import org.gradle.api.provider.SetProperty;
 /**
  * Settings for Error Prone, which finds common bugs while {@code compileJava} runs.
  *
- * <p>Findings at error level fail compilation in every profile; {@link #getWarningsAsErrors()}
- * decides whether warnings do too. For Error Prone options not covered here, configure {@code
- * options.errorprone { }} on the {@code JavaCompile} tasks directly.
+ * <p>Findings at error level fail compilation unless {@link #getErrorsAsWarnings()} is on, as it is
+ * in {@code LENIENT}; {@link #getWarningsAsErrors()} decides whether warnings fail it too. For
+ * Error Prone options not covered here, configure {@code options.errorprone { }} on the {@code
+ * JavaCompile} tasks directly.
  */
 public abstract class ErrorProneSettings {
   /** Creates the settings. Gradle instantiates this class for the {@code sterling} extension. */
@@ -35,6 +36,24 @@ public abstract class ErrorProneSettings {
    * @return the warnings-as-errors property
    */
   public abstract Property<Boolean> getWarningsAsErrors();
+
+  /**
+   * Whether Error Prone's error-level findings, NullAway's included, are reported as warnings
+   * instead of failing compilation, by passing {@code -XepAllErrorsAsWarnings}.
+   *
+   * <p>Defaults to true for {@link Profile#LENIENT} and false otherwise, so adding Sterling to an
+   * existing codebase doesn't break compilation. A package marked {@code @NullMarked} while on
+   * {@code LENIENT} shows its NullAway findings as warnings, and {@link Profile#STANDARD} turns
+   * them back into errors. While it's on, Sterling also raises javac's cap of 100 printed warnings,
+   * so the findings aren't hidden.
+   *
+   * <p>Setting it together with {@link #getWarningsAsErrors()} fails compilation with a message
+   * naming both: {@code -Werror} would turn the demoted errors back into failures. A project's own
+   * {@code options.errorprone.allErrorsAsWarnings} wins.
+   *
+   * @return the errors-as-warnings property
+   */
+  public abstract Property<Boolean> getErrorsAsWarnings();
 
   /**
    * The Error Prone checks turned off, by check name. Empty by default.

@@ -37,6 +37,36 @@ class ErrorProneTest {
       }
       """;
 
+  // A NullAway finding beside DEAD_EXCEPTION's, in a @NullMarked package.
+  private static final String NULL_MARKED =
+      """
+      @NullMarked
+      package app;
+
+      import org.jspecify.annotations.NullMarked;
+      """;
+
+  private static final String DEAD_AND_NULL =
+      """
+      package app;
+
+      import org.jspecify.annotations.Nullable;
+
+      public class App {
+        static @Nullable String find() {
+          return null;
+        }
+
+        public int length() {
+          new IllegalStateException("never thrown");
+          return find().length();
+        }
+      }
+      """;
+
+  private static final String LENIENT =
+      "sterling { profile = dev.balakmran.sterling.Profile.LENIENT }\n";
+
   @TempDir Path dir;
 
   private Fixture fixture(String sterling) {
@@ -131,5 +161,76 @@ class ErrorProneTest {
 
     assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
     assertThat(outcome(result, ":compileTestJava")).isNotNull();
+  }
+
+  @Test
+  void lenientReportsErrorLevelFindingsAsWarningsAndStandardFailsOnThem() {
+    Fixture fixture =
+        fixture(LENIENT)
+            .file("src/main/java/app/package-info.java", NULL_MARKED)
+            .file("src/main/java/app/App.java", DEAD_AND_NULL);
+
+    BuildResult lenient = fixture.build("compileJava");
+    assertThat(outcome(lenient, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(lenient.getOutput())
+        .contains("warning: [DeadException]")
+        .contains("warning: [NullAway]");
+
+    fixture.file(
+        "build.gradle.kts", fixture.read("build.gradle.kts").replace("LENIENT", "STANDARD"));
+    BuildResult standard = fixture.buildAndFail("compileJava");
+    assertThat(outcome(standard, COMPILE)).isEqualTo(TaskOutcome.FAILED);
+    assertThat(standard.getOutput()).contains("error: [DeadException]");
+  }
+
+  @Test
+  void errorsAsWarningsSetOnStandardDemotesErrorsToo() {
+    BuildResult result =
+        fixture("sterling { errorProne { errorsAsWarnings = true } }\n")
+            .file("src/main/java/app/App.java", DEAD_EXCEPTION)
+            .build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput()).contains("warning: [DeadException]");
+  }
+
+  @Test
+  void errorsAsWarningsTogetherWithWarningsAsErrorsFailsNamingBothSettings() {
+    BuildResult result =
+        fixture(LENIENT + "sterling { errorProne { warningsAsErrors = true } }\n")
+            .file("src/main/java/app/App.java", DEAD_EXCEPTION)
+            .buildAndFail("compileJava");
+
+    assertThat(result.getOutput())
+        .contains("sterling.errorProne.errorsAsWarnings")
+        .contains("sterling.errorProne.warningsAsErrors");
+  }
+
+  @Test
+  void lenientPrintsMoreThanJavacsDefaultCapOf100Warnings() {
+    Fixture fixture = fixture(LENIENT);
+    for (int i = 0; i < 150; i++) {
+      fixture.file(
+          "src/main/java/app/C" + i + ".java",
+          "package app;\n\npublic class C"
+              + i
+              + " {\n  public String toString() {\n    return \"c\";\n  }\n}\n");
+    }
+
+    BuildResult result = fixture.build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput().split("warning: \\[MissingOverride\\]", -1)).hasSize(151);
+  }
+
+  @Test
+  void errorsAsWarningsDoesNothingWhileErrorProneIsOff() {
+    BuildResult result =
+        fixture(LENIENT + "sterling { errorProne { enabled = false } }\n")
+            .file("src/main/java/app/App.java", DEAD_EXCEPTION)
+            .build("compileJava");
+
+    assertThat(outcome(result, COMPILE)).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result.getOutput()).doesNotContain("DeadException");
   }
 }

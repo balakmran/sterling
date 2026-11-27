@@ -60,11 +60,21 @@ final class NullAway {
    * NullAway's check severity: error while active, nothing while not, since naming the check
    * without its jar would fail Error Prone.
    *
+   * <p>With {@code errorsAsWarnings} it's a warning: an explicit severity is applied after Error
+   * Prone's blanket demotion and would otherwise override it.
+   *
    * @param active whether NullAway runs
+   * @param errorsAsWarnings whether Error Prone's errors are reported as warnings
    * @return the check entries to add to Error Prone's options
    */
-  static Provider<Map<String, CheckSeverity>> checks(Provider<Boolean> active) {
-    return active.map(on -> on ? Map.of(CHECK, CheckSeverity.ERROR) : Map.of());
+  static Provider<Map<String, CheckSeverity>> checks(
+      Provider<Boolean> active, Provider<Boolean> errorsAsWarnings) {
+    return active.zip(
+        errorsAsWarnings,
+        (on, demoted) ->
+            on
+                ? Map.of(CHECK, demoted ? CheckSeverity.WARN : CheckSeverity.ERROR)
+                : Map.<String, CheckSeverity>of());
   }
 
   /**

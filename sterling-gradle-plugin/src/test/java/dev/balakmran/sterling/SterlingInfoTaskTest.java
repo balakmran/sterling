@@ -133,6 +133,17 @@ class SterlingInfoTaskTest {
   }
 
   @Test
+  void errorProneReportsErrorsAsWarningsOnLenient() {
+    assertThat(render()).doesNotContain("errors are warnings");
+
+    sterling.getProfile().set(Profile.LENIENT);
+
+    assertThat(render()).contains("; warnings are not errors; errors are warnings");
+    assertThat(((Map<?, ?>) task().jsonModel("25").get("errorProne")).get("errorsAsWarnings"))
+        .isEqualTo(true);
+  }
+
+  @Test
   void nullAwayReportsJspecifyModeWhenOn() {
     sterling.getProfile().set(Profile.STRICT);
 

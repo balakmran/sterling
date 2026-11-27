@@ -13,6 +13,7 @@ own in the `sterling { }` block.
 | `format.formatAnnotations` | false | false | false |
 | `errorProne.enabled` | true | true | true |
 | `errorProne.warningsAsErrors` | false | false | true |
+| `errorProne.errorsAsWarnings` | true | false | false |
 | `nullAway.enabled` | true | true | true |
 | `nullAway.jspecifyMode` | false | false | true |
 | `spotbugs.enabled` | false | true | true |
@@ -24,9 +25,9 @@ own in the `sterling { }` block.
 
 ## What the profiles mean
 
-- `LENIENT` still compiles with Error Prone and NullAway, so their
-  error-level findings still fail the build. It only stops `check` from
-  running the gate.
+- `LENIENT` still compiles with Error Prone and NullAway, but reports their
+  error-level findings as warnings (`errorsAsWarnings`), so nothing new fails
+  the build. It also stops `check` from running the gate.
 - `STRICT`'s `warningsAsErrors` adds `-Werror`, which also fails on javac's own
   warnings, such as `[removal]`.
 - NullAway is on in every profile because it does nothing until a package
@@ -77,6 +78,7 @@ sterling {
     errorProne {
         enabled = true
         warningsAsErrors = false        // adds -Werror to javac
+        errorsAsWarnings = false        // reports Error Prone's errors as warnings; true in LENIENT
         disable("UnusedVariable")       // turns checks off by name
     }
     nullAway {
@@ -148,6 +150,7 @@ sterling {
 | `format.ratchetFrom` | A git reference, such as `origin/main` | Unset: every file is formatted |
 | `errorProne.enabled` | Boolean | true |
 | `errorProne.warningsAsErrors` | Boolean | From the profile |
+| `errorProne.errorsAsWarnings` | Boolean | From the profile |
 | `errorProne.disabledChecks` | Set of check names | Empty |
 | `errorProne.disable(...)` | Adds check names to `disabledChecks` | |
 | `nullAway.enabled` | Boolean | true (needs Error Prone) |
@@ -169,7 +172,7 @@ JSON per project, for scripts, CI and coding agents. `-q` leaves only the JSON
 lines on standard output:
 
 ```json
-{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
+{"schemaVersion":1,"sterling":"0.2.0","project":":","profile":"STANDARD","profileProperty":"standard","attachToCheck":true,"daemonJvm":25,"javaToolchain":{"active":true,"version":25},"format":{"enabled":true,"style":"GOOGLE","formatAnnotations":false,"ratchetFrom":null,"versions":{"google-java-format":"2.0.0","spotless":"8.11.0"}},"errorProne":{"enabled":true,"version":"2.52.0","versionSource":"sterling","warningsAsErrors":false,"errorsAsWarnings":false,"disabledChecks":["UnusedVariable"]},"nullAway":{"enabled":true,"active":true,"version":"0.14.3","versionSource":"sterling","jspecify":"1.0.1","jspecifySource":"sterling","jspecifyMode":false},"spotbugs":{"enabled":true,"version":"4.10.5","versionSource":"sterling","effort":"DEFAULT","reportLevel":"MEDIUM","excludeFilter":null,"reports":{"sarif":"build/reports/spotbugs/main.sarif","xml":"build/reports/spotbugs/main.xml"}},"coverage":{"enabled":true,"version":"0.8.16","versionSource":"sterling","instruction":80,"branch":70,"excludes":[],"reports":{"xml":"build/reports/jacoco/test/jacocoTestReport.xml"}}}
 ```
 
 Keys are named after the settings above. A version the project overrides
@@ -202,6 +205,7 @@ given as an absolute path.
 | `errorProne.version` | Version |
 | `errorProne.versionSource` | `"sterling"` for Sterling's pin, `"project"` for a [project override](tools.md#using-a-different-tool-version) |
 | `errorProne.warningsAsErrors` | Boolean |
+| `errorProne.errorsAsWarnings` | Boolean |
 | `errorProne.disabledChecks` | Check names, sorted |
 | `nullAway.enabled` | Boolean |
 | `nullAway.active` | Whether NullAway runs: `enabled` and Error Prone on |

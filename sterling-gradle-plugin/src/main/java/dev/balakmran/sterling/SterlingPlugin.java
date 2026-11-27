@@ -130,6 +130,7 @@ public class SterlingPlugin implements Plugin<Project> {
     sterling.getFormat().getFormatAnnotations().convention(false);
     sterling.getErrorProne().getEnabled().convention(true);
     sterling.getErrorProne().getWarningsAsErrors().convention(profile.map(p -> p.warningsAsErrors));
+    sterling.getErrorProne().getErrorsAsWarnings().convention(profile.map(p -> p.errorsAsWarnings));
     sterling.getNullAway().getEnabled().convention(true);
     sterling.getNullAway().getJspecifyMode().convention(profile.map(p -> p.jspecifyMode));
     sterling.getSpotbugs().getEnabled().convention(profile.map(p -> p.spotbugs));
@@ -191,6 +192,7 @@ public class SterlingPlugin implements Plugin<Project> {
                           sterling.getFormat().getRatchetFrom(), "format.ratchetFrom"));
               task.getErrorProneEnabled().set(sterling.getErrorProne().getEnabled());
               task.getWarningsAsErrors().set(sterling.getErrorProne().getWarningsAsErrors());
+              task.getErrorsAsWarnings().set(sterling.getErrorProne().getErrorsAsWarnings());
               task.getDisabledChecks().set(sterling.getErrorProne().getDisabledChecks());
               task.getNullAwayEnabled().set(sterling.getNullAway().getEnabled());
               task.getJspecifyMode().set(sterling.getNullAway().getJspecifyMode());

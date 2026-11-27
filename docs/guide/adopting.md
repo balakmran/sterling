@@ -6,8 +6,8 @@ Each step is one pull request, and `main` stays green throughout:
 
 1. **Apply Sterling on `LENIENT`.** `sterling.profile=lenient` in
    `gradle.properties`. The tools run on demand, but `check` doesn't run the
-   gate, so nothing new fails `build` except Error Prone's error-level
-   findings, which fail compilation in every profile.
+   gate, and Error Prone's and NullAway's errors are reported as warnings, so
+   nothing new fails `build`.
 2. **Reformat, or choose not to.** See [below](#reformatting-and-first-findings).
 3. **Clear Error Prone's findings.** Fix them, or disable a check by name
    while you work through it.

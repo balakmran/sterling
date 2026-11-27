@@ -2,6 +2,7 @@ package dev.balakmran.sterling;
 
 import static dev.balakmran.sterling.Flags.whenOn;
 
+import dev.balakmran.sterling.internal.ErrorsAsWarnings;
 import dev.balakmran.sterling.internal.WarningsAsErrors;
 import java.util.Map;
 import java.util.Set;
@@ -69,14 +70,23 @@ final class ErrorProne {
           options.getEnabled().convention(enabled);
           options.getDisableWarningsInGeneratedCode().convention(true);
           options.getExcludedPaths().convention(GENERATED_PATHS);
+          options.getAllErrorsAsWarnings().convention(settings.getErrorsAsWarnings());
           // NullAway first, so errorProne.disable("NullAway") can still turn it off.
-          options.getChecks().putAll(NullAway.checks(nullAway));
+          options.getChecks().putAll(NullAway.checks(nullAway, settings.getErrorsAsWarnings()));
           options.getChecks().putAll(disabled);
           options.getCheckOptions().putAll(nullAwayOptions);
           compile
               .getOptions()
               .getCompilerArgumentProviders()
               .add(new WarningsAsErrors(settings.getWarningsAsErrors()));
+          compile
+              .getOptions()
+              .getCompilerArgumentProviders()
+              .add(
+                  new ErrorsAsWarnings(
+                      settings.getErrorsAsWarnings(),
+                      settings.getWarningsAsErrors(),
+                      settings.getEnabled()));
         });
 
     var tasks = project.getTasks();

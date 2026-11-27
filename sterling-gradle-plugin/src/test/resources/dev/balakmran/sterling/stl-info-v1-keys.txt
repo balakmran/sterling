@@ -23,6 +23,7 @@ errorProne.enabled
 errorProne.version
 errorProne.versionSource
 errorProne.warningsAsErrors
+errorProne.errorsAsWarnings
 errorProne.disabledChecks
 nullAway
 nullAway.enabled

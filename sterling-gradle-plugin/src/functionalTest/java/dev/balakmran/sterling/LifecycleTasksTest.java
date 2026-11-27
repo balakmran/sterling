@@ -96,7 +96,7 @@ class LifecycleTasksTest {
     assertThat(result.getOutput())
         .contains("Profile:              LENIENT")
         .contains("Gate wired to check:  yes")
-        .contains("warnings are not errors; 1 check disabled)")
+        .contains("warnings are not errors; errors are warnings; 1 check disabled)")
         .containsPattern("SpotBugs:\\s+on ")
         .contains("instruction >= 90%, branch >= 0%; 1 exclude)");
   }

@@ -80,8 +80,11 @@ by 4 (see [Reformatting](adopting.md#reformatting-and-first-findings)).
 
 ## Error Prone
 
-Error Prone runs inside every Java compilation. Error-level findings always
-fail it; warnings fail it only with `warningsAsErrors`. Sources under
+Error Prone runs inside every Java compilation. Error-level findings fail it
+unless `errorsAsWarnings` is on, as it is in `LENIENT`, where they print as
+warnings and javac's cap of 100 printed warnings is raised to 10,000.
+Warnings fail it only with `warningsAsErrors`; the two settings together are
+rejected. Sources under
 `build/generated` are skipped entirely, and warnings in code annotated
 `@Generated` are ignored.
 
